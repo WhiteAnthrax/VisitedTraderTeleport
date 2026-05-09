@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>TraderTeleport</AssemblyName>
+    <RootNamespace>TraderTeleport</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\refs\managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\refs\managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\..\refs\managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\refs\managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>..\..\refs\harmony\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyToModFolder" AfterTargets="Build">
+    <MakeDir Directories="..\..\mod\TraderTeleport" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\mod\TraderTeleport" />
+  </Target>
+
+  <Target Name="PackageMod" AfterTargets="CopyToModFolder">
+    <XmlPeek
+      XmlInputPath="..\..\mod\TraderTeleport\ModInfo.xml"
+      Query="/xml/Version/@value">
+      <Output TaskParameter="Result" PropertyName="ModVersion" />
+    </XmlPeek>
+    <PropertyGroup>
+      <PackageRoot>$(BaseIntermediateOutputPath)Package\</PackageRoot>
+      <PackageModDir>$(PackageRoot)TraderTeleport\</PackageModDir>
+    </PropertyGroup>
+    <MakeDir Directories="..\..\dist" />
+    <Copy SourceFiles="..\..\CHANGELOG.md" DestinationFiles="..\..\mod\TraderTeleport\Changelog.txt" />
+    <RemoveDir Directories="$(PackageRoot)" />
+    <MakeDir Directories="$(PackageModDir)" />
+    <ItemGroup>
+      <ModPackageFiles Include="..\..\mod\TraderTeleport\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(ModPackageFiles)"
+      DestinationFiles="@(ModPackageFiles->'$(PackageModDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="..\..\LICENSE" DestinationFiles="$(PackageModDir)LICENSE" />
+    <ZipDirectory
+      SourceDirectory="$(PackageRoot)"
+      DestinationFile="..\..\dist\TraderTeleport-$(ModVersion).zip"
+      Overwrite="true" />
+  </Target>
+</Project>
