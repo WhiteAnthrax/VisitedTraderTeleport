@@ -1,5 +1,8 @@
 # TraderTeleport Changelog
 
+## 0.1.10 - 2026-05-10 02:57 JST
+- Removed developer-facing repository notes from the public README.
+
 ## 0.1.9 - 2026-05-10 02:46 JST
 - Added README multiplayer install guidance for server and client installation.
 
