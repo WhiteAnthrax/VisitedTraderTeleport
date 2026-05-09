@@ -38,10 +38,6 @@ For multiplayer, install this mod on both the server and every client. This is c
 
 Anti-cheat should be disabled for this DLL mod.
 
-## Repository Notes
-
-Do not commit local game reference files from `refs/`, generated build outputs, or generated release ZIP files. Publish user-facing ZIP files as GitHub Release assets instead.
-
 ## License
 
 This project is licensed under the MIT License. It does not include or license any 7 Days to Die game assets. 7 Days to Die is property of The Fun Pimps.

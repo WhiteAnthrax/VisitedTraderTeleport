@@ -4,7 +4,7 @@
   <DisplayName value="Trader Teleport" />
   <Description value="Adds a trader dialog option to teleport to previously visited traders." />
   <Author value="WhiteAnthrax" />
-  <Version value="0.1.9" />
+  <Version value="0.1.10" />
   <Website value="" />
   <SkipWithAntiCheat value="true" />
 </xml>
