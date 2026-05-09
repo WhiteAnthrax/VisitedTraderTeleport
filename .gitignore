@@ -1,0 +1,14 @@
+bin/
+obj/
+*.user
+*.suo
+
+# Generated build/package outputs
+dist/
+mod/TraderTeleport/TraderTeleport.dll
+mod/TraderTeleport/Changelog.txt
+
+# Local copies of 7 Days to Die assemblies/config used only for compilation
+# and API inspection. Do not redistribute these game files.
+refs/*
+!refs/README.md
