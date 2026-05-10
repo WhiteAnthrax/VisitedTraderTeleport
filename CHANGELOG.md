@@ -1,4 +1,8 @@
-# Visited Trader Teleport Changelog
+# Travel Between Visited Traders Changelog
+
+## 0.2.1 - 2026-05-11 03:36 JST
+- Changed the public display title to Travel Between Visited Traders.
+- Updated README wording to match the Nexus Mods title.
 
 ## 0.2.0 - 2026-05-11 01:50 JST
 - Renamed the internal project, namespace, assembly, DLL, and solution to VisitedTraderTeleport.

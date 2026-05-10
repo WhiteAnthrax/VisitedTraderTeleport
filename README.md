@@ -1,6 +1,6 @@
-# Visited Trader Teleport
+# Travel Between Visited Traders
 
-7 Days to Die v2.6 mod that adds a trader dialog option for teleporting between traders the player has already visited.
+7 Days to Die v2.6 mod that adds a trader dialog option to travel to traders the player has already visited.
 
 ## Behavior
 
