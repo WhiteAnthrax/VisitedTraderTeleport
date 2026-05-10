@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
 
-namespace TraderTeleport;
+namespace VisitedTraderTeleport;
 
-internal static class TraderTeleportService
+internal static class VisitedTraderTeleportService
 {
     private const float TeleportVerticalClearance = 0.25f;
 
@@ -30,14 +30,14 @@ internal static class TraderTeleportService
 
             if (player is EntityPlayerLocal localForTooltip)
             {
-                GameManager.ShowTooltip(localForTooltip, TTLocalization.Format("tt_teleported_to", destination.DisplayName), false, false, 4f);
+                GameManager.ShowTooltip(localForTooltip, VTTLocalization.Format("vtt_teleported_to", destination.DisplayName), false, false, 4f);
             }
 
-            Debug.Log($"[TraderTeleport] Teleported {player.PlayerDisplayName} to {destination.DialogText}");
+            Debug.Log($"[VisitedTraderTeleport] Teleported {player.PlayerDisplayName} to {destination.DialogText}");
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[TraderTeleport] Teleport failed: {ex}");
+            Debug.LogWarning($"[VisitedTraderTeleport] Teleport failed: {ex}");
         }
     }
 
@@ -84,7 +84,7 @@ internal static class TraderTeleportService
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[TraderTeleport] Could not send teleport package: {ex.Message}");
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not send teleport package: {ex.Message}");
         }
     }
 }

@@ -5,9 +5,7 @@ obj/
 
 # Generated build/package outputs
 dist/
-mod/TraderTeleport/TraderTeleport.dll
-mod/TraderTeleport/Changelog.txt
-mod/VisitedTraderTeleport/TraderTeleport.dll
+mod/VisitedTraderTeleport/*.dll
 mod/VisitedTraderTeleport/Changelog.txt
 
 # Local copies of 7 Days to Die assemblies/config used only for compilation

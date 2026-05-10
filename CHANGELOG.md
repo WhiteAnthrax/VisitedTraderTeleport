@@ -1,5 +1,10 @@
 # Visited Trader Teleport Changelog
 
+## 0.2.0 - 2026-05-11 01:50 JST
+- Renamed the internal project, namespace, assembly, DLL, and solution to VisitedTraderTeleport.
+- Renamed current XML/localization IDs from tt_* to vtt_*.
+- Renamed the visited trader data file to VisitedTraderTeleportVisited.txt.
+
 ## 0.1.12 - 2026-05-11 01:45 JST
 - Renamed the public mod display name to Visited Trader Teleport.
 - Changed generated release packages to use the VisitedTraderTeleport folder and ZIP name.

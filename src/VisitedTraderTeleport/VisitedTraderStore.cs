@@ -4,11 +4,11 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 
-namespace TraderTeleport;
+namespace VisitedTraderTeleport;
 
 internal static class VisitedTraderStore
 {
-    private const string FileName = "TraderTeleportVisited.txt";
+    private const string FileName = "VisitedTraderTeleportVisited.txt";
     private static readonly Dictionary<string, TraderDestination> Destinations = new();
     private static string loadedPath;
 
@@ -76,7 +76,7 @@ internal static class VisitedTraderStore
 
         Destinations[destination.Key] = destination;
         Save();
-        Debug.Log($"[TraderTeleport] Recorded visited trader: {destination.DialogText}");
+        Debug.Log($"[VisitedTraderTeleport] Recorded visited trader: {destination.DialogText}");
     }
 
     private static TraderDestination CreateDestination(EntityTrader trader, EntityPlayer player)
@@ -154,7 +154,7 @@ internal static class VisitedTraderStore
         string path = GetStorePath();
         Directory.CreateDirectory(Path.GetDirectoryName(path));
 
-        var lines = new List<string> { "# TraderTeleport visited trader destinations" };
+        var lines = new List<string> { "# VisitedTraderTeleport visited trader destinations" };
         lines.AddRange(Destinations.Values
             .OrderBy(destination => destination.Key, StringComparer.OrdinalIgnoreCase)
             .Select(destination => destination.Serialize()));
@@ -174,9 +174,9 @@ internal static class VisitedTraderStore
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[TraderTeleport] Could not resolve save directory: {ex.Message}");
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not resolve save directory: {ex.Message}");
         }
 
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Mods", "TraderTeleport", FileName);
+        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Mods", "VisitedTraderTeleport", FileName);
     }
 }
