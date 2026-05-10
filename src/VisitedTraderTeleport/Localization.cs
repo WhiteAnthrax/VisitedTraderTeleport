@@ -1,6 +1,6 @@
-namespace TraderTeleport;
+namespace VisitedTraderTeleport;
 
-internal static class TTLocalization
+internal static class VTTLocalization
 {
     public static string Get(string key)
     {

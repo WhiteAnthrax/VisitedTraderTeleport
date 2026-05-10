@@ -8,18 +8,18 @@
 - The trader dialog gains a `Travel to a visited trader` option.
 - Selecting it shows dynamically generated destinations for recorded traders.
 - Choosing a destination teleports the player to that trader's recorded position.
-- Visited trader data is saved in the current save folder as `TraderTeleportVisited.txt`.
+- Visited trader data is saved in the current save folder as `VisitedTraderTeleportVisited.txt`.
 
 ## Build
 
 Reference DLLs and vanilla config copies are expected under `refs/`.
 
 ```powershell
-dotnet build src\TraderTeleport\TraderTeleport.csproj -c Release
+dotnet build src\VisitedTraderTeleport\VisitedTraderTeleport.csproj -c Release
 ```
 
-The build copies `TraderTeleport.dll` into `mod\VisitedTraderTeleport`.
-It also creates a versioned package under `dist\`, for example `VisitedTraderTeleport-0.1.1.zip`.
+The build copies `VisitedTraderTeleport.dll` into `mod\VisitedTraderTeleport`.
+It also creates a versioned package under `dist\`, for example `VisitedTraderTeleport-0.2.0.zip`.
 The package contains a top-level `VisitedTraderTeleport` folder ready to extract into the game's `Mods` directory.
 
 Update `CHANGELOG.md` whenever behavior, packaging, or project-facing workflow changes. The build copies it into the packaged mod as `Changelog.txt`.

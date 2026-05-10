@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 
-namespace TraderTeleport;
+namespace VisitedTraderTeleport;
 
 internal static class DialogIds
 {
     public const string TraderDialogId = "trader";
-    public const string DestinationStatementId = "tt_destinations";
-    public const string DynamicResponsePrefix = "tt_destination_";
+    public const string DestinationStatementId = "vtt_destinations";
+    public const string DynamicResponsePrefix = "vtt_destination_";
 }
 
 [HarmonyPatch(typeof(Dialog), nameof(Dialog.GetFirstStatment))]
@@ -65,7 +65,7 @@ internal static class DialogStatementGetResponsesPatch
             Actions = new List<BaseDialogAction>()
         };
 
-        var action = new DialogActionTraderTeleport
+        var action = new DialogActionVisitedTraderTeleport
         {
             ID = "teleport",
             Value = destination.Key,

@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using UnityEngine;
 
-namespace TraderTeleport;
+namespace VisitedTraderTeleport;
 
 internal sealed class TraderDestination
 {
