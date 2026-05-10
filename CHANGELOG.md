@@ -1,4 +1,9 @@
-# TraderTeleport Changelog
+# Visited Trader Teleport Changelog
+
+## 0.1.12 - 2026-05-11 01:45 JST
+- Renamed the public mod display name to Visited Trader Teleport.
+- Changed generated release packages to use the VisitedTraderTeleport folder and ZIP name.
+- Updated README wording to describe teleporting between previously visited traders more clearly.
 
 ## 0.1.11 - 2026-05-11 01:40 JST
 - Adjusted teleport target height so saved player positions are not lowered by terrain correction.

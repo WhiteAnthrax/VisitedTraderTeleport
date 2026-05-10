@@ -1,6 +1,6 @@
-# TraderTeleport
+# Visited Trader Teleport
 
-7 Days to Die v2.6 mod that adds a trader dialog option for teleporting to traders the player has already visited.
+7 Days to Die v2.6 mod that adds a trader dialog option for teleporting between traders the player has already visited.
 
 ## Behavior
 
@@ -18,18 +18,18 @@ Reference DLLs and vanilla config copies are expected under `refs/`.
 dotnet build src\TraderTeleport\TraderTeleport.csproj -c Release
 ```
 
-The build copies `TraderTeleport.dll` into `mod\TraderTeleport`.
-It also creates a versioned package under `dist\`, for example `TraderTeleport-0.1.1.zip`.
-The package contains a top-level `TraderTeleport` folder ready to extract into the game's `Mods` directory.
+The build copies `TraderTeleport.dll` into `mod\VisitedTraderTeleport`.
+It also creates a versioned package under `dist\`, for example `VisitedTraderTeleport-0.1.1.zip`.
+The package contains a top-level `VisitedTraderTeleport` folder ready to extract into the game's `Mods` directory.
 
 Update `CHANGELOG.md` whenever behavior, packaging, or project-facing workflow changes. The build copies it into the packaged mod as `Changelog.txt`.
 
 ## Install
 
-For normal users, download the versioned ZIP from GitHub Releases and extract the `TraderTeleport` folder to the game's `Mods` directory:
+For normal users, download the versioned ZIP from GitHub Releases and extract the `VisitedTraderTeleport` folder to the game's `Mods` directory:
 
 ```text
-7 Days To Die\Mods\TraderTeleport
+7 Days To Die\Mods\VisitedTraderTeleport
 ```
 
 The mod requires the vanilla `0_TFP_Harmony` mod that ships with current 7 Days to Die versions.
