@@ -5,6 +5,8 @@ namespace TraderTeleport;
 
 internal static class TraderTeleportService
 {
+    private const float TeleportVerticalClearance = 0.25f;
+
     public static void Teleport(EntityPlayer player, TraderDestination destination)
     {
         if (player == null || destination == null)
@@ -56,11 +58,12 @@ internal static class TraderTeleportService
 
         Vector3 clamped = world.ClampToValidWorldPos(target);
         float terrainY = world.GetHeightAt(clamped.x, clamped.z) + 1.0f;
-        if (!float.IsNaN(terrainY) && terrainY > clamped.y - 3.0f)
+        if (!float.IsNaN(terrainY) && terrainY > clamped.y)
         {
             clamped.y = terrainY;
         }
 
+        clamped.y += TeleportVerticalClearance;
         return clamped;
     }
 
