@@ -1,5 +1,9 @@
 # TraderTeleport Changelog
 
+## 0.1.11 - 2026-05-11 01:40 JST
+- Adjusted teleport target height so saved player positions are not lowered by terrain correction.
+- Added a small upward clearance to reduce floor clipping after teleporting.
+
 ## 0.1.10 - 2026-05-10 02:57 JST
 - Removed developer-facing repository notes from the public README.
 
