@@ -1,17 +1,10 @@
 using System;
 using System.Collections.Generic;
-using HarmonyLib;
-using UnityEngine;
 
 namespace VisitedTraderTeleport;
 
 internal static class VisitedTraderNetwork
 {
-    private const int VisitReportPackageId = 240;
-    private const int SnapshotRequestPackageId = 241;
-    private const int SnapshotPackageId = 242;
-    private const int TeleportRequestPackageId = 243;
-
     public static bool IsClientOnly
     {
         get
@@ -19,14 +12,6 @@ internal static class VisitedTraderNetwork
             ConnectionManager manager = ConnectionManager.Instance;
             return manager != null && manager.IsClient && !manager.IsServer;
         }
-    }
-
-    public static void RegisterPackages()
-    {
-        RegisterPackage(VisitReportPackageId, typeof(NetPackageVisitedTraderVisitReport));
-        RegisterPackage(SnapshotRequestPackageId, typeof(NetPackageVisitedTraderSnapshotRequest));
-        RegisterPackage(SnapshotPackageId, typeof(NetPackageVisitedTraderSnapshot));
-        RegisterPackage(TeleportRequestPackageId, typeof(NetPackageVisitedTraderTeleportRequest));
     }
 
     public static void ReportVisit(TraderVisitReport report)
@@ -87,26 +72,5 @@ internal static class VisitedTraderNetwork
         }
 
         return GameManager.Instance?.World?.GetEntity(clientInfo.entityId) as EntityPlayer;
-    }
-
-    private static void RegisterPackage(int packageId, Type packageType)
-    {
-        try
-        {
-            NetPackageManager.AddPackageMapping(packageId, packageType);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[VisitedTraderTeleport] Could not register net package {packageType.Name} ({packageId}): {ex.Message}");
-        }
-    }
-}
-
-[HarmonyPatch(typeof(NetPackageManager), nameof(NetPackageManager.SetupBaseMapping))]
-internal static class NetPackageManagerSetupBaseMappingPatch
-{
-    public static void Postfix()
-    {
-        VisitedTraderNetwork.RegisterPackages();
     }
 }

@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.1 - 2026-05-13 08:45 JST
+- Removed invalid fixed NetPackage ID registration that caused dedicated servers to log out-of-range registration errors during startup.
+- Switched the custom multiplayer packages back to 7 Days to Die's built-in NetPackage type discovery and runtime mapping flow.
+
 ## 0.4.0 - 2026-05-13 01:50 JST
 - Added server-authoritative multiplayer synchronization for trader visit reports, destination list refreshes, and teleport requests.
 - Made the server-side access mode config authoritative in multiplayer while clients follow the server-provided destination list.
