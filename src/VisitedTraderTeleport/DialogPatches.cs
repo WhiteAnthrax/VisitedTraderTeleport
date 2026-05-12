@@ -21,10 +21,14 @@ internal static class DialogGetFirstStatementPatch
             return;
         }
 
+        DialogSessionStore.SetPlayer(__instance, player);
+
         if (__instance.CurrentOwner is EntityTrader trader)
         {
             VisitedTraderStore.Record(trader, player);
         }
+
+        VisitedTraderNetwork.RequestSnapshot();
     }
 }
 
@@ -39,7 +43,8 @@ internal static class DialogStatementGetResponsesPatch
         }
 
         string currentTraderKey = VisitedTraderStore.GetKey(__instance.OwnerDialog?.CurrentOwner as EntityTrader);
-        List<TraderDestination> destinations = VisitedTraderStore.GetDestinations()
+        EntityPlayer player = DialogSessionStore.GetPlayer(__instance.OwnerDialog);
+        List<TraderDestination> destinations = VisitedTraderStore.GetDestinations(player)
             .Where(destination => destination.Key != currentTraderKey)
             .ToList();
         var dynamicEntries = new List<BaseResponseEntry>();
@@ -78,5 +83,14 @@ internal static class DialogStatementGetResponsesPatch
         {
             Response = response
         };
+    }
+}
+
+[HarmonyPatch(typeof(Dialog), nameof(Dialog.Cleanup))]
+internal static class DialogCleanupPatch
+{
+    public static void Prefix(Dialog __instance)
+    {
+        DialogSessionStore.Remove(__instance);
     }
 }

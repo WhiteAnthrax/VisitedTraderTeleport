@@ -1,5 +1,18 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.0 - 2026-05-13 01:50 JST
+- Added server-authoritative multiplayer synchronization for trader visit reports, destination list refreshes, and teleport requests.
+- Made the server-side access mode config authoritative in multiplayer while clients follow the server-provided destination list.
+- Kept `personal`, `party`, and `shared` behavior compatible with the ownership-aware JSON save schema.
+- Updated the README to explain multiplayer behavior, current-party evaluation, and dedicated-server migration expectations.
+
+## 0.3.0 - 2026-05-13 01:29 JST
+- Added access-mode groundwork for personal, party, and shared visited-trader visibility.
+- Added a new JSON save schema that keeps trader destinations separate from per-player visit ownership.
+- Preserved compatibility with legacy `VisitedTraderTeleportVisited.txt` data by loading it as a shared compatibility pool.
+- Added a packaged XML config file for selecting the access mode.
+- Documented upgrade behavior and the current multiplayer synchronization limitation.
+
 ## 0.2.1 - 2026-05-11 03:36 JST
 - Changed the public display title to Travel Between Visited Traders.
 - Updated README wording to match the Nexus Mods title.

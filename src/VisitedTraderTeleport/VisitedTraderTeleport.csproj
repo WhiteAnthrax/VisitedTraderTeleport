@@ -30,6 +30,10 @@
       <HintPath>..\..\refs\harmony\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\refs\managed\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <Target Name="CopyToModFolder" AfterTargets="Build">

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<VisitedTraderTeleport>
+  <!-- In multiplayer, the server-side file is authoritative. -->
+  <!-- personal: only traders this player newly visits are available -->
+  <!-- party: this player plus current party members' newly visited traders -->
+  <!-- shared: any newly visited trader recorded by the active save/server -->
+  <AccessMode value="personal" />
+</VisitedTraderTeleport>
