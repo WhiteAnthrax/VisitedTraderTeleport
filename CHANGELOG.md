@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.5 - 2026-05-13 20:52 JST
+- Repackaged the release with a new version number for Nexus Mods upload retry.
+- No functional changes from 0.4.4.
+
 ## 0.4.4 - 2026-05-13 12:37 JST
 - Clarified that access modes mainly target multiplayer while single-player users can keep the default personal mode.
 - Tightened README, Nexus Mods copy, and config comments to reduce repetition and improve first-read clarity.
