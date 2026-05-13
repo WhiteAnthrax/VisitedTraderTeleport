@@ -13,25 +13,22 @@
 
 ## Access Modes
 
-The mod has three access modes. Pick the one that matches how you want trader discovery to work.
+Access modes are mainly for multiplayer. Single-player users can keep the default `personal` mode and use the mod much like older versions.
 
 - `personal`
-  Only traders that this player has visited are available.
-  This is the default and is closest to a personal fast-travel unlock list.
+  Only traders visited by that player are available. This is the default mode.
 - `party`
-  Traders visited by this player or by their current party members are available.
-  This is useful for co-op groups that want discovery to be shared while they are actively grouped.
+  Traders visited by that player or their current party members are available.
 - `shared`
-  Any trader visited by anyone in the active save or server data becomes available to everyone.
-  This is the most permissive option and works like a world-wide trader unlock list.
+  Traders visited by anyone in the active save or server data are available to everyone.
 
-In multiplayer, the server-side setting is authoritative. Clients receive the destination list allowed by the server and cannot override the server's mode locally.
+In multiplayer, the server-side setting is authoritative. Clients use the destination list allowed by the server.
 
 ## Which Mode Should I Use
 
-- Use `personal` if each player should unlock traders for themselves.
-- Use `party` if your group explores together and you want discoveries to be shared only while players are in the same party.
-- Use `shared` if your server treats trader discovery as global progression for everyone.
+- Use `personal` for individual unlocks or normal single-player use.
+- Use `party` for co-op groups that should share discoveries only while grouped.
+- Use `shared` for server-wide unlocks.
 
 ## How To Change The Mode
 
@@ -64,12 +61,12 @@ Restart the affected game process after changing the file:
 
 ## Multiplayer Behavior
 
-For multiplayer saves, trader ownership and destination access are evaluated by the server:
+For multiplayer saves, the server owns trader access:
 
 - When a client talks to a trader, the client reports that visit to the server.
-- The server records the visit, applies `personal`, `party`, or `shared`, and sends back the destination list currently allowed for that player.
+- The server records the visit, applies `personal`, `party`, or `shared`, and returns the allowed destination list.
 - When a client chooses a teleport destination, the server validates that destination again before performing the teleport.
-- `party` mode uses the player's current party at the time the destination list is requested, so players can join or leave parties without corrupting saved ownership data.
+- `party` mode checks the player's current party when the destination list is requested.
 
 ## Existing Users Upgrading From Older Versions
 
@@ -85,15 +82,15 @@ Current releases save new visit ownership in:
 VisitedTraderTeleportData.json
 ```
 
-Upgrade behavior is designed to avoid surprising data loss:
+Upgrade behavior:
 
 - Existing `VisitedTraderTeleportVisited.txt` entries continue to load after upgrading.
-- Those legacy entries are treated as a compatibility-wide shared pool, so destinations that were already available do not suddenly disappear.
+- Those legacy entries are treated as a compatibility-wide shared pool, so already available destinations do not suddenly disappear.
 - Legacy entries are not auto-rewritten into the new ownership-aware JSON schema.
 - New trader visits are written to `VisitedTraderTeleportData.json`.
 - The new JSON format keeps trader destination data separate from player ownership, so changing between `personal`, `party`, and `shared` later does not require resetting new-version data.
 
-For dedicated-server migration, legacy data is read from the machine that owns the active save. Old TXT files sitting only on former clients are not automatically transferred to a new server.
+For dedicated-server migration, legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
 
 ## New Users Starting Fresh
 
@@ -102,7 +99,7 @@ If this is your first install:
 - There is no legacy migration step.
 - The default mode is `personal`.
 - New trader visits are recorded in `VisitedTraderTeleportData.json`.
-- You can switch to `party` or `shared` later without resetting that new-version data.
+- You can switch to `party` or `shared` later without resetting new-version data.
 
 ## Build
 

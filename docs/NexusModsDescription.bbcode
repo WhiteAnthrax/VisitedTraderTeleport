@@ -21,31 +21,28 @@ Talking to a trader records that trader as visited. Later, the player can choose
 
 [heading]Access modes[/heading]
 
-This mod supports three access modes.
+Access modes are mainly for multiplayer. Single-player users can keep the default Personal mode and use the mod much like older versions.
 
 [b]Default mode: Personal[/b]
 If you do not change the config file, the mod uses Personal mode.
 
 [b]Personal[/b]
 Only traders visited by that specific player are available.
-This is best if you want each player to unlock fast travel individually.
 
 [b]Party[/b]
 Traders visited by the player or by their current party members are available.
-This is useful for co-op groups that explore together and want shared convenience while grouped.
 
 [b]Shared[/b]
 Any trader visited by anyone in the active save or server data becomes available to everyone.
-This is best for servers that want trader discovery to behave like a world-wide unlock system.
 
 [line]
 
 [heading]Which mode should I use?[/heading]
 
 [list]
-[*][b]Personal[/b] for individual progression
-[*][b]Party[/b] for co-op progression
-[*][b]Shared[/b] for server-wide convenience
+[*][b]Personal[/b] for individual unlocks or normal single-player use
+[*][b]Party[/b] for co-op groups that should share discoveries only while grouped
+[*][b]Shared[/b] for server-wide unlocks
 [/list]
 
 [line]
@@ -103,14 +100,14 @@ Upgrade behavior:
 
 [list]
 [*]Existing TXT data continues to load after upgrading
-[*]Legacy TXT data is treated as a compatibility-wide shared pool so previously available destinations do not suddenly disappear
+[*]Legacy TXT data is treated as a compatibility-wide shared pool so already available destinations do not suddenly disappear
 [*]Legacy TXT data is not automatically rewritten into the new ownership-aware JSON schema
 [*]New visits are recorded in the new JSON format
 [*]The new format keeps trader destinations separate from player ownership, so changing between Personal, Party, and Shared later does not require resetting new-version data
 [/list]
 
 [b]Dedicated server note[/b]
-Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not automatically transferred to a new dedicated server.
+Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
 
 [line]
 
