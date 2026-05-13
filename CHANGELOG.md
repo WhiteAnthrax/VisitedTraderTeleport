@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.3 - 2026-05-13 12:22 JST
+- Added a maintained Nexus Mods BBCode description file for future release updates.
+- Updated project rules so Nexus Mods public copy is refreshed alongside player-facing documentation changes.
+- Corrected versioning/package rule references to the current VisitedTraderTeleport project paths.
+
 ## 0.4.2 - 2026-05-13 09:36 JST
 - Reworked the README for end users with clearer access mode guidance, setup steps, upgrade behavior, and new-install notes.
 - Clarified how `personal`, `party`, and `shared` differ in single-player and multiplayer usage.

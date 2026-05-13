@@ -1,0 +1,156 @@
+[heading]About this mod[/heading]
+
+[b]Travel Between Visited Traders[/b] adds a trader dialog option that lets players travel to traders they have already discovered.
+
+Talking to a trader records that trader as visited. Later, the player can choose [b]Travel to a visited trader[/b] in trader dialog and teleport to an available destination.
+
+[line]
+
+[heading]Main features[/heading]
+
+[list]
+[*]Adds trader fast travel through dialog
+[*]Works with previously visited traders only
+[*]Supports English and Japanese
+[*]Supports single-player and multiplayer
+[*]Includes configurable trader-sharing behavior
+[*]Preserves compatibility with older save data
+[/list]
+
+[line]
+
+[heading]Access modes[/heading]
+
+This mod supports three access modes.
+
+[b]Default mode: Personal[/b]
+If you do not change the config file, the mod uses Personal mode.
+
+[b]Personal[/b]
+Only traders visited by that specific player are available.
+This is best if you want each player to unlock fast travel individually.
+
+[b]Party[/b]
+Traders visited by the player or by their current party members are available.
+This is useful for co-op groups that explore together and want shared convenience while grouped.
+
+[b]Shared[/b]
+Any trader visited by anyone in the active save or server data becomes available to everyone.
+This is best for servers that want trader discovery to behave like a world-wide unlock system.
+
+[line]
+
+[heading]Which mode should I use?[/heading]
+
+[list]
+[*][b]Personal[/b] for individual progression
+[*][b]Party[/b] for co-op progression
+[*][b]Shared[/b] for server-wide convenience
+[/list]
+
+[line]
+
+[heading]Installation[/heading]
+
+Extract the [b]VisitedTraderTeleport[/b] folder into:
+
+[quote]
+7 Days To Die\Mods\VisitedTraderTeleport
+[/quote]
+
+The mod requires the vanilla [b]0_TFP_Harmony[/b] mod that ships with current 7 Days to Die versions.
+
+[b]Anti-cheat should be disabled for this DLL mod.[/b]
+
+[line]
+
+[heading]Multiplayer[/heading]
+
+Install this mod on both:
+
+[list]
+[*]The server
+[*]Every client
+[/list]
+
+In multiplayer, the server controls:
+
+[list]
+[*]Which access mode is active
+[*]Which visited traders each player may use
+[*]Whether a requested teleport is allowed
+[/list]
+
+The client displays the destination list allowed by the server.
+
+[line]
+
+[heading]Upgrading from older versions[/heading]
+
+Older versions stored visited trader data in:
+
+[quote]
+VisitedTraderTeleportVisited.txt
+[/quote]
+
+Current versions store new data in:
+
+[quote]
+VisitedTraderTeleportData.json
+[/quote]
+
+Upgrade behavior:
+
+[list]
+[*]Existing TXT data continues to load after upgrading
+[*]Legacy TXT data is treated as a compatibility-wide shared pool so previously available destinations do not suddenly disappear
+[*]Legacy TXT data is not automatically rewritten into the new ownership-aware JSON schema
+[*]New visits are recorded in the new JSON format
+[*]The new format keeps trader destinations separate from player ownership, so changing between Personal, Party, and Shared later does not require resetting new-version data
+[/list]
+
+[b]Dedicated server note[/b]
+Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not automatically transferred to a new dedicated server.
+
+[line]
+
+[heading]Configuration[/heading]
+
+Edit:
+
+[quote]
+7 Days To Die\Mods\VisitedTraderTeleport\Config\VisitedTraderTeleport.xml
+[/quote]
+
+Change:
+
+[quote]
+<AccessMode value="personal" />
+[/quote]
+
+to one of:
+
+[list]
+[*]<AccessMode value="personal" />
+[*]<AccessMode value="party" />
+[*]<AccessMode value="shared" />
+[/list]
+
+For multiplayer, edit the file on the server.
+
+Restart the affected game process after changing the setting:
+
+[list]
+[*]Single-player: restart the game
+[*]Multiplayer server: restart the dedicated server or host process
+[/list]
+
+[line]
+
+[heading]Notes[/heading]
+
+[list]
+[*]The current trader is not shown as a teleport destination
+[*]If there are no valid destinations, only the normal "Never mind" response is shown
+[*]Teleport destinations are based on previously recorded trader visits
+[/list]
