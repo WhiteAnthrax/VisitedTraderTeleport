@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.2 - 2026-05-13 09:36 JST
+- Reworked the README for end users with clearer access mode guidance, setup steps, upgrade behavior, and new-install notes.
+- Clarified how `personal`, `party`, and `shared` differ in single-player and multiplayer usage.
+
 ## 0.4.1 - 2026-05-13 08:45 JST
 - Removed invalid fixed NetPackage ID registration that caused dedicated servers to log out-of-range registration errors during startup.
 - Switched the custom multiplayer packages back to 7 Days to Die's built-in NetPackage type discovery and runtime mapping flow.
