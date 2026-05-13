@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.4 - 2026-05-13 12:37 JST
+- Clarified that access modes mainly target multiplayer while single-player users can keep the default personal mode.
+- Tightened README, Nexus Mods copy, and config comments to reduce repetition and improve first-read clarity.
+
 ## 0.4.3 - 2026-05-13 12:22 JST
 - Added a maintained Nexus Mods BBCode description file for future release updates.
 - Updated project rules so Nexus Mods public copy is refreshed alongside player-facing documentation changes.
