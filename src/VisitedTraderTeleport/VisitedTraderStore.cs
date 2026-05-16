@@ -125,11 +125,13 @@ internal static class VisitedTraderStore
 
         if (!changed)
         {
+            RecordAllKnownTradersForTesting(player);
             return;
         }
 
         SaveDatabase();
         Debug.Log($"[VisitedTraderTeleport] Recorded visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
+        RecordAllKnownTradersForTesting(player);
     }
 
     public static void RecordReportedVisit(TraderVisitReport report, EntityPlayer player)
@@ -164,11 +166,13 @@ internal static class VisitedTraderStore
 
         if (!changed)
         {
+            RecordAllKnownTradersForTesting(player);
             return;
         }
 
         SaveDatabase();
         Debug.Log($"[VisitedTraderTeleport] Recorded reported visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
+        RecordAllKnownTradersForTesting(player);
     }
 
     private static HashSet<string> GetAllowedNewSchemaKeys(EntityPlayer player)
@@ -285,6 +289,99 @@ internal static class VisitedTraderStore
             Forward = Vector3.zero,
             AreaX = report.AreaX,
             AreaZ = report.AreaZ
+        };
+    }
+
+    private static void RecordAllKnownTradersForTesting(EntityPlayer player)
+    {
+        if (!VisitedTraderTeleportConfig.TestRecordAllTradersOnVisit)
+        {
+            return;
+        }
+
+        EnsureLoaded();
+
+        string playerKey = GetPlayerKey(player);
+        if (string.IsNullOrEmpty(playerKey))
+        {
+            Debug.LogWarning("[VisitedTraderTeleport] Test mode could not resolve player key.");
+            return;
+        }
+
+        World world = GameManager.Instance?.World;
+        List<TraderArea> traderAreas = world?.TraderAreas;
+        if (traderAreas == null || traderAreas.Count == 0)
+        {
+            Debug.LogWarning("[VisitedTraderTeleport] Test mode found no trader areas to record.");
+            return;
+        }
+
+        if (!database.VisitsByPlayer.TryGetValue(playerKey, out HashSet<string> playerVisits))
+        {
+            playerVisits = new HashSet<string>(StringComparer.Ordinal);
+            database.VisitsByPlayer[playerKey] = playerVisits;
+        }
+
+        bool changed = false;
+        int recordedCount = 0;
+        foreach (TraderArea traderArea in traderAreas)
+        {
+            EntityTrader trader = traderArea?.owningTrader;
+            if (trader == null)
+            {
+                continue;
+            }
+
+            TraderDestination destination = CreateTestDestination(trader);
+            changed |= UpsertTrader(destination);
+            if (playerVisits.Add(destination.Key))
+            {
+                changed = true;
+            }
+
+            recordedCount++;
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        SaveDatabase();
+        Debug.Log($"[VisitedTraderTeleport] Test mode recorded {recordedCount} known traders for {player.PlayerDisplayName}.");
+    }
+
+    private static TraderDestination CreateTestDestination(EntityTrader trader)
+    {
+        Vector3 forward = trader.GetForwardVector();
+        forward.y = 0f;
+        if (forward.sqrMagnitude >= 0.001f)
+        {
+            forward.Normalize();
+        }
+        else
+        {
+            forward = Vector3.zero;
+        }
+
+        Vector3 position = trader.position + forward * 2f;
+        int areaX = Mathf.RoundToInt(position.x);
+        int areaZ = Mathf.RoundToInt(position.z);
+
+        if (trader.traderArea != null)
+        {
+            areaX = trader.traderArea.Position.x;
+            areaZ = trader.traderArea.Position.z;
+        }
+
+        return new TraderDestination
+        {
+            Key = GetKey(trader),
+            DisplayName = GetDisplayName(trader),
+            Position = position,
+            Forward = Vector3.zero,
+            AreaX = areaX,
+            AreaZ = areaZ
         };
     }
 

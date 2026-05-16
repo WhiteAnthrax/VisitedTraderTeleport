@@ -6,4 +6,9 @@
   <!-- party: this player plus current party members -->
   <!-- shared: everyone in the active save/server -->
   <AccessMode value="personal" />
+
+  <!-- Test mode for local verification only. Leave false for normal play. -->
+  <!-- true: talking to any trader records all known traders for that player. -->
+  <!-- Test destinations are saved two blocks in front of each trader's facing direction. -->
+  <TestRecordAllTradersOnVisit value="false" />
 </VisitedTraderTeleport>

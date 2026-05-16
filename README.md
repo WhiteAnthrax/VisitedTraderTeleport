@@ -60,6 +60,18 @@ Restart the affected game process after changing the file:
 - Single-player: restart the game.
 - Multiplayer server: restart the dedicated server or host process.
 
+## Local Testing Mode
+
+For testing unloaded-destination travel, the config also includes:
+
+```xml
+<TestRecordAllTradersOnVisit value="false" />
+```
+
+Leave this `false` for normal play. If set to `true`, talking to any trader records all known traders for that player. Test-mode destinations are saved two blocks in front of each trader's facing direction.
+
+This is intended for local verification only. In multiplayer, the server-side setting is authoritative.
+
 ## Multiplayer Behavior
 
 For multiplayer saves, the server owns trader access:
