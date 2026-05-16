@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.6 - 2026-05-17 03:36 JST
+- Added a short "Preparing travel..." step that asks the game to load the destination area before teleporting when needed.
+- Reduced possible short freezes when teleporting to distant traders by avoiding synchronous terrain-height lookup for unloaded destinations.
+
 ## 0.4.5 - 2026-05-13 20:52 JST
 - Repackaged the release with a new version number for Nexus Mods upload retry.
 - No functional changes from 0.4.4.

@@ -8,6 +8,7 @@
 - The trader dialog gains a `Travel to a visited trader` option.
 - Selecting it shows dynamically generated destinations for recorded traders.
 - Choosing a destination teleports the player to that trader's recorded position.
+- If the destination area is not loaded yet, the mod briefly prepares travel before teleporting.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
 - Older `VisitedTraderTeleportVisited.txt` save data remains readable for compatibility.
 
