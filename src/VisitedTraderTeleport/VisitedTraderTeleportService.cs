@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace VisitedTraderTeleport;
@@ -6,6 +8,10 @@ namespace VisitedTraderTeleport;
 internal static class VisitedTraderTeleportService
 {
     private const float TeleportVerticalClearance = 0.25f;
+    private const float PrepareTimeoutSeconds = 4f;
+    private const int PrepareChunkViewDim = 3;
+
+    private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
 
     public static void Teleport(EntityPlayer player, TraderDestination destination)
     {
@@ -15,7 +21,99 @@ internal static class VisitedTraderTeleportService
         }
 
         Vector3 target = ResolveTarget(destination);
+        World world = GameManager.Instance?.World;
+        if (NeedsPreparation(world, target) && TryStartPreparedTeleport(player, destination, target))
+        {
+            ShowPreparingTooltip(player);
+            return;
+        }
 
+        ExecuteTeleport(player, destination, target);
+    }
+
+    private static bool TryStartPreparedTeleport(EntityPlayer player, TraderDestination destination, Vector3 target)
+    {
+        GameManager gameManager = GameManager.Instance;
+        World world = gameManager?.World;
+        if (gameManager == null || world == null)
+        {
+            return false;
+        }
+
+        int entityId = player.entityId;
+        if (PreparationObservers.ContainsKey(entityId))
+        {
+            return true;
+        }
+
+        gameManager.StartCoroutine(PrepareAndTeleport(player, destination, target));
+        return true;
+    }
+
+    private static IEnumerator PrepareAndTeleport(EntityPlayer player, TraderDestination destination, Vector3 initialTarget)
+    {
+        GameManager gameManager = GameManager.Instance;
+        World world = gameManager?.World;
+        ChunkManager.ChunkObserver observer = null;
+        int entityId = player?.entityId ?? -1;
+
+        try
+        {
+            if (gameManager != null && world != null && player != null)
+            {
+                observer = gameManager.AddChunkObserver(
+                    initialTarget,
+                    !GameManager.IsDedicatedServer,
+                    PrepareChunkViewDim,
+                    player.entityId);
+                PreparationObservers[player.entityId] = observer;
+            }
+
+            float timeoutAt = Time.realtimeSinceStartup + PrepareTimeoutSeconds;
+            while (player != null &&
+                   world != null &&
+                   !IsDestinationReady(world, initialTarget) &&
+                   Time.realtimeSinceStartup < timeoutAt)
+            {
+                yield return null;
+            }
+
+            if (player != null && destination != null)
+            {
+                ExecuteTeleport(player, destination, ResolveTarget(destination));
+            }
+        }
+        finally
+        {
+            if (gameManager != null && observer != null)
+            {
+                gameManager.RemoveChunkObserver(observer);
+            }
+
+            if (entityId >= 0)
+            {
+                PreparationObservers.Remove(entityId);
+            }
+        }
+    }
+
+    private static bool NeedsPreparation(World world, Vector3 target)
+    {
+        return world != null && !IsDestinationReady(world, target);
+    }
+
+    private static bool IsDestinationReady(World world, Vector3 target)
+    {
+        if (world == null || !world.IsChunkAreaLoaded(target))
+        {
+            return false;
+        }
+
+        return GameManager.IsDedicatedServer || world.IsChunkAreaCollidersLoaded(target);
+    }
+
+    private static void ExecuteTeleport(EntityPlayer player, TraderDestination destination, Vector3 target)
+    {
         try
         {
             if (player is EntityPlayerLocal localPlayer)
@@ -41,6 +139,14 @@ internal static class VisitedTraderTeleportService
         }
     }
 
+    private static void ShowPreparingTooltip(EntityPlayer player)
+    {
+        if (player is EntityPlayerLocal localPlayer)
+        {
+            GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_preparing_travel"), false, false, 2f);
+        }
+    }
+
     private static Vector3 ResolveTarget(TraderDestination destination)
     {
         Vector3 forward = destination.Forward;
@@ -57,10 +163,13 @@ internal static class VisitedTraderTeleportService
         }
 
         Vector3 clamped = world.ClampToValidWorldPos(target);
-        float terrainY = world.GetHeightAt(clamped.x, clamped.z) + 1.0f;
-        if (!float.IsNaN(terrainY) && terrainY > clamped.y)
+        if (world.IsChunkAreaLoaded(clamped))
         {
-            clamped.y = terrainY;
+            float terrainY = world.GetHeightAt(clamped.x, clamped.z) + 1.0f;
+            if (!float.IsNaN(terrainY) && terrainY > clamped.y)
+            {
+                clamped.y = terrainY;
+            }
         }
 
         clamped.y += TeleportVerticalClearance;
