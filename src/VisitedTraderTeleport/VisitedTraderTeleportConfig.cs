@@ -10,6 +10,7 @@ internal static class VisitedTraderTeleportConfig
     private const string ConfigFileName = "VisitedTraderTeleport.xml";
     private static string loadedPath;
     private static AccessMode loadedMode = AccessMode.Personal;
+    private static bool loadedTestRecordAllTradersOnVisit;
 
     public static AccessMode AccessMode
     {
@@ -17,6 +18,15 @@ internal static class VisitedTraderTeleportConfig
         {
             EnsureLoaded();
             return loadedMode;
+        }
+    }
+
+    public static bool TestRecordAllTradersOnVisit
+    {
+        get
+        {
+            EnsureLoaded();
+            return loadedTestRecordAllTradersOnVisit;
         }
     }
 
@@ -30,6 +40,7 @@ internal static class VisitedTraderTeleportConfig
 
         loadedPath = path;
         loadedMode = AccessMode.Personal;
+        loadedTestRecordAllTradersOnVisit = false;
 
         try
         {
@@ -50,11 +61,37 @@ internal static class VisitedTraderTeleportConfig
                 loadedMode = AccessMode.Personal;
                 Debug.LogWarning($"[VisitedTraderTeleport] Invalid AccessMode '{rawValue}', using Personal.");
             }
+
+            string rawTestValue = doc.Root?
+                .Element("TestRecordAllTradersOnVisit")?
+                .Attribute("value")?
+                .Value;
+            loadedTestRecordAllTradersOnVisit = TryParseBool(rawTestValue);
         }
         catch (Exception ex)
         {
             loadedMode = AccessMode.Personal;
+            loadedTestRecordAllTradersOnVisit = false;
             Debug.LogWarning($"[VisitedTraderTeleport] Could not read config, using Personal: {ex.Message}");
+        }
+    }
+
+    private static bool TryParseBool(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "true":
+            case "1":
+            case "yes":
+            case "on":
+                return true;
+            default:
+                return false;
         }
     }
 

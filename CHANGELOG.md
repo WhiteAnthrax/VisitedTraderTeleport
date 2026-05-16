@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.7 - 2026-05-17 03:54 JST
+- Added an opt-in local testing mode that records all known traders when talking to any trader.
+- Test-mode destinations are saved two blocks in front of each trader's facing direction to make unloaded-destination testing easier.
+
 ## 0.4.6 - 2026-05-17 03:36 JST
 - Added a short "Preparing travel..." step that asks the game to load the destination area before teleporting when needed.
 - Reduced possible short freezes when teleporting to distant traders by avoiding synchronous terrain-height lookup for unloaded destinations.
