@@ -1,8 +1,10 @@
 [heading]About this mod[/heading]
 
-[b]Travel Between Visited Traders[/b] adds a trader dialog option that lets players travel to traders they have already discovered.
+[b]Travel Between Visited Traders[/b] adds a trader dialog option for fast travel between traders you have already visited.
 
-Talking to a trader records that trader as visited. Later, the player can choose [b]Travel to a visited trader[/b] in trader dialog and teleport to an available destination.
+Talk to a trader once to record that trader. After that, choose [b]Travel to a visited trader[/b] in trader dialog and select a destination.
+
+[b]Single-player users can install and play with the default settings.[/b]
 
 [line]
 
@@ -10,41 +12,13 @@ Talking to a trader records that trader as visited. Later, the player can choose
 
 [list]
 [*]Adds trader fast travel through dialog
-[*]Works with previously visited traders only
+[*]Only shows traders that are available from your visited-trader data
+[*]Shows clean destination labels with trader name, distance, direction, and map-style coordinates
+[*]Sorts destinations by distance from your current position
 [*]Supports English and Japanese
 [*]Supports single-player and multiplayer
-[*]Includes configurable trader-sharing behavior
-[*]Briefly prepares unloaded destination areas before teleporting when needed
-[*]Warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel
+[*]Includes multiplayer trader-sharing modes
 [*]Preserves compatibility with older save data
-[/list]
-
-[line]
-
-[heading]Access modes[/heading]
-
-Access modes are mainly for multiplayer. Single-player users can keep the default Personal mode and use the mod much like older versions.
-
-[b]Default mode: Personal[/b]
-If you do not change the config file, the mod uses Personal mode.
-
-[b]Personal[/b]
-Only traders visited by that specific player are available.
-
-[b]Party[/b]
-Traders visited by the player or by their current party members are available.
-
-[b]Shared[/b]
-Any trader visited by anyone in the active save or server data becomes available to everyone.
-
-[line]
-
-[heading]Which mode should I use?[/heading]
-
-[list]
-[*][b]Personal[/b] for individual unlocks or normal single-player use
-[*][b]Party[/b] for co-op groups that should share discoveries only while grouped
-[*][b]Shared[/b] for server-wide unlocks
 [/list]
 
 [line]
@@ -63,6 +37,14 @@ The mod requires the vanilla [b]0_TFP_Harmony[/b] mod that ships with current 7 
 
 [line]
 
+[heading]Single-player[/heading]
+
+No configuration is required for normal single-player use.
+
+The default mode is [b]Personal[/b]. In single-player, that simply means you can travel to traders you have personally visited in that save.
+
+[line]
+
 [heading]Multiplayer[/heading]
 
 Install this mod on both:
@@ -72,50 +54,35 @@ Install this mod on both:
 [*]Every client
 [/list]
 
-In multiplayer, the server controls:
+In multiplayer, the server is authoritative. The server controls which access mode is active, which traders each player may use, and whether a requested teleport is allowed.
 
-[list]
-[*]Which access mode is active
-[*]Which visited traders each player may use
-[*]Whether a requested teleport is allowed
-[/list]
-
-The client displays the destination list allowed by the server.
+Clients display the destination list allowed by the server.
 
 [line]
 
-[heading]Upgrading from older versions[/heading]
+[heading]Multiplayer access modes[/heading]
 
-Older versions stored visited trader data in:
+These modes are mainly for multiplayer servers. Single-player users can usually ignore this section.
 
-[quote]
-VisitedTraderTeleportVisited.txt
-[/quote]
+[b]Default mode: Personal[/b]
+If you do not change the config file, the mod uses Personal mode.
 
-Current versions store new data in:
+[b]Personal[/b]
+Each player can travel only to traders they personally visited.
 
-[quote]
-VisitedTraderTeleportData.json
-[/quote]
+[b]Party[/b]
+Players can travel to traders visited by themselves or by their current party members.
 
-Upgrade behavior:
-
-[list]
-[*]Existing TXT data continues to load after upgrading
-[*]Legacy TXT data is treated as a compatibility-wide shared pool so already available destinations do not suddenly disappear
-[*]Legacy TXT data is not automatically rewritten into the new ownership-aware JSON schema
-[*]New visits are recorded in the new JSON format
-[*]The new format keeps trader destinations separate from player ownership, so changing between Personal, Party, and Shared later does not require resetting new-version data
-[/list]
-
-[b]Dedicated server note[/b]
-Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
+[b]Shared[/b]
+Any trader visited by anyone in the active server/save data becomes available to everyone.
 
 [line]
 
 [heading]Configuration[/heading]
 
-Edit:
+Configuration is mainly for multiplayer server owners who want to change trader-sharing behavior.
+
+For multiplayer, edit this file on the [b]server[/b]:
 
 [quote]
 7 Days To Die\Mods\VisitedTraderTeleport\Config\VisitedTraderTeleport.xml
@@ -135,14 +102,36 @@ to one of:
 [*]<AccessMode value="shared" />
 [/list]
 
-For multiplayer, edit the file on the server.
+Restart the dedicated server or host process after changing the setting.
 
-Restart the affected game process after changing the setting:
+[line]
+
+[heading]Upgrading from version 0.2.x or older[/heading]
+
+Version [b]0.2.x and older[/b] stored visited trader data in:
+
+[quote]
+VisitedTraderTeleportVisited.txt
+[/quote]
+
+Version [b]0.3.0 and newer[/b] store new data in:
+
+[quote]
+VisitedTraderTeleportData.json
+[/quote]
+
+Upgrade behavior:
 
 [list]
-[*]Single-player: restart the game
-[*]Multiplayer server: restart the dedicated server or host process
+[*]Existing 0.2.x-or-older TXT data continues to load after upgrading
+[*]Legacy TXT data is treated as a compatibility-wide shared pool so already available destinations do not suddenly disappear
+[*]Legacy TXT data is not automatically rewritten into the new ownership-aware JSON schema
+[*]New visits after upgrading are recorded in the new JSON format
+[*]The new format keeps trader destinations separate from player ownership, so changing between Personal, Party, and Shared later does not require resetting new-version data
 [/list]
+
+[b]Dedicated server note[/b]
+Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
 
 [line]
 
@@ -152,4 +141,6 @@ Restart the affected game process after changing the setting:
 [*]The current trader is not shown as a teleport destination
 [*]If there are no valid destinations, only the normal "Never mind" response is shown
 [*]Teleport destinations are based on previously recorded trader visits
+[*]The mod briefly prepares distant or unloaded destination areas before teleporting when needed
+[*]The client also refreshes destination visuals around teleport to reduce transparent POI objects after travel
 [/list]

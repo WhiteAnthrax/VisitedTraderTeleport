@@ -58,6 +58,10 @@ internal static class DialogStatementGetResponsesPatch
         EntityPlayer player = DialogSessionStore.GetPlayer(__instance.OwnerDialog);
         List<TraderDestination> destinations = VisitedTraderStore.GetDestinations(player)
             .Where(destination => !VisitedTraderStore.IsSameTrader(destination, currentTrader))
+            .OrderBy(destination => TraderDestinationFormatter.GetDistanceSq(destination, player))
+            .ThenBy(destination => destination.DisplayName, System.StringComparer.OrdinalIgnoreCase)
+            .ThenBy(destination => destination.AreaX)
+            .ThenBy(destination => destination.AreaZ)
             .ToList();
         var dynamicEntries = new List<BaseResponseEntry>();
 
@@ -65,19 +69,19 @@ internal static class DialogStatementGetResponsesPatch
         {
             foreach (TraderDestination destination in destinations)
             {
-                dynamicEntries.Add(CreateDestinationEntry(__instance, destination));
+                dynamicEntries.Add(CreateDestinationEntry(__instance, destination, player));
             }
         }
 
         __result.InsertRange(0, dynamicEntries);
     }
 
-    private static BaseResponseEntry CreateDestinationEntry(DialogStatement statement, TraderDestination destination)
+    private static BaseResponseEntry CreateDestinationEntry(DialogStatement statement, TraderDestination destination, EntityPlayer player)
     {
         string responseId = DialogIds.DynamicResponsePrefix + unchecked((uint)destination.Key.GetHashCode()).ToString("X8");
         var response = new DialogResponse(responseId)
         {
-            Text = destination.DialogText,
+            Text = TraderDestinationFormatter.FormatResponse(destination, player),
             OwnerDialog = statement.OwnerDialog,
             Actions = new List<BaseDialogAction>()
         };

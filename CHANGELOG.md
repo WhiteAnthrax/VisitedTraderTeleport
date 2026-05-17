@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.12 - 2026-05-17 22:06 JST
+- Improved trader destination labels with friendly trader names, distance, direction, and coordinates.
+- Destination choices are now ordered by distance from the player.
+- Reworked the Nexus Mods description to clarify that configuration is mainly for multiplayer server access modes.
+- Clarified that legacy TXT save migration applies to data from version 0.2.x and older.
+
 ## 0.4.11 - 2026-05-17 17:20 JST
 - Added client-side destination visual warm-up, chunk visual refresh, and a short visual hold around teleports.
 - Reduced cases where POI objects such as shutters or vehicles can remain transparent after teleporting even though their collision/state exists.
