@@ -21,14 +21,20 @@ internal static class DialogGetFirstStatementPatch
             return;
         }
 
-        DialogSessionStore.SetPlayer(__instance, player);
-
         if (__instance.CurrentOwner is EntityTrader trader)
         {
+            DialogSessionStore.Set(__instance, player, VisitedTraderStore.CreateCurrentTraderDestination(trader));
             VisitedTraderStore.Record(trader, player);
         }
+        else
+        {
+            DialogSessionStore.Set(__instance, player, null);
+        }
 
-        VisitedTraderNetwork.RequestSnapshot();
+        if (!VisitedTraderNetwork.IsClientOnly)
+        {
+            VisitedTraderNetwork.RequestSnapshot();
+        }
     }
 }
 
@@ -42,10 +48,16 @@ internal static class DialogStatementGetResponsesPatch
             return;
         }
 
-        string currentTraderKey = VisitedTraderStore.GetKey(__instance.OwnerDialog?.CurrentOwner as EntityTrader);
+        TraderDestination currentTrader = VisitedTraderStore.CreateCurrentTraderDestination(
+            __instance.OwnerDialog?.CurrentOwner as EntityTrader);
+        if (currentTrader == null)
+        {
+            currentTrader = DialogSessionStore.GetCurrentTrader(__instance.OwnerDialog);
+        }
+
         EntityPlayer player = DialogSessionStore.GetPlayer(__instance.OwnerDialog);
         List<TraderDestination> destinations = VisitedTraderStore.GetDestinations(player)
-            .Where(destination => destination.Key != currentTraderKey)
+            .Where(destination => !VisitedTraderStore.IsSameTrader(destination, currentTrader))
             .ToList();
         var dynamicEntries = new List<BaseResponseEntry>();
 
