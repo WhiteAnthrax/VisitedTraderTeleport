@@ -2,7 +2,7 @@
 
 [list]
 [*]Added a preventative stability improvement for reports of the game freezing when warping to a distant or unloaded trader.
-[*]I could not reproduce the reported freeze in my local test environment, but the likely risky path has been changed.
+[*]Reported freeze was not reproducible in my test environment, but the likely risky teleport path was changed.
 [*]The mod now briefly prepares distant or unloaded destination areas before teleporting when needed.
 [*]The mod avoids synchronous terrain-height lookup on unloaded chunks, reducing the chance of short freezes during trader travel.
 [*]Fixed destination filtering so the trader you are currently talking to is not shown as a travel destination.
