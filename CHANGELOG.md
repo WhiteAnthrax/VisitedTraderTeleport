@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.10 - 2026-05-17 16:17 JST
+- Added a preventative stability improvement for reported freezes when teleporting to distant or unloaded trader destinations. The reported freeze was not reproducible in local testing.
+- Destination areas are now prepared briefly before teleporting when needed.
+- Avoided synchronous terrain-height lookup on unloaded chunks to reduce the chance of short freezes during travel.
+- Fixed current trader filtering by keeping the active trader for the dialog session and matching by trader area as well as key.
+
 ## 0.4.7 - 2026-05-17 03:54 JST
 - Added an opt-in local testing mode that records all known traders when talking to any trader.
 - Test-mode destinations are saved two blocks in front of each trader's facing direction to make unloaded-destination testing easier.
