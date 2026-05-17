@@ -8,6 +8,11 @@ internal sealed class DialogActionVisitedTraderTeleport : BaseDialogAction
         {
             if (player is EntityPlayerLocal localPlayer)
             {
+                if (VisitedTraderClientState.TryGet(Value, out TraderDestination clientDestination))
+                {
+                    VisitedTraderTeleportService.PrepareClientDestinationVisuals(localPlayer, clientDestination);
+                }
+
                 GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_preparing_travel"), false, false, 2f);
             }
 

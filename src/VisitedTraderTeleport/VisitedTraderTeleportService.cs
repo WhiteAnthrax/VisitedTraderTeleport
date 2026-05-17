@@ -10,8 +10,12 @@ internal static class VisitedTraderTeleportService
     private const float TeleportVerticalClearance = 0.25f;
     private const float PrepareTimeoutSeconds = 4f;
     private const int PrepareChunkViewDim = 3;
+    private const float ClientVisualRefreshMaxSeconds = 12f;
+    private const float ClientVisualRefreshHoldSeconds = 5f;
+    private const float ClientVisualRefreshArrivalDistanceSq = 64f * 64f;
 
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
+    private static readonly Dictionary<int, ChunkManager.ChunkObserver> ClientVisualRefreshObservers = new();
 
     public static void Teleport(EntityPlayer player, TraderDestination destination)
     {
@@ -48,6 +52,16 @@ internal static class VisitedTraderTeleportService
 
         gameManager.StartCoroutine(PrepareAndTeleport(player, destination, target));
         return true;
+    }
+
+    public static void PrepareClientDestinationVisuals(EntityPlayerLocal player, TraderDestination destination)
+    {
+        if (player == null || destination == null)
+        {
+            return;
+        }
+
+        StartClientVisualRefresh(player, ResolveTarget(destination));
     }
 
     private static IEnumerator PrepareAndTeleport(EntityPlayer player, TraderDestination destination, Vector3 initialTarget)
@@ -119,6 +133,7 @@ internal static class VisitedTraderTeleportService
             if (player is EntityPlayerLocal localPlayer)
             {
                 localPlayer.TeleportToPosition(target, false, null);
+                StartClientVisualRefresh(localPlayer, target);
             }
             else
             {
@@ -136,6 +151,112 @@ internal static class VisitedTraderTeleportService
         catch (Exception ex)
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Teleport failed: {ex}");
+        }
+    }
+
+    private static void StartClientVisualRefresh(EntityPlayerLocal player, Vector3 target)
+    {
+        GameManager gameManager = GameManager.Instance;
+        World world = gameManager?.World;
+        if (player == null || gameManager == null || world == null)
+        {
+            return;
+        }
+
+        int entityId = player.entityId;
+        if (ClientVisualRefreshObservers.TryGetValue(entityId, out ChunkManager.ChunkObserver existingObserver))
+        {
+            gameManager.RemoveChunkObserver(existingObserver);
+            ClientVisualRefreshObservers.Remove(entityId);
+        }
+
+        gameManager.StartCoroutine(KeepClientDestinationVisualsLoaded(player, target));
+    }
+
+    private static IEnumerator KeepClientDestinationVisualsLoaded(EntityPlayerLocal player, Vector3 target)
+    {
+        GameManager gameManager = GameManager.Instance;
+        World world = gameManager?.World;
+        ChunkManager.ChunkObserver observer = null;
+        int entityId = player?.entityId ?? -1;
+
+        try
+        {
+            if (gameManager == null || world == null || player == null)
+            {
+                yield break;
+            }
+
+            observer = gameManager.AddChunkObserver(
+                target,
+                true,
+                PrepareChunkViewDim,
+                player.entityId);
+            ClientVisualRefreshObservers[player.entityId] = observer;
+            ForceClientChunkVisualUpdate(world);
+
+            float timeoutAt = Time.realtimeSinceStartup + ClientVisualRefreshMaxSeconds;
+            float holdUntil = 0f;
+            bool forcedAfterArrival = false;
+            while (player != null && world != null && Time.realtimeSinceStartup < timeoutAt)
+            {
+                if (IsNearDestination(player, target) && IsDestinationReady(world, target))
+                {
+                    if (!forcedAfterArrival)
+                    {
+                        ForceClientChunkVisualUpdate(world);
+                        forcedAfterArrival = true;
+                    }
+
+                    if (holdUntil <= 0f)
+                    {
+                        holdUntil = Time.realtimeSinceStartup + ClientVisualRefreshHoldSeconds;
+                    }
+
+                    if (Time.realtimeSinceStartup >= holdUntil)
+                    {
+                        break;
+                    }
+                }
+
+                yield return null;
+            }
+        }
+        finally
+        {
+            if (gameManager != null &&
+                observer != null &&
+                entityId >= 0 &&
+                ClientVisualRefreshObservers.TryGetValue(entityId, out ChunkManager.ChunkObserver currentObserver) &&
+                ReferenceEquals(currentObserver, observer))
+            {
+                gameManager.RemoveChunkObserver(observer);
+                ClientVisualRefreshObservers.Remove(entityId);
+            }
+        }
+    }
+
+    private static bool IsNearDestination(EntityPlayerLocal player, Vector3 target)
+    {
+        if (player == null)
+        {
+            return false;
+        }
+
+        Vector3 delta = player.position - target;
+        delta.y = 0f;
+        return delta.sqrMagnitude <= ClientVisualRefreshArrivalDistanceSq;
+    }
+
+    private static void ForceClientChunkVisualUpdate(World world)
+    {
+        try
+        {
+            world?.m_ChunkManager?.ForceUpdate();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not force client chunk visual update: {ex.Message}");
         }
     }
 

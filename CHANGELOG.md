@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.11 - 2026-05-17 17:20 JST
+- Added client-side destination visual warm-up, chunk visual refresh, and a short visual hold around teleports.
+- Reduced cases where POI objects such as shutters or vehicles can remain transparent after teleporting even though their collision/state exists.
+- No save reset is required.
+
 ## 0.4.10 - 2026-05-17 16:17 JST
 - Added a preventative stability improvement for reported freezes when teleporting to distant or unloaded trader destinations. The reported freeze was not reproducible in local testing.
 - Destination areas are now prepared briefly before teleporting when needed.
