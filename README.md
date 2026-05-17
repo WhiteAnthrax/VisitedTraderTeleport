@@ -9,6 +9,7 @@
 - Selecting it shows dynamically generated destinations for recorded traders.
 - Choosing a destination teleports the player to that trader's recorded position.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting.
+- In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
 - Older `VisitedTraderTeleportVisited.txt` save data remains readable for compatibility.
 
