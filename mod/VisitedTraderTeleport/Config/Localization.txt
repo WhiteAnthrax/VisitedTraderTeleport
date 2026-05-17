@@ -3,3 +3,29 @@ vtt_response_open,dialogs,Dialog,,,Travel to a visited trader,Travel to a visite
 vtt_statement_destinations,dialogs,Dialog,,,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,移動先のトレーダーを選択してください。,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.,Choose a trader destination.
 vtt_preparing_travel,dialogs,Tooltip,,,Preparing travel...,Preparing travel...,Preparing travel...,Preparing travel...,Preparing travel...,Preparing travel...,移動の準備中...,Preparing travel...,Preparing travel...,Preparing travel...,Preparing travel...,Preparing travel...,Preparing travel...,Preparing travel...
 vtt_teleported_to,dialogs,Tooltip,,,Teleported to {0},Teleported to {0},Teleported to {0},Teleported to {0},Teleported to {0},Teleported to {0},{0}へ移動しました,Teleported to {0},Teleported to {0},Teleported to {0},Teleported to {0},Teleported to {0},Teleported to {0},Teleported to {0}
+vtt_destination_response,dialogs,Dialog,,,{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1}{2}（{3}）,{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3})
+vtt_coordinates,dialogs,Dialog,,,{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0}{1} {2}{3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3}
+vtt_coord_east,dialogs,Dialog,,,E,E,E,E,E,E,東,E,E,E,E,E,E,E
+vtt_coord_west,dialogs,Dialog,,,W,W,W,W,W,W,西,W,W,W,W,W,W,W
+vtt_coord_north,dialogs,Dialog,,,N,N,N,N,N,N,北,N,N,N,N,N,N,N
+vtt_coord_south,dialogs,Dialog,,,S,S,S,S,S,S,南,S,S,S,S,S,S,S
+vtt_distance_m,dialogs,Dialog,,,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m
+vtt_distance_km,dialogs,Dialog,,,{0} km,{0} km,{0} km,{0} km,{0} km,{0} km,{0}km,{0} km,{0} km,{0} km,{0} km,{0} km,{0} km,{0} km
+vtt_distance_unknown,dialogs,Dialog,,,distance unknown,distance unknown,distance unknown,distance unknown,distance unknown,distance unknown,距離不明,distance unknown,distance unknown,distance unknown,distance unknown,distance unknown,distance unknown,distance unknown
+vtt_direction_unknown,dialogs,Dialog,,,?,?,?,?,?,?,不明,?,?,?,?,?,?,?
+vtt_direction_here,dialogs,Dialog,,,here,here,here,here,here,here,現在地,here,here,here,here,here,here,here
+vtt_direction_n,dialogs,Dialog,,,N,N,N,N,N,N,北,N,N,N,N,N,N,N
+vtt_direction_ne,dialogs,Dialog,,,NE,NE,NE,NE,NE,NE,北東,NE,NE,NE,NE,NE,NE,NE
+vtt_direction_e,dialogs,Dialog,,,E,E,E,E,E,E,東,E,E,E,E,E,E,E
+vtt_direction_se,dialogs,Dialog,,,SE,SE,SE,SE,SE,SE,南東,SE,SE,SE,SE,SE,SE,SE
+vtt_direction_s,dialogs,Dialog,,,S,S,S,S,S,S,南,S,S,S,S,S,S,S
+vtt_direction_sw,dialogs,Dialog,,,SW,SW,SW,SW,SW,SW,南西,SW,SW,SW,SW,SW,SW,SW
+vtt_direction_w,dialogs,Dialog,,,W,W,W,W,W,W,西,W,W,W,W,W,W,W
+vtt_direction_nw,dialogs,Dialog,,,NW,NW,NW,NW,NW,NW,北西,NW,NW,NW,NW,NW,NW,NW
+vtt_trader_name_generic,dialogs,Dialog,,,Trader,Trader,Trader,Trader,Trader,Trader,トレーダー,Trader,Trader,Trader,Trader,Trader,Trader,Trader
+vtt_trader_name_unknown,dialogs,Dialog,,,Trader {0},Trader {0},Trader {0},Trader {0},Trader {0},Trader {0},トレーダー {0},Trader {0},Trader {0},Trader {0},Trader {0},Trader {0},Trader {0},Trader {0}
+vtt_trader_name_rekt,dialogs,Dialog,,,Rekt,Rekt,Rekt,Rekt,Rekt,Rekt,レクト,Rekt,Rekt,Rekt,Rekt,Rekt,Rekt,Rekt
+vtt_trader_name_jen,dialogs,Dialog,,,Jen,Jen,Jen,Jen,Jen,Jen,ジェン,Jen,Jen,Jen,Jen,Jen,Jen,Jen
+vtt_trader_name_bob,dialogs,Dialog,,,Bob,Bob,Bob,Bob,Bob,Bob,ボブ,Bob,Bob,Bob,Bob,Bob,Bob,Bob
+vtt_trader_name_hugh,dialogs,Dialog,,,Hugh,Hugh,Hugh,Hugh,Hugh,Hugh,ヒュー,Hugh,Hugh,Hugh,Hugh,Hugh,Hugh,Hugh
+vtt_trader_name_joel,dialogs,Dialog,,,Joel,Joel,Joel,Joel,Joel,Joel,ジョエル,Joel,Joel,Joel,Joel,Joel,Joel,Joel

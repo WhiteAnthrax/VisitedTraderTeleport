@@ -6,7 +6,7 @@
 
 - Talking to a trader records that trader as visited for the current save.
 - The trader dialog gains a `Travel to a visited trader` option.
-- Selecting it shows dynamically generated destinations for recorded traders.
+- Selecting it shows dynamically generated destinations with trader name, distance, direction, and coordinates.
 - Choosing a destination teleports the player to that trader's recorded position.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting.
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
@@ -70,15 +70,15 @@ For multiplayer saves, the server owns trader access:
 - When a client chooses a teleport destination, the server validates that destination again before performing the teleport.
 - `party` mode checks the player's current party when the destination list is requested.
 
-## Existing Users Upgrading From Older Versions
+## Existing Users Upgrading From Version 0.2.x Or Older
 
-Older releases saved visited traders in:
+Version `0.2.x` and older saved visited traders in:
 
 ```text
 VisitedTraderTeleportVisited.txt
 ```
 
-Current releases save new visit ownership in:
+Version `0.3.0` and newer save new visit ownership in:
 
 ```text
 VisitedTraderTeleportData.json
@@ -86,10 +86,10 @@ VisitedTraderTeleportData.json
 
 Upgrade behavior:
 
-- Existing `VisitedTraderTeleportVisited.txt` entries continue to load after upgrading.
+- Existing `VisitedTraderTeleportVisited.txt` entries from `0.2.x` or older continue to load after upgrading.
 - Those legacy entries are treated as a compatibility-wide shared pool, so already available destinations do not suddenly disappear.
 - Legacy entries are not auto-rewritten into the new ownership-aware JSON schema.
-- New trader visits are written to `VisitedTraderTeleportData.json`.
+- New trader visits after upgrading are written to `VisitedTraderTeleportData.json`.
 - The new JSON format keeps trader destination data separate from player ownership, so changing between `personal`, `party`, and `shared` later does not require resetting new-version data.
 
 For dedicated-server migration, legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.

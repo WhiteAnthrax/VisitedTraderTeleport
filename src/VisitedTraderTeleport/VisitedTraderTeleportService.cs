@@ -143,7 +143,7 @@ internal static class VisitedTraderTeleportService
 
             if (player is EntityPlayerLocal localForTooltip)
             {
-                GameManager.ShowTooltip(localForTooltip, VTTLocalization.Format("vtt_teleported_to", destination.DisplayName), false, false, 4f);
+                GameManager.ShowTooltip(localForTooltip, VTTLocalization.Format("vtt_teleported_to", TraderDestinationFormatter.FormatName(destination)), false, false, 4f);
             }
 
             Debug.Log($"[VisitedTraderTeleport] Teleported {player.PlayerDisplayName} to {destination.DialogText}");
