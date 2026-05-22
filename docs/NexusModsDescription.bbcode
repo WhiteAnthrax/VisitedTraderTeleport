@@ -21,6 +21,7 @@ Talk to a trader once to record that trader. After that, choose [b]Travel to a v
 [*]Includes multiplayer trader-sharing modes
 [*]Normalizes server-side visit data to reduce duplicate destinations from older position-based records
 [*]Keeps trader identity separate from the saved travel position, so slight differences in where you talked to the same trader do not create duplicate destinations
+[*]Aborts travel if an unloaded destination still is not ready after preparation
 [*]Preserves compatibility with older save data
 [/list]
 
@@ -135,6 +136,7 @@ Upgrade behavior:
 [*]Version 0.4.17 and newer include local trader position in normalized keys to better support mods with multiple traders in one trader area
 [*]Version 0.4.18 and newer normalize legacy TXT destinations in memory and de-duplicate destination lists when old TXT and new JSON records refer to the same nearby trader
 [*]Version 0.4.19 and newer separate trader identity from teleport destination position, so visiting the same trader from slightly different interaction spots no longer creates duplicate destinations
+[*]Version 0.4.20 and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis
 [*]Before automatic JSON normalization, a one-time backup is created as VisitedTraderTeleportData.before-0.4.16.json
 [/list]
 
@@ -150,5 +152,6 @@ Legacy data is read from the machine that owns the active save. Old TXT files th
 [*]If there are no valid destinations, the destination screen explains that none are available in the current mode
 [*]Teleport destinations are based on previously recorded trader visits
 [*]The mod briefly prepares distant or unloaded destination areas before teleporting when needed
+[*]If a destination cannot be prepared in time, travel is aborted and the server log explains which destination was not ready
 [*]The client also refreshes destination visuals around teleport to reduce transparent POI objects after travel
 [/list]
