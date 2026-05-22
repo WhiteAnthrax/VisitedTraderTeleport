@@ -114,6 +114,9 @@ Restart the dedicated server or host process after changing the setting.
 
 [heading]Upgrading from version 0.2.x or older[/heading]
 
+[b]You do not need to reset your save when upgrading.[/b]
+Existing visited trader data is kept and loaded automatically.
+
 Version [b]0.2.x and older[/b] stored visited trader data in:
 
 [quote]
@@ -129,11 +132,13 @@ VisitedTraderTeleportData.json
 Upgrade behavior:
 
 [list]
+[*]Existing data is not deleted by the upgrade
 [*]Existing 0.2.x-or-older TXT data continues to load after upgrading
 [*]Legacy TXT data is treated as a compatibility-wide shared pool so already available destinations do not suddenly disappear
 [*]Legacy TXT data is not automatically rewritten into the new ownership-aware JSON schema
 [*]New visits after upgrading are recorded in the new JSON format
 [*]The new format keeps trader destinations separate from player ownership, so changing between Personal, Party, and Shared later does not require resetting new-version data
+[*]If old or duplicate entries are found, the mod may automatically tidy the JSON data on load while keeping player visit ownership linked to the correct trader records
 [*]Version 0.4.16 and newer normalize duplicate JSON entries caused by older position-based trader keys when the matching trader area can be resolved
 [*]Version 0.4.17 and newer include local trader position in normalized keys to better support mods with multiple traders in one trader area
 [*]Version 0.4.18 and newer normalize legacy TXT destinations in memory and de-duplicate destination lists when old TXT and new JSON records refer to the same nearby trader
@@ -143,6 +148,9 @@ Upgrade behavior:
 [*]Version 0.4.22 and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat
 [*]Before automatic JSON normalization, a one-time backup is created as VisitedTraderTeleportData.before-0.4.16.json
 [/list]
+
+[b]Extra safety tip[/b]
+Before upgrading a server, stop the server and copy VisitedTraderTeleportData.json and VisitedTraderTeleportVisited.txt from the save folder first.
 
 [b]Dedicated server note[/b]
 Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
