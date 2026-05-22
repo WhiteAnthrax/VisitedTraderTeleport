@@ -19,7 +19,10 @@ public sealed class NetPackageVisitedTraderVisitReport : NetPackage
             Key = reader.ReadString(),
             DisplayName = reader.ReadString(),
             AreaX = reader.ReadInt32(),
-            AreaZ = reader.ReadInt32()
+            AreaZ = reader.ReadInt32(),
+            TraderPositionX = reader.ReadSingle(),
+            TraderPositionY = reader.ReadSingle(),
+            TraderPositionZ = reader.ReadSingle()
         };
     }
 
@@ -30,11 +33,14 @@ public sealed class NetPackageVisitedTraderVisitReport : NetPackage
         writer.ReadWrite(report.DisplayName ?? string.Empty);
         writer.ReadWrite(report.AreaX);
         writer.ReadWrite(report.AreaZ);
+        writer.ReadWrite(report.TraderPositionX);
+        writer.ReadWrite(report.TraderPositionY);
+        writer.ReadWrite(report.TraderPositionZ);
     }
 
     public override int GetLength()
     {
-        return 16 + (report.Key?.Length ?? 0) + (report.DisplayName?.Length ?? 0);
+        return 28 + (report.Key?.Length ?? 0) + (report.DisplayName?.Length ?? 0);
     }
 
     public override void ProcessPackage(World world, GameManager callbacks)

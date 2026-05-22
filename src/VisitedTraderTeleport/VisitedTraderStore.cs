@@ -12,9 +12,13 @@ internal static class VisitedTraderStore
 {
     private const string LegacyFileName = "VisitedTraderTeleportVisited.txt";
     private const string DatabaseFileName = "VisitedTraderTeleportData.json";
+    private const string DatabaseNormalizationBackupFileName = "VisitedTraderTeleportData.before-0.4.16.json";
     private const float TestTraderPreloadTimeoutSeconds = 8f;
     private const int TestTraderPreloadViewDim = 3;
     private const float TestTraderAreaPadding = 8f;
+    private const float SameTraderPositionTolerance = 16f;
+    private const float SameDetailedTraderPositionTolerance = 6f;
+    private const int TraderPositionKeyBucketSize = 4;
 
     private static readonly Dictionary<string, TraderDestination> LegacyDestinations = new();
     private static readonly HashSet<string> TestScansInProgress = new(StringComparer.Ordinal);
@@ -36,13 +40,12 @@ internal static class VisitedTraderStore
             keys.Add(key);
         }
 
-        return keys
+        return DeduplicateDestinations(keys
             .Select(TryResolveDestination)
             .Where(destination => destination != null)
             .OrderBy(destination => destination.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(destination => destination.AreaX)
-            .ThenBy(destination => destination.AreaZ)
-            .ToList();
+            .ThenBy(destination => destination.AreaZ));
     }
 
     public static bool TryGet(string key, EntityPlayer player, out TraderDestination destination)
@@ -112,7 +115,7 @@ internal static class VisitedTraderStore
             areaZ = trader.traderArea.Position.z;
         }
 
-        return new TraderDestination
+        return CanonicalizeDestination(new TraderDestination
         {
             Key = GetKey(trader),
             DisplayName = GetDisplayName(trader),
@@ -120,7 +123,7 @@ internal static class VisitedTraderStore
             Forward = Vector3.zero,
             AreaX = areaX,
             AreaZ = areaZ
-        };
+        }, position);
     }
 
     public static bool IsSameTrader(TraderDestination destination, TraderDestination currentTrader)
@@ -136,8 +139,67 @@ internal static class VisitedTraderStore
             return true;
         }
 
-        return destination.AreaX == currentTrader.AreaX &&
-               destination.AreaZ == currentTrader.AreaZ;
+        return IsSameTraderByNearbyPosition(destination, currentTrader);
+    }
+
+    private static bool IsSameTraderByNearbyPosition(TraderDestination destination, TraderDestination currentTrader)
+    {
+        string destinationPrefix = GetKeyPrefix(destination.Key);
+        string currentPrefix = GetKeyPrefix(currentTrader.Key);
+        if (string.IsNullOrEmpty(destinationPrefix) ||
+            string.IsNullOrEmpty(currentPrefix) ||
+            !string.Equals(destinationPrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        Vector3 delta = destination.Position - currentTrader.Position;
+        delta.y = 0f;
+        float tolerance = HasLocalPositionInKey(destination.Key) && HasLocalPositionInKey(currentTrader.Key)
+            ? SameDetailedTraderPositionTolerance
+            : SameTraderPositionTolerance;
+        return delta.sqrMagnitude <= tolerance * tolerance;
+    }
+
+    private static List<TraderDestination> DeduplicateDestinations(IEnumerable<TraderDestination> destinations)
+    {
+        var results = new List<TraderDestination>();
+        foreach (TraderDestination destination in destinations)
+        {
+            int existingIndex = results.FindIndex(existing => IsSameTrader(existing, destination));
+            if (existingIndex < 0)
+            {
+                results.Add(destination);
+                continue;
+            }
+
+            if (IsMoreSpecificKey(destination.Key, results[existingIndex].Key))
+            {
+                results[existingIndex] = destination;
+            }
+        }
+
+        return results;
+    }
+
+    private static bool IsMoreSpecificKey(string candidate, string existing)
+    {
+        return GetKeyPartCount(candidate) > GetKeyPartCount(existing);
+    }
+
+    private static bool HasLocalPositionInKey(string key)
+    {
+        return GetKeyPartCount(key) >= 5;
+    }
+
+    private static int GetKeyPartCount(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return 0;
+        }
+
+        return key.Count(c => c == ':') + 1;
     }
 
     public static void Record(EntityTrader trader, EntityPlayer player)
@@ -162,7 +224,7 @@ internal static class VisitedTraderStore
             return;
         }
 
-        TraderDestination destination = CreateDestination(trader, player);
+        TraderDestination destination = CanonicalizeDestination(CreateDestination(trader, player), trader.position);
         bool changed = UpsertTrader(destination);
 
         if (!database.VisitsByPlayer.TryGetValue(playerKey, out HashSet<string> playerVisits))
@@ -178,6 +240,7 @@ internal static class VisitedTraderStore
 
         if (!changed)
         {
+            Debug.Log($"[VisitedTraderTeleport] Visit already recorded for {player.PlayerDisplayName}: {destination.DialogText}");
             StartRecordAllKnownTradersForTesting(player);
             return;
         }
@@ -189,8 +252,15 @@ internal static class VisitedTraderStore
 
     public static void RecordReportedVisit(TraderVisitReport report, EntityPlayer player)
     {
-        if (report == null || player == null || string.IsNullOrEmpty(report.Key))
+        if (player == null)
         {
+            Debug.LogWarning("[VisitedTraderTeleport] Ignored reported visit because player could not be resolved.");
+            return;
+        }
+
+        if (report == null || string.IsNullOrEmpty(report.Key))
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Ignored reported visit for {player.PlayerDisplayName} because the trader key was empty.");
             return;
         }
 
@@ -203,7 +273,11 @@ internal static class VisitedTraderStore
             return;
         }
 
-        TraderDestination destination = CreateDestination(report, player);
+        TraderDestination destination = CanonicalizeDestination(
+            CreateDestination(report, player),
+            report.HasTraderPosition
+                ? new Vector3(report.TraderPositionX, report.TraderPositionY, report.TraderPositionZ)
+                : (Vector3?)null);
         bool changed = UpsertTrader(destination);
 
         if (!database.VisitsByPlayer.TryGetValue(playerKey, out HashSet<string> playerVisits))
@@ -219,6 +293,7 @@ internal static class VisitedTraderStore
 
         if (!changed)
         {
+            Debug.Log($"[VisitedTraderTeleport] Reported visit already recorded for {player.PlayerDisplayName}: {destination.DialogText}");
             StartRecordAllKnownTradersForTesting(player);
             return;
         }
@@ -343,6 +418,68 @@ internal static class VisitedTraderStore
             AreaX = report.AreaX,
             AreaZ = report.AreaZ
         };
+    }
+
+    private static TraderDestination CanonicalizeDestination(TraderDestination destination, Vector3? identityPosition = null)
+    {
+        if (destination == null)
+        {
+            return null;
+        }
+
+        Vector3 keyPosition = identityPosition ?? destination.Position;
+        TraderArea traderArea = FindTraderAreaForPosition(keyPosition) ?? FindTraderAreaForPosition(destination.Position);
+        if (traderArea == null)
+        {
+            return destination;
+        }
+
+        string keyPrefix = GetKeyPrefix(destination.Key);
+        if (string.IsNullOrEmpty(keyPrefix))
+        {
+            keyPrefix = "trader";
+        }
+
+        string canonicalKey = BuildCanonicalKey(keyPrefix, traderArea, keyPosition);
+        if (string.Equals(destination.Key, canonicalKey, StringComparison.Ordinal) &&
+            destination.AreaX == traderArea.Position.x &&
+            destination.AreaZ == traderArea.Position.z)
+        {
+            return destination;
+        }
+
+        return new TraderDestination
+        {
+            Key = canonicalKey,
+            DisplayName = destination.DisplayName,
+            Position = destination.Position,
+            Forward = destination.Forward,
+            AreaX = traderArea.Position.x,
+            AreaZ = traderArea.Position.z
+        };
+    }
+
+    private static string GetKeyPrefix(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return string.Empty;
+        }
+
+        int separator = key.IndexOf(':');
+        return (separator > 0 ? key.Substring(0, separator) : key).Trim().ToLowerInvariant();
+    }
+
+    private static string BuildCanonicalKey(string keyPrefix, TraderArea traderArea, Vector3 position)
+    {
+        int localX = QuantizeTraderLocalPosition(position.x - traderArea.Position.x);
+        int localZ = QuantizeTraderLocalPosition(position.z - traderArea.Position.z);
+        return $"{keyPrefix}:{traderArea.Position.x}:{traderArea.Position.z}:{localX}:{localZ}";
+    }
+
+    private static int QuantizeTraderLocalPosition(float value)
+    {
+        return Mathf.RoundToInt(value / TraderPositionKeyBucketSize) * TraderPositionKeyBucketSize;
     }
 
     private static void StartRecordAllKnownTradersForTesting(EntityPlayer player)
@@ -525,6 +662,43 @@ internal static class VisitedTraderStore
         return position;
     }
 
+    private static TraderArea FindTraderAreaForPosition(Vector3 position)
+    {
+        World world = GameManager.Instance?.World;
+        IEnumerable<TraderArea> traderAreas = world?.TraderAreas;
+        if (traderAreas == null)
+        {
+            return null;
+        }
+
+        TraderArea bestArea = null;
+        float bestDistanceSq = float.MaxValue;
+        foreach (TraderArea traderArea in traderAreas)
+        {
+            if (traderArea == null)
+            {
+                continue;
+            }
+
+            Bounds bounds = GetTraderAreaBounds(traderArea);
+            if (!bounds.Contains(position))
+            {
+                continue;
+            }
+
+            Vector3 delta = bounds.center - position;
+            delta.y = 0f;
+            float distanceSq = delta.sqrMagnitude;
+            if (distanceSq < bestDistanceSq)
+            {
+                bestArea = traderArea;
+                bestDistanceSq = distanceSq;
+            }
+        }
+
+        return bestArea;
+    }
+
     private static bool TryFindTraderForArea(
         World world,
         TraderArea traderArea,
@@ -626,7 +800,7 @@ internal static class VisitedTraderStore
         TraderArea traderArea,
         HashSet<string> playerVisits)
     {
-        TraderDestination destination = CreateTestDestination(trader, traderArea);
+        TraderDestination destination = CanonicalizeDestination(CreateTestDestination(trader, traderArea), trader.position);
         bool changed = UpsertTrader(destination);
         if (playerVisits.Add(destination.Key))
         {
@@ -688,7 +862,10 @@ internal static class VisitedTraderStore
             Key = GetKey(trader),
             DisplayName = GetDisplayName(trader),
             AreaX = areaX,
-            AreaZ = areaZ
+            AreaZ = areaZ,
+            TraderPositionX = trader.position.x,
+            TraderPositionY = trader.position.y,
+            TraderPositionZ = trader.position.z
         };
     }
 
@@ -793,6 +970,7 @@ internal static class VisitedTraderStore
 
         LoadLegacyDestinations();
         LoadDatabase();
+        NormalizeDatabase();
     }
 
     private static void LoadLegacyDestinations()
@@ -803,13 +981,26 @@ internal static class VisitedTraderStore
             return;
         }
 
+        int loadedCount = 0;
+        int normalizedCount = 0;
         foreach (string line in File.ReadAllLines(path))
         {
             if (TraderDestination.TryParse(line, out TraderDestination destination))
             {
+                string originalKey = destination.Key;
+                destination = CanonicalizeDestination(destination);
                 LegacyDestinations[destination.Key] = destination;
+                loadedCount++;
+                if (!string.Equals(originalKey, destination.Key, StringComparison.Ordinal))
+                {
+                    normalizedCount++;
+                }
             }
         }
+
+        Debug.Log(
+            $"[VisitedTraderTeleport] Loaded legacy TXT destinations: " +
+            $"{loadedCount} entries, normalized={normalizedCount}.");
     }
 
     private static void LoadDatabase()
@@ -832,6 +1023,205 @@ internal static class VisitedTraderStore
             database = new VisitedTraderDatabase();
             Debug.LogWarning($"[VisitedTraderTeleport] Could not read JSON database: {ex.Message}");
         }
+    }
+
+    private static void NormalizeDatabase()
+    {
+        if (database.Traders == null || database.Traders.Count == 0)
+        {
+            return;
+        }
+
+        var keyAliases = new Dictionary<string, string>(StringComparer.Ordinal);
+        var normalizedTraders = new Dictionary<string, TraderDestinationRecord>(StringComparer.Ordinal);
+        int normalizedTraderKeys = 0;
+        int mergedTraderRecords = 0;
+        bool normalizedTraderRecords = false;
+
+        foreach (KeyValuePair<string, TraderDestinationRecord> pair in database.Traders)
+        {
+            TraderDestination destination = FromRecord(pair.Value, pair.Key);
+            if (destination == null || string.IsNullOrEmpty(destination.Key))
+            {
+                continue;
+            }
+
+            TraderDestination canonical = CanonicalizeDestination(destination);
+            if (canonical == null || string.IsNullOrEmpty(canonical.Key))
+            {
+                continue;
+            }
+
+            string targetKey = canonical.Key;
+            if (TryFindSameNormalizedTraderKey(normalizedTraders, canonical, out string existingKey))
+            {
+                targetKey = existingKey;
+                if (!string.Equals(canonical.Key, targetKey, StringComparison.Ordinal))
+                {
+                    keyAliases[canonical.Key] = targetKey;
+                    canonical = WithKey(canonical, targetKey);
+                    mergedTraderRecords++;
+                }
+            }
+
+            keyAliases[pair.Key] = targetKey;
+            keyAliases[destination.Key] = targetKey;
+
+            bool keyChanged =
+                !string.Equals(pair.Key, targetKey, StringComparison.Ordinal) ||
+                !string.Equals(destination.Key, targetKey, StringComparison.Ordinal);
+            if (keyChanged)
+            {
+                normalizedTraderKeys++;
+            }
+
+            TraderDestinationRecord canonicalRecord = ToRecord(canonical);
+            bool hasExisting = normalizedTraders.TryGetValue(targetKey, out TraderDestinationRecord existing);
+            bool recordChangedFromOriginal = !RecordsEqual(pair.Value, canonicalRecord);
+            if (!hasExisting || keyChanged || !RecordsEqual(existing, canonicalRecord))
+            {
+                normalizedTraders[targetKey] = canonicalRecord;
+            }
+
+            normalizedTraderRecords |= recordChangedFromOriginal;
+        }
+
+        bool changed =
+            normalizedTraderKeys > 0 ||
+            mergedTraderRecords > 0 ||
+            normalizedTraderRecords ||
+            normalizedTraders.Count != database.Traders.Count;
+        int normalizedVisits = 0;
+        var normalizedVisitsByPlayer = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, HashSet<string>> pair in database.VisitsByPlayer)
+        {
+            var visits = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string key in pair.Value ?? Enumerable.Empty<string>())
+            {
+                string normalizedKey = keyAliases.TryGetValue(key, out string alias) ? alias : key;
+                if (!string.Equals(key, normalizedKey, StringComparison.Ordinal))
+                {
+                    normalizedVisits++;
+                }
+
+                visits.Add(normalizedKey);
+            }
+
+            if (visits.Count != (pair.Value?.Count ?? 0))
+            {
+                changed = true;
+            }
+
+            normalizedVisitsByPlayer[pair.Key] = visits;
+        }
+
+        if (normalizedVisits > 0)
+        {
+            changed = true;
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        database.Traders = normalizedTraders;
+        database.VisitsByPlayer = normalizedVisitsByPlayer;
+        BackupDatabaseBeforeNormalization();
+        SaveDatabase();
+        Debug.Log(
+            $"[VisitedTraderTeleport] Normalized visited trader data: " +
+            $"traderKeys={normalizedTraderKeys}, merged={mergedTraderRecords}, " +
+            $"visitKeys={normalizedVisits}, traders={database.Traders.Count}.");
+    }
+
+    private static bool TryFindSameNormalizedTraderKey(
+        Dictionary<string, TraderDestinationRecord> normalizedTraders,
+        TraderDestination destination,
+        out string key)
+    {
+        foreach (KeyValuePair<string, TraderDestinationRecord> pair in normalizedTraders)
+        {
+            TraderDestination existing = FromRecord(pair.Value, pair.Key);
+            if (IsSameTrader(existing, destination))
+            {
+                key = pair.Key;
+                return true;
+            }
+        }
+
+        key = string.Empty;
+        return false;
+    }
+
+    private static TraderDestination WithKey(TraderDestination destination, string key)
+    {
+        return new TraderDestination
+        {
+            Key = key,
+            DisplayName = destination.DisplayName,
+            Position = destination.Position,
+            Forward = destination.Forward,
+            AreaX = destination.AreaX,
+            AreaZ = destination.AreaZ
+        };
+    }
+
+    private static void BackupDatabaseBeforeNormalization()
+    {
+        string path = Path.Combine(loadedSaveDirectory, DatabaseFileName);
+        string backupPath = Path.Combine(loadedSaveDirectory, DatabaseNormalizationBackupFileName);
+        if (!File.Exists(path) || File.Exists(backupPath))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Copy(path, backupPath, false);
+            Debug.Log($"[VisitedTraderTeleport] Created visited trader data backup: {DatabaseNormalizationBackupFileName}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not create visited trader data backup: {ex.Message}");
+        }
+    }
+
+    private static TraderDestination FromRecord(TraderDestinationRecord record, string fallbackKey)
+    {
+        if (record == null)
+        {
+            return null;
+        }
+
+        return new TraderDestination
+        {
+            Key = string.IsNullOrEmpty(record.Key) ? fallbackKey : record.Key,
+            DisplayName = record.DisplayName,
+            Position = new Vector3(record.PositionX, record.PositionY, record.PositionZ),
+            Forward = new Vector3(record.ForwardX, record.ForwardY, record.ForwardZ),
+            AreaX = record.AreaX,
+            AreaZ = record.AreaZ
+        };
+    }
+
+    private static bool RecordsEqual(TraderDestinationRecord left, TraderDestinationRecord right)
+    {
+        if (left == null || right == null)
+        {
+            return left == right;
+        }
+
+        return left.Key == right.Key &&
+               left.DisplayName == right.DisplayName &&
+               left.PositionX == right.PositionX &&
+               left.PositionY == right.PositionY &&
+               left.PositionZ == right.PositionZ &&
+               left.ForwardX == right.ForwardX &&
+               left.ForwardY == right.ForwardY &&
+               left.ForwardZ == right.ForwardZ &&
+               left.AreaX == right.AreaX &&
+               left.AreaZ == right.AreaZ;
     }
 
     private static void SaveDatabase()

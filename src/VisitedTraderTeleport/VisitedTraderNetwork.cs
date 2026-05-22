@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace VisitedTraderTeleport;
 
@@ -33,6 +34,7 @@ internal static class VisitedTraderNetwork
             return;
         }
 
+        Debug.Log("[VisitedTraderTeleport] Requesting visited trader snapshot from server.");
         ConnectionManager.Instance.SendToServer(
             NetPackageManager.GetPackage<NetPackageVisitedTraderSnapshotRequest>().Setup(),
             false);
@@ -59,6 +61,9 @@ internal static class VisitedTraderNetwork
         }
 
         IReadOnlyList<TraderDestination> destinations = VisitedTraderStore.GetDestinations(player);
+        Debug.Log(
+            $"[VisitedTraderTeleport] Sending snapshot to {player.PlayerDisplayName}: " +
+            $"{destinations.Count} destinations, mode={VisitedTraderTeleportConfig.AccessMode}.");
         clientInfo.SendPackage(
             NetPackageManager.GetPackage<NetPackageVisitedTraderSnapshot>()
                 .Setup(VisitedTraderTeleportConfig.AccessMode, destinations));
