@@ -99,6 +99,7 @@ Upgrade behavior:
 - Version `0.4.18` and newer normalize legacy TXT destinations in memory and de-duplicate destination lists when old TXT and new JSON records refer to the same nearby trader.
 - Version `0.4.19` and newer separate trader identity from teleport destination position, so visiting the same trader from slightly different interaction spots no longer creates duplicate destinations.
 - Version `0.4.20` and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis.
+- Version `0.4.21` and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate.
 - Before automatic JSON normalization, a one-time backup is created as `VisitedTraderTeleportData.before-0.4.16.json`.
 
 For dedicated-server migration, legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.

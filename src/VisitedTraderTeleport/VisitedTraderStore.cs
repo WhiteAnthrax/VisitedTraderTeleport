@@ -153,12 +153,49 @@ internal static class VisitedTraderStore
             return false;
         }
 
+        if (IsSameNamedTraderInSameArea(destination, currentTrader))
+        {
+            return true;
+        }
+
         Vector3 delta = destination.Position - currentTrader.Position;
         delta.y = 0f;
         float tolerance = HasLocalPositionInKey(destination.Key) && HasLocalPositionInKey(currentTrader.Key)
             ? SameDetailedTraderPositionTolerance
             : SameTraderPositionTolerance;
         return delta.sqrMagnitude <= tolerance * tolerance;
+    }
+
+    private static bool IsSameNamedTraderInSameArea(TraderDestination left, TraderDestination right)
+    {
+        if (left.AreaX != right.AreaX || left.AreaZ != right.AreaZ)
+        {
+            return false;
+        }
+
+        string leftName = NormalizeDisplayNameToken(left.DisplayName);
+        string rightName = NormalizeDisplayNameToken(right.DisplayName);
+        return !string.IsNullOrEmpty(leftName) &&
+               string.Equals(leftName, rightName, StringComparison.Ordinal);
+    }
+
+    private static string NormalizeDisplayNameToken(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var builder = new System.Text.StringBuilder(value.Length);
+        foreach (char c in value)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                builder.Append(char.ToLowerInvariant(c));
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static List<TraderDestination> DeduplicateDestinations(IEnumerable<TraderDestination> destinations)

@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.21 - 2026-05-23 06:48 JST
+- De-duplicated same-name traders recorded in the same trader area, even when their local position buckets differ.
+- Kept distinct same-area traders separate when their display names differ, improving compatibility with overhaul mods that place multiple traders in one area.
+- Existing same-name duplicate records are merged automatically on load.
+- No save reset is required.
+
 ## 0.4.20 - 2026-05-23 01:17 JST
 - Avoided forcing a teleport if the destination area is still not ready after preparation.
 - Added clearer server logs for destination preparation, ready, and abort cases to help diagnose unloaded or not-yet-generated trader areas.
