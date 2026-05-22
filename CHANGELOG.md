@@ -1,5 +1,12 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.20 - 2026-05-23 01:17 JST
+- Avoided forcing a teleport if the destination area is still not ready after preparation.
+- Added clearer server logs for destination preparation, ready, and abort cases to help diagnose unloaded or not-yet-generated trader areas.
+- Added a localized "destination is not ready yet" message for local/single-player abort cases.
+- Increased destination preparation timeout from 4 seconds to 8 seconds.
+- No save reset is required.
+
 ## 0.4.19 - 2026-05-22 20:31 JST
 - Fixed duplicate destination entries when the same trader was recorded from slightly different interaction positions.
 - Separated trader identity from teleport destination position: the trader's position is used for stable matching, while the player's conversation position remains the saved travel destination.
