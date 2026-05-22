@@ -7,6 +7,7 @@
 - Talking to a trader records that trader as visited for the current save.
 - The trader dialog gains a `Travel to a visited trader` option.
 - Selecting it shows dynamically generated destinations with trader name, distance, direction, and coordinates.
+- Known vanilla and Wasteland Mod trader names are displayed cleanly when recognized.
 - The destination screen shows the active access mode and explains when no destinations are available.
 - Choosing a destination teleports the player to that trader's recorded position.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting. If the area still is not ready, the teleport is aborted instead of forcing the player into an unsafe destination.
@@ -100,6 +101,7 @@ Upgrade behavior:
 - Version `0.4.19` and newer separate trader identity from teleport destination position, so visiting the same trader from slightly different interaction spots no longer creates duplicate destinations.
 - Version `0.4.20` and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis.
 - Version `0.4.21` and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate.
+- Version `0.4.22` and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat.
 - Before automatic JSON normalization, a one-time backup is created as `VisitedTraderTeleportData.before-0.4.16.json`.
 
 For dedicated-server migration, legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.

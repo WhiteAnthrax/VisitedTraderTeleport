@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.22 - 2026-05-23 07:03 JST
+- Added friendly trader name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat.
+- Recognized likely raw/internal Wasteland name tokens such as `tradergene`, `traderjohnny`, and `spheretest`.
+- Unknown modded trader names still use the existing generic fallback.
+- No save reset is required.
+
 ## 0.4.21 - 2026-05-23 06:48 JST
 - De-duplicated same-name traders recorded in the same trader area, even when their local position buckets differ.
 - Kept distinct same-area traders separate when their display names differ, improving compatibility with overhaul mods that place multiple traders in one area.
