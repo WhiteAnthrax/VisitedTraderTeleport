@@ -7,10 +7,12 @@
 - Talking to a trader records that trader as visited for the current save.
 - The trader dialog gains a `Travel to a visited trader` option.
 - Selecting it shows dynamically generated destinations with trader name, distance, direction, and coordinates.
+- The destination screen shows the active access mode and explains when no destinations are available.
 - Choosing a destination teleports the player to that trader's recorded position.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting.
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
+- Server-side visit data is normalized to stable trader keys when possible, reducing duplicate destinations from older position-based records.
 - Older `VisitedTraderTeleportVisited.txt` save data remains readable for compatibility.
 
 ## Access Modes
@@ -67,6 +69,7 @@ For multiplayer saves, the server owns trader access:
 
 - When a client talks to a trader, the client reports that visit to the server.
 - The server records the visit, applies `personal`, `party`, or `shared`, and returns the allowed destination list.
+- The client shows the server's active access mode on the destination screen.
 - When a client chooses a teleport destination, the server validates that destination again before performing the teleport.
 - `party` mode checks the player's current party when the destination list is requested.
 
@@ -91,6 +94,11 @@ Upgrade behavior:
 - Legacy entries are not auto-rewritten into the new ownership-aware JSON schema.
 - New trader visits after upgrading are written to `VisitedTraderTeleportData.json`.
 - The new JSON format keeps trader destination data separate from player ownership, so changing between `personal`, `party`, and `shared` later does not require resetting new-version data.
+- Version `0.4.16` and newer normalize duplicate JSON entries caused by older position-based trader keys when the matching trader area can be resolved.
+- Version `0.4.17` and newer include local trader position in normalized keys to better support mods with multiple traders in one trader area.
+- Version `0.4.18` and newer normalize legacy TXT destinations in memory and de-duplicate destination lists when old TXT and new JSON records refer to the same nearby trader.
+- Version `0.4.19` and newer separate trader identity from teleport destination position, so visiting the same trader from slightly different interaction spots no longer creates duplicate destinations.
+- Before automatic JSON normalization, a one-time backup is created as `VisitedTraderTeleportData.before-0.4.16.json`.
 
 For dedicated-server migration, legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
 
