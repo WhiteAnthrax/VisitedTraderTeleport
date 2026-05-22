@@ -21,6 +21,7 @@ Talk to a trader once to record that trader. After that, choose [b]Travel to a v
 [*]Includes multiplayer trader-sharing modes
 [*]Normalizes server-side visit data to reduce duplicate destinations from older position-based records
 [*]Keeps trader identity separate from the saved travel position, so slight differences in where you talked to the same trader do not create duplicate destinations
+[*]Merges same-name destinations in the same trader area while keeping differently named traders separate
 [*]Aborts travel if an unloaded destination still is not ready after preparation
 [*]Preserves compatibility with older save data
 [/list]
@@ -137,6 +138,7 @@ Upgrade behavior:
 [*]Version 0.4.18 and newer normalize legacy TXT destinations in memory and de-duplicate destination lists when old TXT and new JSON records refer to the same nearby trader
 [*]Version 0.4.19 and newer separate trader identity from teleport destination position, so visiting the same trader from slightly different interaction spots no longer creates duplicate destinations
 [*]Version 0.4.20 and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis
+[*]Version 0.4.21 and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate
 [*]Before automatic JSON normalization, a one-time backup is created as VisitedTraderTeleportData.before-0.4.16.json
 [/list]
 
