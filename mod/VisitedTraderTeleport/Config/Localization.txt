@@ -38,3 +38,6 @@ vtt_trader_name_jen,dialogs,Dialog,,,Jen,Jen,Jen,Jen,Jen,Jen,ジェン,Jen,Jen,J
 vtt_trader_name_bob,dialogs,Dialog,,,Bob,Bob,Bob,Bob,Bob,Bob,ボブ,Bob,Bob,Bob,Bob,Bob,Bob,Bob
 vtt_trader_name_hugh,dialogs,Dialog,,,Hugh,Hugh,Hugh,Hugh,Hugh,Hugh,ヒュー,Hugh,Hugh,Hugh,Hugh,Hugh,Hugh,Hugh
 vtt_trader_name_joel,dialogs,Dialog,,,Joel,Joel,Joel,Joel,Joel,Joel,ジョエル,Joel,Joel,Joel,Joel,Joel,Joel,Joel
+vtt_trader_name_gene,dialogs,Dialog,,,Gene,Gene,Gene,Gene,Gene,Gene,ジーン,Gene,Gene,Gene,Gene,Gene,Gene,Gene
+vtt_trader_name_johnny,dialogs,Dialog,,,Johnny,Johnny,Johnny,Johnny,Johnny,Johnny,ジョニー,Johnny,Johnny,Johnny,Johnny,Johnny,Johnny,Johnny
+vtt_trader_name_radcat,dialogs,Dialog,,,Rad Cat,Rad Cat,Rad Cat,Rad Cat,Rad Cat,Rad Cat,ラッドキャット,Rad Cat,Rad Cat,Rad Cat,Rad Cat,Rad Cat,Rad Cat,Rad Cat
