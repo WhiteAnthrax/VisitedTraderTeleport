@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.23 - 2026-05-23 08:24 JST
+- Clarified upgrade and save-data compatibility documentation for existing users.
+- Added user-facing notes that existing JSON/TXT data is kept, old TXT data still loads, and automatic cleanup does not require a save reset.
+- Added a server upgrade safety tip recommending a manual copy of visited trader data files before updating.
+
 ## 0.4.22 - 2026-05-23 07:03 JST
 - Added friendly trader name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat.
 - Recognized likely raw/internal Wasteland name tokens such as `tradergene`, `traderjohnny`, and `spheretest`.
