@@ -65,6 +65,8 @@ In multiplayer, the server is authoritative. The server controls which access mo
 
 Clients display the destination list allowed by the server.
 
+The config is loaded from the installed mod folder beside VisitedTraderTeleport.dll, so custom folder names still work as long as the Config folder is kept with the mod.
+
 [line]
 
 [heading]Multiplayer access modes[/heading]
@@ -148,6 +150,7 @@ Upgrade behavior:
 [*]Version 0.4.21 and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate
 [*]Version 0.4.22 and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat
 [*]Version 0.4.24 and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data
+[*]Version 0.4.25 and newer load VisitedTraderTeleport.xml from the actual installed mod folder, so access mode settings work even if the folder is renamed
 [*]Before automatic JSON normalization, a one-time backup is created as VisitedTraderTeleportData.before-0.4.16.json
 [/list]
 

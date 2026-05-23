@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.25 - 2026-05-23 23:48 JST
+- Fixed config loading when the installed mod folder is named something other than `VisitedTraderTeleport`, such as `Travel Between Visited Traders`.
+- Access mode settings now load from the actual installed mod folder beside `VisitedTraderTeleport.dll`, with the old path kept as a fallback.
+- No save reset is required.
+
 ## 0.4.24 - 2026-05-23 19:45 JST
 - Improved same-trader matching for old TXT/JSON records whose raw/internal trader IDs differ, such as `npcTraderRekt` and `traderrekt`.
 - Reused existing matching trader records when recording a visit, preventing the same trader from being saved again under a slightly different key during the same session.
