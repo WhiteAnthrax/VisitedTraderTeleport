@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.24 - 2026-05-23 19:45 JST
+- Improved same-trader matching for old TXT/JSON records whose raw/internal trader IDs differ, such as `npcTraderRekt` and `traderrekt`.
+- Reused existing matching trader records when recording a visit, preventing the same trader from being saved again under a slightly different key during the same session.
+- No save reset is required.
+
 ## 0.4.23 - 2026-05-23 08:24 JST
 - Clarified upgrade and save-data compatibility documentation for existing users.
 - Added user-facing notes that existing JSON/TXT data is kept, old TXT data still loads, and automatic cleanup does not require a save reset.

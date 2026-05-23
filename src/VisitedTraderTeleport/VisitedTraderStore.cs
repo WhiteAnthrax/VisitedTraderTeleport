@@ -144,11 +144,7 @@ internal static class VisitedTraderStore
 
     private static bool IsSameTraderByNearbyPosition(TraderDestination destination, TraderDestination currentTrader)
     {
-        string destinationPrefix = GetKeyPrefix(destination.Key);
-        string currentPrefix = GetKeyPrefix(currentTrader.Key);
-        if (string.IsNullOrEmpty(destinationPrefix) ||
-            string.IsNullOrEmpty(currentPrefix) ||
-            !string.Equals(destinationPrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
+        if (!HasCompatibleTraderIdentity(destination, currentTrader))
         {
             return false;
         }
@@ -166,6 +162,31 @@ internal static class VisitedTraderStore
         return delta.sqrMagnitude <= tolerance * tolerance;
     }
 
+    private static bool HasCompatibleTraderIdentity(TraderDestination left, TraderDestination right)
+    {
+        string leftPrefix = NormalizeTraderIdentityToken(GetKeyPrefix(left.Key));
+        string rightPrefix = NormalizeTraderIdentityToken(GetKeyPrefix(right.Key));
+        if (!string.IsNullOrEmpty(leftPrefix) &&
+            string.Equals(leftPrefix, rightPrefix, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        string leftName = NormalizeTraderIdentityToken(left.DisplayName);
+        string rightName = NormalizeTraderIdentityToken(right.DisplayName);
+        if (!string.IsNullOrEmpty(leftName) &&
+            string.Equals(leftName, rightName, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return
+            (!string.IsNullOrEmpty(leftPrefix) &&
+             string.Equals(leftPrefix, rightName, StringComparison.Ordinal)) ||
+            (!string.IsNullOrEmpty(rightPrefix) &&
+             string.Equals(rightPrefix, leftName, StringComparison.Ordinal));
+    }
+
     private static bool IsSameNamedTraderInSameArea(TraderDestination left, TraderDestination right)
     {
         if (left.AreaX != right.AreaX || left.AreaZ != right.AreaZ)
@@ -173,10 +194,26 @@ internal static class VisitedTraderStore
             return false;
         }
 
-        string leftName = NormalizeDisplayNameToken(left.DisplayName);
-        string rightName = NormalizeDisplayNameToken(right.DisplayName);
+        string leftName = NormalizeTraderIdentityToken(left.DisplayName);
+        string rightName = NormalizeTraderIdentityToken(right.DisplayName);
         return !string.IsNullOrEmpty(leftName) &&
                string.Equals(leftName, rightName, StringComparison.Ordinal);
+    }
+
+    private static string NormalizeTraderIdentityToken(string value)
+    {
+        string token = NormalizeDisplayNameToken(value);
+        if (token.StartsWith("npc", StringComparison.Ordinal) && token.Length > 3)
+        {
+            token = token.Substring(3);
+        }
+
+        if (token.StartsWith("traitor", StringComparison.Ordinal) && token.Length > 7)
+        {
+            token = "trader" + token.Substring(7);
+        }
+
+        return token;
     }
 
     private static string NormalizeDisplayNameToken(string value)
@@ -261,7 +298,8 @@ internal static class VisitedTraderStore
             return;
         }
 
-        TraderDestination destination = CanonicalizeDestination(CreateDestination(trader, player), trader.position);
+        TraderDestination destination = ReuseExistingTraderKey(
+            CanonicalizeDestination(CreateDestination(trader, player), trader.position));
         bool changed = UpsertTrader(destination);
 
         if (!database.VisitsByPlayer.TryGetValue(playerKey, out HashSet<string> playerVisits))
@@ -310,11 +348,12 @@ internal static class VisitedTraderStore
             return;
         }
 
-        TraderDestination destination = CanonicalizeDestination(
-            CreateDestination(report, player),
-            report.HasTraderPosition
-                ? new Vector3(report.TraderPositionX, report.TraderPositionY, report.TraderPositionZ)
-                : (Vector3?)null);
+        TraderDestination destination = ReuseExistingTraderKey(
+            CanonicalizeDestination(
+                CreateDestination(report, player),
+                report.HasTraderPosition
+                    ? new Vector3(report.TraderPositionX, report.TraderPositionY, report.TraderPositionZ)
+                    : (Vector3?)null));
         bool changed = UpsertTrader(destination);
 
         if (!database.VisitsByPlayer.TryGetValue(playerKey, out HashSet<string> playerVisits))
@@ -837,7 +876,8 @@ internal static class VisitedTraderStore
         TraderArea traderArea,
         HashSet<string> playerVisits)
     {
-        TraderDestination destination = CanonicalizeDestination(CreateTestDestination(trader, traderArea), trader.position);
+        TraderDestination destination = ReuseExistingTraderKey(
+            CanonicalizeDestination(CreateTestDestination(trader, traderArea), trader.position));
         bool changed = UpsertTrader(destination);
         if (playerVisits.Add(destination.Key))
         {
@@ -1189,6 +1229,22 @@ internal static class VisitedTraderStore
 
         key = string.Empty;
         return false;
+    }
+
+    private static TraderDestination ReuseExistingTraderKey(TraderDestination destination)
+    {
+        if (destination == null || database.Traders == null || database.Traders.Count == 0)
+        {
+            return destination;
+        }
+
+        if (TryFindSameNormalizedTraderKey(database.Traders, destination, out string existingKey) &&
+            !string.Equals(existingKey, destination.Key, StringComparison.Ordinal))
+        {
+            return WithKey(destination, existingKey);
+        }
+
+        return destination;
     }
 
     private static TraderDestination WithKey(TraderDestination destination, string key)

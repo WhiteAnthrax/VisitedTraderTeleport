@@ -14,6 +14,7 @@
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
 - Server-side visit data is normalized to stable trader keys when possible, reducing duplicate destinations from older position-based records.
+- Old TXT/JSON records with compatible raw trader ID variations are matched to the same trader when possible.
 - Older `VisitedTraderTeleportVisited.txt` save data remains readable for compatibility.
 
 ## Access Modes
@@ -106,6 +107,7 @@ Upgrade behavior:
 - Version `0.4.20` and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis.
 - Version `0.4.21` and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate.
 - Version `0.4.22` and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat.
+- Version `0.4.24` and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data.
 - Before automatic JSON normalization, a one-time backup is created as `VisitedTraderTeleportData.before-0.4.16.json`.
 
 If you want extra safety before upgrading a server, stop the server and copy `VisitedTraderTeleportData.json` and `VisitedTraderTeleportVisited.txt` from the save folder first.
