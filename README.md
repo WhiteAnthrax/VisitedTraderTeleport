@@ -30,6 +30,8 @@ Access modes are mainly for multiplayer. Single-player users can keep the defaul
 
 In multiplayer, the server-side setting is authoritative. Clients use the destination list allowed by the server.
 
+The config is loaded from the installed mod folder beside `VisitedTraderTeleport.dll`, so custom folder names still work as long as the `Config` folder is kept with the mod.
+
 ## Which Mode Should I Use
 
 - Use `personal` for individual unlocks or normal single-player use.
@@ -108,6 +110,7 @@ Upgrade behavior:
 - Version `0.4.21` and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate.
 - Version `0.4.22` and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat.
 - Version `0.4.24` and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data.
+- Version `0.4.25` and newer load `VisitedTraderTeleport.xml` from the actual installed mod folder, so access mode settings work even if the folder is renamed.
 - Before automatic JSON normalization, a one-time backup is created as `VisitedTraderTeleportData.before-0.4.16.json`.
 
 If you want extra safety before upgrading a server, stop the server and copy `VisitedTraderTeleportData.json` and `VisitedTraderTeleportVisited.txt` from the save folder first.

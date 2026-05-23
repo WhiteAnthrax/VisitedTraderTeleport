@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Xml.Linq;
 using UnityEngine;
 
@@ -121,6 +122,25 @@ internal static class VisitedTraderTeleportConfig
 
     private static string GetConfigPath()
     {
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Mods", "VisitedTraderTeleport", "Config", ConfigFileName);
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (!string.IsNullOrEmpty(assemblyPath))
+        {
+            string assemblyDirectory = Path.GetDirectoryName(assemblyPath);
+            if (!string.IsNullOrEmpty(assemblyDirectory))
+            {
+                string installedPath = Path.Combine(assemblyDirectory, "Config", ConfigFileName);
+                if (File.Exists(installedPath))
+                {
+                    return installedPath;
+                }
+            }
+        }
+
+        return Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            "Mods",
+            "VisitedTraderTeleport",
+            "Config",
+            ConfigFileName);
     }
 }
