@@ -1,5 +1,79 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.25 - 2026-05-23 23:48 JST
+- Fixed config loading when the installed mod folder is named something other than `VisitedTraderTeleport`, such as `Travel Between Visited Traders`.
+- Access mode settings now load from the actual installed mod folder beside `VisitedTraderTeleport.dll`, with the old path kept as a fallback.
+- No save reset is required.
+
+## 0.4.24 - 2026-05-23 19:45 JST
+- Improved same-trader matching for old TXT/JSON records whose raw/internal trader IDs differ, such as `npcTraderRekt` and `traderrekt`.
+- Reused existing matching trader records when recording a visit, preventing the same trader from being saved again under a slightly different key during the same session.
+- No save reset is required.
+
+## 0.4.23 - 2026-05-23 08:24 JST
+- Clarified upgrade and save-data compatibility documentation for existing users.
+- Added user-facing notes that existing JSON/TXT data is kept, old TXT data still loads, and automatic cleanup does not require a save reset.
+- Added a server upgrade safety tip recommending a manual copy of visited trader data files before updating.
+
+## 0.4.22 - 2026-05-23 07:03 JST
+- Added friendly trader name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat.
+- Recognized likely raw/internal Wasteland name tokens such as `tradergene`, `traderjohnny`, and `spheretest`.
+- Unknown modded trader names still use the existing generic fallback.
+- No save reset is required.
+
+## 0.4.21 - 2026-05-23 06:48 JST
+- De-duplicated same-name traders recorded in the same trader area, even when their local position buckets differ.
+- Kept distinct same-area traders separate when their display names differ, improving compatibility with overhaul mods that place multiple traders in one area.
+- Existing same-name duplicate records are merged automatically on load.
+- No save reset is required.
+
+## 0.4.20 - 2026-05-23 01:17 JST
+- Avoided forcing a teleport if the destination area is still not ready after preparation.
+- Added clearer server logs for destination preparation, ready, and abort cases to help diagnose unloaded or not-yet-generated trader areas.
+- Added a localized "destination is not ready yet" message for local/single-player abort cases.
+- Increased destination preparation timeout from 4 seconds to 8 seconds.
+- No save reset is required.
+
+## 0.4.19 - 2026-05-22 20:31 JST
+- Fixed duplicate destination entries when the same trader was recorded from slightly different interaction positions.
+- Separated trader identity from teleport destination position: the trader's position is used for stable matching, while the player's conversation position remains the saved travel destination.
+- Existing nearby duplicate trader records are merged automatically on load when they refer to the same trader.
+- No save reset is required.
+
+## 0.4.18 - 2026-05-22 19:49 JST
+- Normalized legacy TXT destinations in memory so old shared data is less likely to duplicate JSON destinations.
+- De-duplicated destination lists when legacy TXT and JSON records refer to the same nearby trader.
+- Refined same-trader matching so distinct detailed keys inside the same trader area are not merged just because they share an area.
+- No save reset is required.
+
+## 0.4.17 - 2026-05-22 15:39 JST
+- Adjusted canonical trader keys to include local trader position within the trader area.
+- Reduced the chance that mods with multiple traders in the same trader area merge distinct traders into one destination.
+- No save reset is required.
+
+## 0.4.16 - 2026-05-22 14:39 JST
+- Stabilized trader visit keys by normalizing server-side visit data to trader area coordinates when possible.
+- Existing duplicate trader entries caused by older position-based keys are merged into canonical trader-area keys on load.
+- A one-time backup named `VisitedTraderTeleportData.before-0.4.16.json` is created before automatic JSON normalization.
+- Improved current-trader filtering when old position-based keys and new trader-area keys refer to the same nearby trader.
+- No save reset is required.
+
+## 0.4.15 - 2026-05-22 14:08 JST
+- Fixed a startup error introduced in 0.4.14 by removing the unsupported dialog header Harmony patch.
+- Changed the current access mode and no-destinations notices to use safe dynamic dialog rows.
+- No save reset is required.
+
+## 0.4.14 - 2026-05-22 13:58 JST
+- Fixed the destination screen status text so the current access mode and no-destinations message are returned through the dialog header text used by the game UI.
+- No save reset is required.
+
+## 0.4.13 - 2026-05-22 12:51 JST
+- Added the active access mode to the trader travel destination screen.
+- Added a clear no-destinations message when the current mode has no valid destinations after excluding the current trader.
+- Fixed the client-side snapshot refresh request when opening trader dialog in multiplayer.
+- Added diagnostic logs for snapshot requests, server snapshot counts, client snapshot application, and empty destination lists.
+- No save reset is required.
+
 ## 0.4.12 - 2026-05-17 22:06 JST
 - Improved trader destination labels with friendly trader names, distance, direction, and coordinates.
 - Destination choices are now ordered by distance from the player.

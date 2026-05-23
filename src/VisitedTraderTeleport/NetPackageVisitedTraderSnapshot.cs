@@ -76,6 +76,9 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         VisitedTraderClientState.ApplySnapshot(accessMode, destinations);
+        Debug.Log(
+            $"[VisitedTraderTeleport] Applied server snapshot: " +
+            $"{destinations.Count} destinations, mode={accessMode}.");
     }
 
     private static AccessMode ParseAccessMode(string value)
