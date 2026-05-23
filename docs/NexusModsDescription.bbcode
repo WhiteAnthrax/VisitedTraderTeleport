@@ -23,6 +23,7 @@ Talk to a trader once to record that trader. After that, choose [b]Travel to a v
 [*]Normalizes server-side visit data to reduce duplicate destinations from older position-based records
 [*]Keeps trader identity separate from the saved travel position, so slight differences in where you talked to the same trader do not create duplicate destinations
 [*]Merges same-name destinations in the same trader area while keeping differently named traders separate
+[*]Matches compatible raw/internal trader ID variations from older TXT/JSON data when possible
 [*]Aborts travel if an unloaded destination still is not ready after preparation
 [*]Preserves compatibility with older save data
 [/list]
@@ -146,6 +147,7 @@ Upgrade behavior:
 [*]Version 0.4.20 and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis
 [*]Version 0.4.21 and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate
 [*]Version 0.4.22 and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat
+[*]Version 0.4.24 and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data
 [*]Before automatic JSON normalization, a one-time backup is created as VisitedTraderTeleportData.before-0.4.16.json
 [/list]
 
