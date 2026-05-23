@@ -8,7 +8,7 @@ namespace VisitedTraderTeleport;
 internal static class VisitedTraderTeleportService
 {
     private const float TeleportVerticalClearance = 0.25f;
-    private const float PrepareTimeoutSeconds = 4f;
+    private const float PrepareTimeoutSeconds = 8f;
     private const int PrepareChunkViewDim = 3;
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshHoldSeconds = 5f;
@@ -28,6 +28,10 @@ internal static class VisitedTraderTeleportService
         World world = GameManager.Instance?.World;
         if (NeedsPreparation(world, target) && TryStartPreparedTeleport(player, destination, target))
         {
+            Debug.Log(
+                $"[VisitedTraderTeleport] Preparing destination for {player.PlayerDisplayName}: " +
+                $"{destination.DialogText}, target=({target.x:0.##}, {target.y:0.##}, {target.z:0.##}), " +
+                $"timeout={PrepareTimeoutSeconds:0.#}s.");
             ShowPreparingTooltip(player);
             return;
         }
@@ -92,9 +96,28 @@ internal static class VisitedTraderTeleportService
                 yield return null;
             }
 
+            if (player == null || destination == null || world == null)
+            {
+                yield break;
+            }
+
+            Vector3 finalTarget = ResolveTarget(destination);
+            if (!IsDestinationReady(world, finalTarget))
+            {
+                Debug.LogWarning(
+                    $"[VisitedTraderTeleport] Destination was not ready after preparation; teleport aborted for " +
+                    $"{player.PlayerDisplayName}: {destination.DialogText}, " +
+                    $"target=({finalTarget.x:0.##}, {finalTarget.y:0.##}, {finalTarget.z:0.##}).");
+                ShowDestinationNotReadyTooltip(player);
+                yield break;
+            }
+
             if (player != null && destination != null)
             {
-                ExecuteTeleport(player, destination, ResolveTarget(destination));
+                Debug.Log(
+                    $"[VisitedTraderTeleport] Destination ready after preparation for {player.PlayerDisplayName}: " +
+                    $"{destination.DialogText}.");
+                ExecuteTeleport(player, destination, finalTarget);
             }
         }
         finally
@@ -265,6 +288,14 @@ internal static class VisitedTraderTeleportService
         if (player is EntityPlayerLocal localPlayer)
         {
             GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_preparing_travel"), false, false, 2f);
+        }
+    }
+
+    private static void ShowDestinationNotReadyTooltip(EntityPlayer player)
+    {
+        if (player is EntityPlayerLocal localPlayer)
+        {
+            GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_destination_not_ready"), false, false, 4f);
         }
     }
 

@@ -15,9 +15,16 @@ Talk to a trader once to record that trader. After that, choose [b]Travel to a v
 [*]Only shows traders that are available from your visited-trader data
 [*]Shows clean destination labels with trader name, distance, direction, and map-style coordinates
 [*]Sorts destinations by distance from your current position
+[*]Shows the current access mode on the destination screen
+[*]Displays known vanilla and Wasteland Mod trader names cleanly when recognized
 [*]Supports English and Japanese
 [*]Supports single-player and multiplayer
 [*]Includes multiplayer trader-sharing modes
+[*]Normalizes server-side visit data to reduce duplicate destinations from older position-based records
+[*]Keeps trader identity separate from the saved travel position, so slight differences in where you talked to the same trader do not create duplicate destinations
+[*]Merges same-name destinations in the same trader area while keeping differently named traders separate
+[*]Matches compatible raw/internal trader ID variations from older TXT/JSON data when possible
+[*]Aborts travel if an unloaded destination still is not ready after preparation
 [*]Preserves compatibility with older save data
 [/list]
 
@@ -57,6 +64,8 @@ Install this mod on both:
 In multiplayer, the server is authoritative. The server controls which access mode is active, which traders each player may use, and whether a requested teleport is allowed.
 
 Clients display the destination list allowed by the server.
+
+The config is loaded from the installed mod folder beside VisitedTraderTeleport.dll, so custom folder names still work as long as the Config folder is kept with the mod.
 
 [line]
 
@@ -108,6 +117,9 @@ Restart the dedicated server or host process after changing the setting.
 
 [heading]Upgrading from version 0.2.x or older[/heading]
 
+[b]You do not need to reset your save when upgrading.[/b]
+Existing visited trader data is kept and loaded automatically.
+
 Version [b]0.2.x and older[/b] stored visited trader data in:
 
 [quote]
@@ -123,12 +135,27 @@ VisitedTraderTeleportData.json
 Upgrade behavior:
 
 [list]
+[*]Existing data is not deleted by the upgrade
 [*]Existing 0.2.x-or-older TXT data continues to load after upgrading
 [*]Legacy TXT data is treated as a compatibility-wide shared pool so already available destinations do not suddenly disappear
 [*]Legacy TXT data is not automatically rewritten into the new ownership-aware JSON schema
 [*]New visits after upgrading are recorded in the new JSON format
 [*]The new format keeps trader destinations separate from player ownership, so changing between Personal, Party, and Shared later does not require resetting new-version data
+[*]If old or duplicate entries are found, the mod may automatically tidy the JSON data on load while keeping player visit ownership linked to the correct trader records
+[*]Version 0.4.16 and newer normalize duplicate JSON entries caused by older position-based trader keys when the matching trader area can be resolved
+[*]Version 0.4.17 and newer include local trader position in normalized keys to better support mods with multiple traders in one trader area
+[*]Version 0.4.18 and newer normalize legacy TXT destinations in memory and de-duplicate destination lists when old TXT and new JSON records refer to the same nearby trader
+[*]Version 0.4.19 and newer separate trader identity from teleport destination position, so visiting the same trader from slightly different interaction spots no longer creates duplicate destinations
+[*]Version 0.4.20 and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis
+[*]Version 0.4.21 and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate
+[*]Version 0.4.22 and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat
+[*]Version 0.4.24 and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data
+[*]Version 0.4.25 and newer load VisitedTraderTeleport.xml from the actual installed mod folder, so access mode settings work even if the folder is renamed
+[*]Before automatic JSON normalization, a one-time backup is created as VisitedTraderTeleportData.before-0.4.16.json
 [/list]
+
+[b]Extra safety tip[/b]
+Before upgrading a server, stop the server and copy VisitedTraderTeleportData.json and VisitedTraderTeleportVisited.txt from the save folder first.
 
 [b]Dedicated server note[/b]
 Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
@@ -139,8 +166,9 @@ Legacy data is read from the machine that owns the active save. Old TXT files th
 
 [list]
 [*]The current trader is not shown as a teleport destination
-[*]If there are no valid destinations, only the normal "Never mind" response is shown
+[*]If there are no valid destinations, the destination screen explains that none are available in the current mode
 [*]Teleport destinations are based on previously recorded trader visits
 [*]The mod briefly prepares distant or unloaded destination areas before teleporting when needed
+[*]If a destination cannot be prepared in time, travel is aborted and the server log explains which destination was not ready
 [*]The client also refreshes destination visuals around teleport to reduce transparent POI objects after travel
 [/list]
