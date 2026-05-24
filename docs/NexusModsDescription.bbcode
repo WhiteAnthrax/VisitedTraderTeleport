@@ -1,31 +1,25 @@
 [heading]About this mod[/heading]
 
-[b]Travel Between Visited Traders[/b] adds a trader dialog option for fast travel between traders you have already visited.
+[b]Travel Between Visited Traders[/b] adds a trader dialog option that lets you travel back to traders you have already visited.
 
-Talk to a trader once to record that trader. After that, choose [b]Travel to a visited trader[/b] in trader dialog and select a destination.
+Talk to a trader once to record that trader for the current save. After that, use [b]Travel to a visited trader[/b] in trader dialog and pick a destination from the list.
 
-[b]Single-player users can install and play with the default settings.[/b]
+For normal single-player use, install the mod and leave the default settings alone.
 
 [line]
 
 [heading]Main features[/heading]
 
 [list]
-[*]Adds trader fast travel through dialog
-[*]Only shows traders that are available from your visited-trader data
-[*]Shows clean destination labels with trader name, distance, direction, and map-style coordinates
-[*]Sorts destinations by distance from your current position
-[*]Shows the current access mode on the destination screen
-[*]Displays known vanilla and Wasteland Mod trader names cleanly when recognized
+[*]Travel between traders you have already visited
+[*]Destination list shows trader name, distance, direction, coordinates, and the current access mode
+[*]Known vanilla and Wasteland Mod trader names display cleanly when recognized
 [*]Supports English and Japanese
-[*]Supports single-player and multiplayer
-[*]Includes multiplayer trader-sharing modes
-[*]Normalizes server-side visit data to reduce duplicate destinations from older position-based records
-[*]Keeps trader identity separate from the saved travel position, so slight differences in where you talked to the same trader do not create duplicate destinations
-[*]Merges same-name destinations in the same trader area while keeping differently named traders separate
-[*]Matches compatible raw/internal trader ID variations from older TXT/JSON data when possible
-[*]Aborts travel if an unloaded destination still is not ready after preparation
-[*]Preserves compatibility with older save data
+[*]Works in single-player and multiplayer
+[*]Includes Personal, Party, and Shared access modes for servers
+[*]Keeps older visited-trader save data readable
+[*]Reduces duplicate destinations from older records and repeat visits to the same trader
+[*]Prepares distant or unloaded trader areas before travel, and cancels the teleport if the destination is not ready
 [/list]
 
 [line]
@@ -46,35 +40,23 @@ The mod requires the vanilla [b]0_TFP_Harmony[/b] mod that ships with current 7 
 
 [heading]Single-player[/heading]
 
-No configuration is required for normal single-player use.
+No configuration is needed for normal single-player play.
 
-The default mode is [b]Personal[/b]. In single-player, that simply means you can travel to traders you have personally visited in that save.
+The default mode is [b]Personal[/b], which means you can travel only to traders you have personally visited in that save.
 
 [line]
 
 [heading]Multiplayer[/heading]
 
-Install this mod on both:
+Install the mod on both the server and every client.
 
-[list]
-[*]The server
-[*]Every client
-[/list]
+In multiplayer, the server controls trader access and teleport validation. Clients show the destination list allowed by the server.
 
-In multiplayer, the server is authoritative. The server controls which access mode is active, which traders each player may use, and whether a requested teleport is allowed.
-
-Clients display the destination list allowed by the server.
-
-The config is loaded from the installed mod folder beside VisitedTraderTeleport.dll, so custom folder names still work as long as the Config folder is kept with the mod.
+The config is loaded from the installed mod folder beside [b]VisitedTraderTeleport.dll[/b], so custom folder names work as long as the [b]Config[/b] folder stays with the mod.
 
 [line]
 
-[heading]Multiplayer access modes[/heading]
-
-These modes are mainly for multiplayer servers. Single-player users can usually ignore this section.
-
-[b]Default mode: Personal[/b]
-If you do not change the config file, the mod uses Personal mode.
+[heading]Access modes[/heading]
 
 [b]Personal[/b]
 Each player can travel only to traders they personally visited.
@@ -85,13 +67,7 @@ Players can travel to traders visited by themselves or by their current party me
 [b]Shared[/b]
 Any trader visited by anyone in the active server/save data becomes available to everyone.
 
-[line]
-
-[heading]Configuration[/heading]
-
-Configuration is mainly for multiplayer server owners who want to change trader-sharing behavior.
-
-For multiplayer, edit this file on the [b]server[/b]:
+For multiplayer, change the access mode on the server:
 
 [quote]
 7 Days To Die\Mods\VisitedTraderTeleport\Config\VisitedTraderTeleport.xml
@@ -103,72 +79,32 @@ Change:
 <AccessMode value="personal" />
 [/quote]
 
-to one of:
-
-[list]
-[*]<AccessMode value="personal" />
-[*]<AccessMode value="party" />
-[*]<AccessMode value="shared" />
-[/list]
-
-Restart the dedicated server or host process after changing the setting.
+to [b]personal[/b], [b]party[/b], or [b]shared[/b], then restart the dedicated server or host process.
 
 [line]
 
-[heading]Upgrading from version 0.2.x or older[/heading]
+[heading]Upgrading from older versions[/heading]
 
 [b]You do not need to reset your save when upgrading.[/b]
-Existing visited trader data is kept and loaded automatically.
 
-Version [b]0.2.x and older[/b] stored visited trader data in:
+Older versions stored visited trader data in [b]VisitedTraderTeleportVisited.txt[/b]. Newer versions use [b]VisitedTraderTeleportData.json[/b].
 
-[quote]
-VisitedTraderTeleportVisited.txt
-[/quote]
+The old TXT data still loads for compatibility, and new visits are written to the newer JSON file. Existing data is not deleted during upgrade.
 
-Version [b]0.3.0 and newer[/b] store new data in:
+When old or duplicate records are found, the mod may tidy them automatically while keeping visited-trader ownership linked to the matching trader records. A one-time backup named [b]VisitedTraderTeleportData.before-0.4.16.json[/b] is created before automatic JSON normalization.
 
-[quote]
-VisitedTraderTeleportData.json
-[/quote]
+For extra safety before updating a server, stop the server and copy [b]VisitedTraderTeleportData.json[/b] and [b]VisitedTraderTeleportVisited.txt[/b] from the save folder first.
 
-Upgrade behavior:
-
-[list]
-[*]Existing data is not deleted by the upgrade
-[*]Existing 0.2.x-or-older TXT data continues to load after upgrading
-[*]Legacy TXT data is treated as a compatibility-wide shared pool so already available destinations do not suddenly disappear
-[*]Legacy TXT data is not automatically rewritten into the new ownership-aware JSON schema
-[*]New visits after upgrading are recorded in the new JSON format
-[*]The new format keeps trader destinations separate from player ownership, so changing between Personal, Party, and Shared later does not require resetting new-version data
-[*]If old or duplicate entries are found, the mod may automatically tidy the JSON data on load while keeping player visit ownership linked to the correct trader records
-[*]Version 0.4.16 and newer normalize duplicate JSON entries caused by older position-based trader keys when the matching trader area can be resolved
-[*]Version 0.4.17 and newer include local trader position in normalized keys to better support mods with multiple traders in one trader area
-[*]Version 0.4.18 and newer normalize legacy TXT destinations in memory and de-duplicate destination lists when old TXT and new JSON records refer to the same nearby trader
-[*]Version 0.4.19 and newer separate trader identity from teleport destination position, so visiting the same trader from slightly different interaction spots no longer creates duplicate destinations
-[*]Version 0.4.20 and newer abort travel when an unloaded destination still is not ready after preparation, with clearer server logs for diagnosis
-[*]Version 0.4.21 and newer merge same-name destinations in the same trader area while still keeping different named traders in that area separate
-[*]Version 0.4.22 and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat
-[*]Version 0.4.24 and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data
-[*]Version 0.4.25 and newer load VisitedTraderTeleport.xml from the actual installed mod folder, so access mode settings work even if the folder is renamed
-[*]Before automatic JSON normalization, a one-time backup is created as VisitedTraderTeleportData.before-0.4.16.json
-[/list]
-
-[b]Extra safety tip[/b]
-Before upgrading a server, stop the server and copy VisitedTraderTeleportData.json and VisitedTraderTeleportVisited.txt from the save folder first.
-
-[b]Dedicated server note[/b]
-Legacy data is read from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
+Dedicated servers read legacy data from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
 
 [line]
 
 [heading]Notes[/heading]
 
 [list]
-[*]The current trader is not shown as a teleport destination
+[*]The current trader is not shown as a destination
 [*]If there are no valid destinations, the destination screen explains that none are available in the current mode
-[*]Teleport destinations are based on previously recorded trader visits
-[*]The mod briefly prepares distant or unloaded destination areas before teleporting when needed
-[*]If a destination cannot be prepared in time, travel is aborted and the server log explains which destination was not ready
-[*]The client also refreshes destination visuals around teleport to reduce transparent POI objects after travel
+[*]Teleport destinations are based on the position saved when the trader visit was recorded
+[*]If a destination cannot be prepared in time, travel is cancelled instead of forcing the player into an unsafe area
+[*]After multiplayer travel, the client refreshes destination visuals to reduce transparent POI objects
 [/list]
