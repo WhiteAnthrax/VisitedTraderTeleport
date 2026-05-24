@@ -9,7 +9,8 @@
 - Selecting it shows dynamically generated destinations with trader name, distance, direction, and coordinates.
 - Known vanilla and Wasteland Mod trader names are displayed cleanly when recognized.
 - The destination screen shows the active access mode and explains when no destinations are available.
-- Choosing a destination teleports the player to that trader's recorded position.
+- Choosing a destination starts a short trader-transport transition, then moves the player to that trader's recorded position.
+- Optional distance-based travel costs can be enabled in config. The default cost item is gas.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting. If the area still is not ready, the teleport is aborted instead of forcing the player into an unsafe destination.
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
@@ -67,14 +68,50 @@ Restart the affected game process after changing the file:
 - Single-player: restart the game.
 - Multiplayer server: restart the dedicated server or host process.
 
+## Travel Cost And Transition
+
+Travel is free by default. To charge for travel, edit:
+
+```text
+7 Days To Die\Mods\VisitedTraderTeleport\Config\VisitedTraderTeleport.xml
+```
+
+Change `TravelCost`:
+
+```xml
+<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perKilometer="1500" minimum="0" />
+```
+
+Useful values:
+
+- `enabled`
+  Set to `true` to charge for travel.
+- `item`
+  Internal item name to consume. The default `ammoGasCan` is vanilla gas.
+- `displayName`
+  Text shown in destination labels and messages.
+- `perKilometer`
+  Item count charged per kilometer of straight-line distance.
+- `minimum`
+  Minimum item count for any paid trip.
+
+The travel transition is enabled by default:
+
+```xml
+<TravelTransition enabled="true" durationSeconds="5" disableCamera="true" sound="suv_startup" />
+```
+
+Set `enabled="false"` to keep travel instant. Set `disableCamera="false"` or leave `sound` empty to disable only that part of the transition.
+
 ## Multiplayer Behavior
 
 For multiplayer saves, the server owns trader access:
 
 - When a client talks to a trader, the client reports that visit to the server.
 - The server records the visit, applies `personal`, `party`, or `shared`, and returns the allowed destination list.
-- The client shows the server's active access mode on the destination screen.
+- The client shows the server's active access mode and travel cost on the destination screen.
 - When a client chooses a teleport destination, the server validates that destination again before performing the teleport.
+- If travel costs are enabled, the server checks and consumes the required item before travel.
 - `party` mode checks the player's current party when the destination list is requested.
 
 ## Existing Users Upgrading From Version 0.2.x Or Older

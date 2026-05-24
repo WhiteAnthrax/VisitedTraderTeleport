@@ -32,8 +32,9 @@ internal static class TraderDestinationFormatter
         string distance = FormatDistance(destination, player);
         string direction = FormatDirection(destination, player);
         string coordinates = FormatCoordinates(destination);
+        string cost = TravelCostService.FormatCostSuffix(destination, player);
 
-        return VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates);
+        return VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates) + cost;
     }
 
     public static string FormatName(TraderDestination destination)

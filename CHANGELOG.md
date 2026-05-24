@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.0 - 2026-05-25 05:18 JST
+- Added a short trader-transport transition before travel, with a brief hidden-view delay, optional vehicle sound, and arrival message.
+- Added optional distance-based travel costs using configurable items, with gas as the default cost item when enabled.
+- Multiplayer servers now send cost settings to clients so destination labels can show the server-side travel cost.
+- No save reset is required.
+
 ## 0.4.25 - 2026-05-23 23:48 JST
 - Fixed config loading when the installed mod folder is named something other than `VisitedTraderTeleport`, such as `Travel Between Visited Traders`.
 - Access mode settings now load from the actual installed mod folder beside `VisitedTraderTeleport.dll`, with the old path kept as a fallback.

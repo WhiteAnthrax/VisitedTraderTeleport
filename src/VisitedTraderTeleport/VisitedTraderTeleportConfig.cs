@@ -12,6 +12,8 @@ internal static class VisitedTraderTeleportConfig
     private static string loadedPath;
     private static AccessMode loadedMode = AccessMode.Personal;
     private static bool loadedTestRecordAllTradersOnVisit;
+    private static TravelCostSettings loadedTravelCost = TravelCostSettings.Disabled();
+    private static TravelTransitionSettings loadedTravelTransition = TravelTransitionSettings.Default();
 
     public static AccessMode AccessMode
     {
@@ -31,6 +33,24 @@ internal static class VisitedTraderTeleportConfig
         }
     }
 
+    public static TravelCostSettings TravelCost
+    {
+        get
+        {
+            EnsureLoaded();
+            return loadedTravelCost;
+        }
+    }
+
+    public static TravelTransitionSettings TravelTransition
+    {
+        get
+        {
+            EnsureLoaded();
+            return loadedTravelTransition;
+        }
+    }
+
     private static void EnsureLoaded()
     {
         string path = GetConfigPath();
@@ -42,6 +62,8 @@ internal static class VisitedTraderTeleportConfig
         loadedPath = path;
         loadedMode = AccessMode.Personal;
         loadedTestRecordAllTradersOnVisit = false;
+        loadedTravelCost = TravelCostSettings.Disabled();
+        loadedTravelTransition = TravelTransitionSettings.Default();
 
         try
         {
@@ -68,13 +90,86 @@ internal static class VisitedTraderTeleportConfig
                 .Attribute("value")?
                 .Value;
             loadedTestRecordAllTradersOnVisit = TryParseBool(rawTestValue);
+
+            loadedTravelCost = ParseTravelCost(doc.Root?.Element("TravelCost"));
+            loadedTravelTransition = ParseTravelTransition(doc.Root?.Element("TravelTransition"));
         }
         catch (Exception ex)
         {
             loadedMode = AccessMode.Personal;
             loadedTestRecordAllTradersOnVisit = false;
+            loadedTravelCost = TravelCostSettings.Disabled();
+            loadedTravelTransition = TravelTransitionSettings.Default();
             Debug.LogWarning($"[VisitedTraderTeleport] Could not read config, using Personal: {ex.Message}");
         }
+    }
+
+    private static TravelCostSettings ParseTravelCost(XElement element)
+    {
+        var settings = TravelCostSettings.Disabled();
+        if (element == null)
+        {
+            return settings;
+        }
+
+        settings.Enabled = TryParseBool(GetAttributeValue(element, "enabled"));
+        settings.ItemName = GetStringAttribute(element, "item", settings.ItemName);
+        settings.ItemDisplayName = GetStringAttribute(element, "displayName", settings.ItemDisplayName);
+        settings.PerKilometer = Math.Max(0, GetIntAttribute(element, "perKilometer", settings.PerKilometer));
+        settings.Minimum = Math.Max(0, GetIntAttribute(element, "minimum", settings.Minimum));
+        return settings;
+    }
+
+    private static TravelTransitionSettings ParseTravelTransition(XElement element)
+    {
+        var settings = TravelTransitionSettings.Default();
+        if (element == null)
+        {
+            return settings;
+        }
+
+        string rawEnabled = GetAttributeValue(element, "enabled");
+        if (!string.IsNullOrWhiteSpace(rawEnabled))
+        {
+            settings.Enabled = TryParseBool(rawEnabled);
+        }
+
+        settings.DurationSeconds = Math.Max(0f, GetFloatAttribute(element, "durationSeconds", settings.DurationSeconds));
+        string rawDisableCamera = GetAttributeValue(element, "disableCamera");
+        if (!string.IsNullOrWhiteSpace(rawDisableCamera))
+        {
+            settings.DisableCamera = TryParseBool(rawDisableCamera);
+        }
+
+        settings.Sound = GetStringAttribute(element, "sound", settings.Sound);
+        return settings;
+    }
+
+    private static string GetAttributeValue(XElement element, string name)
+    {
+        return element?
+            .Attribute(name)?
+            .Value;
+    }
+
+    private static string GetStringAttribute(XElement element, string name, string fallback)
+    {
+        string value = GetAttributeValue(element, name);
+        return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+    }
+
+    private static int GetIntAttribute(XElement element, string name, int fallback)
+    {
+        string value = GetAttributeValue(element, name);
+        return int.TryParse(value, out int parsed) ? parsed : fallback;
+    }
+
+    private static float GetFloatAttribute(XElement element, string name, float fallback)
+    {
+        string value = GetAttributeValue(element, name);
+        return float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float parsed)
+            ? parsed
+            : fallback;
     }
 
     private static bool TryParseBool(string value)
