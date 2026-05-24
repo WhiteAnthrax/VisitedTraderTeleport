@@ -12,13 +12,13 @@ For normal single-player use, install the mod and leave the default settings alo
 
 [list]
 [*]Travel between traders you have already visited
-[*]Destination list shows trader name, distance, direction, and coordinates
+[*]Destination list shows trader name, distance, direction, coordinates, and the current access mode
 [*]Known vanilla and Wasteland Mod trader names display cleanly when recognized
 [*]Supports English and Japanese
 [*]Works in single-player and multiplayer
 [*]Includes Personal, Party, and Shared access modes for servers
 [*]Keeps older visited-trader save data readable
-[*]Reduces duplicate destinations from older records and slightly different interaction positions
+[*]Reduces duplicate destinations from older records and repeat visits to the same trader
 [*]Prepares distant or unloaded trader areas before travel, and cancels the teleport if the destination is not ready
 [/list]
 
@@ -91,7 +91,7 @@ Older versions stored visited trader data in [b]VisitedTraderTeleportVisited.txt
 
 The old TXT data still loads for compatibility, and new visits are written to the newer JSON file. Existing data is not deleted during upgrade.
 
-When old or duplicate records are found, the mod may clean them up automatically while keeping visited-trader ownership linked to the matching trader records. A one-time backup named [b]VisitedTraderTeleportData.before-0.4.16.json[/b] is created before automatic JSON normalization.
+When old or duplicate records are found, the mod may tidy them automatically while keeping visited-trader ownership linked to the matching trader records. A one-time backup named [b]VisitedTraderTeleportData.before-0.4.16.json[/b] is created before automatic JSON normalization.
 
 For extra safety before updating a server, stop the server and copy [b]VisitedTraderTeleportData.json[/b] and [b]VisitedTraderTeleportVisited.txt[/b] from the save folder first.
 

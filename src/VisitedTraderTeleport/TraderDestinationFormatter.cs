@@ -128,6 +128,13 @@ internal static class TraderDestinationFormatter
                 return "vtt_trader_name_hugh";
             case "joel":
                 return "vtt_trader_name_joel";
+            case "gene":
+                return "vtt_trader_name_gene";
+            case "johnny":
+                return "vtt_trader_name_johnny";
+            case "radcat":
+            case "spheretest":
+                return "vtt_trader_name_radcat";
             default:
                 return string.Empty;
         }
