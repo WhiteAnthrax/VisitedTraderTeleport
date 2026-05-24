@@ -7,6 +7,7 @@ namespace VisitedTraderTeleport;
 public sealed class NetPackageVisitedTraderSnapshot : NetPackage
 {
     private AccessMode accessMode = AccessMode.Personal;
+    private TravelCostSettings travelCost = TravelCostSettings.Disabled();
     private readonly List<TraderDestination> destinations = new();
 
     public override NetPackageDirection PackageDirection => NetPackageDirection.ToClient;
@@ -14,6 +15,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
     internal NetPackageVisitedTraderSnapshot Setup(AccessMode mode, IEnumerable<TraderDestination> values)
     {
         accessMode = mode;
+        travelCost = VisitedTraderTeleportConfig.TravelCost.Clone();
         destinations.Clear();
         if (values != null)
         {
@@ -26,6 +28,14 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
     public override void read(PooledBinaryReader reader)
     {
         accessMode = ParseAccessMode(reader.ReadString());
+        travelCost = new TravelCostSettings
+        {
+            Enabled = reader.ReadBoolean(),
+            ItemName = reader.ReadString(),
+            ItemDisplayName = reader.ReadString(),
+            PerKilometer = reader.ReadInt32(),
+            Minimum = reader.ReadInt32()
+        };
         destinations.Clear();
 
         int count = reader.ReadInt32();
@@ -47,6 +57,11 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
     {
         base.write(writer);
         writer.ReadWrite(accessMode.ToString().ToLowerInvariant());
+        writer.ReadWrite(travelCost.Enabled);
+        writer.ReadWrite(travelCost.ItemName ?? string.Empty);
+        writer.ReadWrite(travelCost.ItemDisplayName ?? string.Empty);
+        writer.ReadWrite(travelCost.PerKilometer);
+        writer.ReadWrite(travelCost.Minimum);
         writer.ReadWrite(destinations.Count);
 
         foreach (TraderDestination destination in destinations)
@@ -62,7 +77,10 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
 
     public override int GetLength()
     {
-        int length = 8 + accessMode.ToString().Length;
+        int length = 20 +
+                     accessMode.ToString().Length +
+                     (travelCost.ItemName?.Length ?? 0) +
+                     (travelCost.ItemDisplayName?.Length ?? 0);
         foreach (TraderDestination destination in destinations)
         {
             length += 40;
@@ -75,7 +93,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
 
     public override void ProcessPackage(World world, GameManager callbacks)
     {
-        VisitedTraderClientState.ApplySnapshot(accessMode, destinations);
+        VisitedTraderClientState.ApplySnapshot(accessMode, destinations, travelCost);
         Debug.Log(
             $"[VisitedTraderTeleport] Applied server snapshot: " +
             $"{destinations.Count} destinations, mode={accessMode}.");
