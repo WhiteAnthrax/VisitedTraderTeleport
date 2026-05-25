@@ -15,9 +15,4 @@
   <!-- Short transport-style transition before travel. -->
   <!-- disableCamera briefly hides the trip. sound uses a game-defined audio key; set sound empty to disable audio. -->
   <TravelTransition enabled="true" durationSeconds="5" disableCamera="true" sound="suv_startup" />
-
-  <!-- Test mode for local verification only. Leave false for normal play. -->
-  <!-- true: talking to any trader loads trader areas one at a time and records resolved trader NPCs for that player. -->
-  <!-- Resolved traders are saved two blocks in front of their facing direction. This can be heavy; leave false for normal play. -->
-  <TestRecordAllTradersOnVisit value="false" />
 </VisitedTraderTeleport>
