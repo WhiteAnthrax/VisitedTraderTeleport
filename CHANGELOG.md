@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.4.26 - 2026-05-25 11:14 JST
+- Added paging controls to the visited-trader destination screen so long lists remain fully reachable.
+- No save reset is required.
+
 ## 0.4.25 - 2026-05-23 23:48 JST
 - Fixed config loading when the installed mod folder is named something other than `VisitedTraderTeleport`, such as `Travel Between Visited Traders`.
 - Access mode settings now load from the actual installed mod folder beside `VisitedTraderTeleport.dll`, with the old path kept as a fallback.
