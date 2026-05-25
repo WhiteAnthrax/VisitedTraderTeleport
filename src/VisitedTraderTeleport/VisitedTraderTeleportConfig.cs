@@ -11,7 +11,6 @@ internal static class VisitedTraderTeleportConfig
     private const string ConfigFileName = "VisitedTraderTeleport.xml";
     private static string loadedPath;
     private static AccessMode loadedMode = AccessMode.Personal;
-    private static bool loadedTestRecordAllTradersOnVisit;
     private static TravelCostSettings loadedTravelCost = TravelCostSettings.Disabled();
     private static TravelTransitionSettings loadedTravelTransition = TravelTransitionSettings.Default();
 
@@ -21,15 +20,6 @@ internal static class VisitedTraderTeleportConfig
         {
             EnsureLoaded();
             return loadedMode;
-        }
-    }
-
-    public static bool TestRecordAllTradersOnVisit
-    {
-        get
-        {
-            EnsureLoaded();
-            return loadedTestRecordAllTradersOnVisit;
         }
     }
 
@@ -61,7 +51,6 @@ internal static class VisitedTraderTeleportConfig
 
         loadedPath = path;
         loadedMode = AccessMode.Personal;
-        loadedTestRecordAllTradersOnVisit = false;
         loadedTravelCost = TravelCostSettings.Disabled();
         loadedTravelTransition = TravelTransitionSettings.Default();
 
@@ -85,19 +74,12 @@ internal static class VisitedTraderTeleportConfig
                 Debug.LogWarning($"[VisitedTraderTeleport] Invalid AccessMode '{rawValue}', using Personal.");
             }
 
-            string rawTestValue = doc.Root?
-                .Element("TestRecordAllTradersOnVisit")?
-                .Attribute("value")?
-                .Value;
-            loadedTestRecordAllTradersOnVisit = TryParseBool(rawTestValue);
-
             loadedTravelCost = ParseTravelCost(doc.Root?.Element("TravelCost"));
             loadedTravelTransition = ParseTravelTransition(doc.Root?.Element("TravelTransition"));
         }
         catch (Exception ex)
         {
             loadedMode = AccessMode.Personal;
-            loadedTestRecordAllTradersOnVisit = false;
             loadedTravelCost = TravelCostSettings.Disabled();
             loadedTravelTransition = TravelTransitionSettings.Default();
             Debug.LogWarning($"[VisitedTraderTeleport] Could not read config, using Personal: {ex.Message}");

@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.1 - 2026-05-26 00:31 JST
+- Fixed the trader transport setup so travel costs, multiplayer transition messages, and the optional travel sound can run correctly.
+- Removed leftover local-only verification code from the main mod package.
+- No save reset is required.
+
 ## 0.5.0 - 2026-05-25 05:18 JST
 - Added a short trader-transport transition before travel, with a brief hidden-view delay, optional vehicle sound, and arrival message.
 - Added optional distance-based travel costs using configurable items, with gas as the default cost item when enabled.

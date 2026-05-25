@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<VisitedTraderTeleportTestTools>
+  <!-- Local verification helper only. Do not use for normal play. -->
+  <!-- true: after entering a local world, move the local player to a resolved trader. -->
+  <TeleportToTraderOnGameStart value="true" />
+
+  <!-- true: after entering a local world, record all resolved traders as visited for the local player. -->
+  <RecordAllTradersOnGameStart value="true" />
+
+  <!-- nearest: choose the known trader area nearest to the player spawn. -->
+  <!-- first: choose the first known trader area by world position. -->
+  <TargetTrader value="nearest" />
+
+  <!-- Wait briefly after player spawn before scanning trader areas. -->
+  <StartDelaySeconds value="3" />
+
+  <!-- Time to wait for the selected trader area to load and expose its trader NPC. -->
+  <ChunkLoadTimeoutSeconds value="12" />
+
+  <!-- true: if no trader NPC is resolved, move to the trader area center instead of doing nothing. -->
+  <FallbackToTraderAreaCenter value="true" />
+</VisitedTraderTeleportTestTools>
