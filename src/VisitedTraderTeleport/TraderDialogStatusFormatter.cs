@@ -10,7 +10,7 @@ internal static class TraderDialogStatusFormatter
             FormatModeDescription(accessMode));
     }
 
-    private static string FormatModeName(AccessMode accessMode)
+    public static string FormatModeName(AccessMode accessMode)
     {
         return VTTLocalization.Get(accessMode switch
         {

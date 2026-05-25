@@ -7,7 +7,7 @@
 - Talking to a trader records that trader as visited for the current save.
 - The trader dialog gains a `Travel to a visited trader` option.
 - Selecting it shows dynamically generated destinations with trader name, distance, direction, and coordinates.
-- Destination screen status lines are shown above the choices, keeping actual selectable actions easier to scan.
+- Destination screen status is shown in the trader heading, keeping actual selectable actions easier to scan.
 - Long destination lists are split into pages so every visited trader remains reachable.
 - Known vanilla and Wasteland Mod trader names are displayed cleanly when recognized.
 - The destination screen shows the active access mode and explains when no destinations are available.

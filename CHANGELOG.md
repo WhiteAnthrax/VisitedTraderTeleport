@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.6 - 2026-05-26 02:48 JST
+- Moved destination mode and page status into the trader name heading on the destination screen so the selectable list stays limited to real choices.
+- No save reset is required.
+
 ## 0.5.5 - 2026-05-26 02:14 JST
 - Fixed destination screen status text so the current access mode and page count are shown above the selectable choices again.
 - Changed the sample gas travel cost to `perMeter="0.1"` and added a Duke's casino token example using `casinoCoin`.

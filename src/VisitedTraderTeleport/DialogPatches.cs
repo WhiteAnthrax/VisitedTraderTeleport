@@ -189,6 +189,40 @@ internal static class DialogStatementWindowGetBindingValuePatch
     }
 }
 
+[HarmonyPatch(typeof(XUiC_DialogRespondentName), nameof(XUiC_DialogRespondentName.GetBindingValueInternal))]
+internal static class DialogRespondentNameGetBindingValuePatch
+{
+    public static bool Prefix(
+        XUiC_DialogRespondentName __instance,
+        ref string value,
+        string bindingName,
+        ref bool __result)
+    {
+        if (!string.Equals(bindingName, "respondentname", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        Dialog dialog = __instance?.CurrentDialog;
+        if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
+        {
+            return true;
+        }
+
+        string respondentName = dialog.CurrentOwner?.EntityName;
+        if (string.IsNullOrWhiteSpace(respondentName))
+        {
+            respondentName = value;
+        }
+
+        value = string.IsNullOrWhiteSpace(respondentName)
+            ? DestinationStatementFormatter.FormatCompactStatus(dialog)
+            : respondentName + " - " + DestinationStatementFormatter.FormatCompactStatus(dialog);
+        __result = true;
+        return false;
+    }
+}
+
 internal static class DestinationStatementFormatter
 {
     public static string Format(Dialog dialog)
@@ -215,6 +249,23 @@ internal static class DestinationStatementFormatter
         }
 
         return string.Join("\n", lines);
+    }
+
+    public static string FormatCompactStatus(Dialog dialog)
+    {
+        DialogDestinationState destinationState = DialogDestinationState.Create(dialog);
+        string modeName = TraderDialogStatusFormatter.FormatModeName(destinationState.AccessMode);
+        if (destinationState.TotalDestinationCount > 0 && destinationState.TotalPages > 1)
+        {
+            return VTTLocalization.Format(
+                "vtt_compact_status_paged",
+                modeName,
+                destinationState.PageIndex + 1,
+                destinationState.TotalPages,
+                destinationState.TotalDestinationCount);
+        }
+
+        return VTTLocalization.Format("vtt_compact_status", modeName);
     }
 }
 
