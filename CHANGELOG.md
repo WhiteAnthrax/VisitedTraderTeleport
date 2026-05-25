@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.2 - 2026-05-26 01:22 JST
+- Fixed config loading for the travel cost and transition settings by using the active mod folder path provided by the game.
+- Added clearer startup logging for the loaded travel cost and transition settings.
+- Tried both player-local and position-based playback for the optional travel sound.
+- No save reset is required.
+
 ## 0.5.1 - 2026-05-26 00:31 JST
 - Fixed the trader transport setup so travel costs, multiplayer transition messages, and the optional travel sound can run correctly.
 - Removed leftover local-only verification code from the main mod package.

@@ -9,10 +9,17 @@ namespace VisitedTraderTeleport;
 internal static class VisitedTraderTeleportConfig
 {
     private const string ConfigFileName = "VisitedTraderTeleport.xml";
+    private static string modPath;
     private static string loadedPath;
     private static AccessMode loadedMode = AccessMode.Personal;
     private static TravelCostSettings loadedTravelCost = TravelCostSettings.Disabled();
     private static TravelTransitionSettings loadedTravelTransition = TravelTransitionSettings.Default();
+
+    public static void Configure(Mod mod)
+    {
+        modPath = mod?.Path;
+        loadedPath = null;
+    }
 
     public static AccessMode AccessMode
     {
@@ -76,6 +83,14 @@ internal static class VisitedTraderTeleportConfig
 
             loadedTravelCost = ParseTravelCost(doc.Root?.Element("TravelCost"));
             loadedTravelTransition = ParseTravelTransition(doc.Root?.Element("TravelTransition"));
+            Debug.Log(
+                $"[VisitedTraderTeleport] Loaded config from '{path}': " +
+                $"accessMode={loadedMode}, " +
+                $"travelCostEnabled={loadedTravelCost.Enabled}, item={loadedTravelCost.ItemName}, " +
+                $"perKilometer={loadedTravelCost.PerKilometer}, minimum={loadedTravelCost.Minimum}, " +
+                $"transitionEnabled={loadedTravelTransition.Enabled}, " +
+                $"duration={loadedTravelTransition.DurationSeconds:0.##}, " +
+                $"disableCamera={loadedTravelTransition.DisableCamera}, sound={loadedTravelTransition.Sound}.");
         }
         catch (Exception ex)
         {
@@ -199,6 +214,15 @@ internal static class VisitedTraderTeleportConfig
 
     private static string GetConfigPath()
     {
+        if (!string.IsNullOrEmpty(modPath))
+        {
+            string modConfigPath = Path.Combine(modPath, "Config", ConfigFileName);
+            if (File.Exists(modConfigPath))
+            {
+                return modConfigPath;
+            }
+        }
+
         string assemblyPath = Assembly.GetExecutingAssembly().Location;
         if (!string.IsNullOrEmpty(assemblyPath))
         {
