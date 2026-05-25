@@ -81,7 +81,7 @@ Travel is free by default. To charge for travel, edit:
 Change `TravelCost`:
 
 ```xml
-<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="1.5" minimum="0" />
+<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="0.1" minimum="0" />
 ```
 
 Useful values:
@@ -98,6 +98,12 @@ Useful values:
   Minimum item count for any paid trip.
 
 Older configs that use `perKilometer` still work. If both `perMeter` and `perKilometer` are present, `perMeter` is used.
+
+To charge Duke's casino tokens instead of gas, use `casinoCoin`:
+
+```xml
+<TravelCost enabled="true" item="casinoCoin" displayName="Dukes" perMeter="1" minimum="0" />
+```
 
 The travel transition is enabled by default:
 

@@ -54,6 +54,7 @@ internal static class DialogStatementGetResponsesPatch
             return;
         }
 
+        __instance.Text = DestinationStatementFormatter.Format(__instance.OwnerDialog);
         DialogDestinationState destinationState = DialogDestinationState.Create(__instance.OwnerDialog);
         List<TraderDestination> destinations = destinationState.VisibleDestinations;
         var dynamicEntries = new List<BaseResponseEntry>();
@@ -150,6 +151,18 @@ internal static class DialogStatementGetResponsesPatch
 
 }
 
+[HarmonyPatch(typeof(Dialog), nameof(Dialog.GetStatement))]
+internal static class DialogGetStatementPatch
+{
+    public static void Postfix(Dialog __instance, string currentStatementID, ref DialogStatement __result)
+    {
+        if (__result?.ID == DialogIds.DestinationStatementId)
+        {
+            __result.Text = DestinationStatementFormatter.Format(__instance);
+        }
+    }
+}
+
 [HarmonyPatch(typeof(XUiC_DialogStatementWindow), nameof(XUiC_DialogStatementWindow.GetBindingValueInternal))]
 internal static class DialogStatementWindowGetBindingValuePatch
 {
@@ -170,12 +183,15 @@ internal static class DialogStatementWindowGetBindingValuePatch
             return true;
         }
 
-        value = FormatDestinationStatement(dialog);
+        value = DestinationStatementFormatter.Format(dialog);
         __result = true;
         return false;
     }
+}
 
-    private static string FormatDestinationStatement(Dialog dialog)
+internal static class DestinationStatementFormatter
+{
+    public static string Format(Dialog dialog)
     {
         DialogDestinationState destinationState = DialogDestinationState.Create(dialog);
         var lines = new List<string>

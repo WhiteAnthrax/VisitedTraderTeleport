@@ -94,10 +94,16 @@ Use [b]personal[/b], [b]party[/b], or [b]shared[/b].
 Optional travel cost:
 
 [quote]
-<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="1.5" minimum="0" />
+<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="0.1" minimum="0" />
 [/quote]
 
 Set [b]enabled[/b] to [b]true[/b] to charge for travel. The default item is vanilla gas. New configs can use [b]perMeter[/b] for finer tuning; older [b]perKilometer[/b] configs still work.
+
+To charge Duke's casino tokens instead of gas:
+
+[quote]
+<TravelCost enabled="true" item="casinoCoin" displayName="Dukes" perMeter="1" minimum="0" />
+[/quote]
 
 Travel transition:
 

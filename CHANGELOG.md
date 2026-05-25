@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.5 - 2026-05-26 02:14 JST
+- Fixed destination screen status text so the current access mode and page count are shown above the selectable choices again.
+- Changed the sample gas travel cost to `perMeter="0.1"` and added a Duke's casino token example using `casinoCoin`.
+- No save reset is required.
+
 ## 0.5.4 - 2026-05-26 02:03 JST
 - Moved destination screen status lines out of the selectable response list so only real actions show as selectable dialog choices.
 - No save reset is required.
