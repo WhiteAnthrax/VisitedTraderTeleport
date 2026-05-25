@@ -57,25 +57,9 @@ internal static class DialogStatementGetResponsesPatch
         DialogDestinationState destinationState = DialogDestinationState.Create(__instance.OwnerDialog);
         List<TraderDestination> destinations = destinationState.VisibleDestinations;
         var dynamicEntries = new List<BaseResponseEntry>();
-        dynamicEntries.Add(CreateInfoEntry(
-            __instance,
-            "vtt_mode_info",
-            TraderDialogStatusFormatter.FormatModeLine(destinationState.AccessMode)));
 
         if (destinations.Count > 0)
         {
-            if (destinationState.TotalPages > 1)
-            {
-                dynamicEntries.Add(CreateInfoEntry(
-                    __instance,
-                    "vtt_page_info",
-                    VTTLocalization.Format(
-                        "vtt_page_info",
-                        destinationState.PageIndex + 1,
-                        destinationState.TotalPages,
-                        destinationState.TotalDestinationCount)));
-            }
-
             foreach (TraderDestination destination in destinations)
             {
                 dynamicEntries.Add(CreateDestinationEntry(__instance, destination, destinationState.Player));
@@ -105,10 +89,6 @@ internal static class DialogStatementGetResponsesPatch
 
         if (destinations.Count == 0)
         {
-            dynamicEntries.Add(CreateInfoEntry(
-                __instance,
-                "vtt_no_destinations_info",
-                VTTLocalization.Get("vtt_no_destinations")));
             Debug.Log(
                 $"[VisitedTraderTeleport] No destinations shown for {DialogDestinationState.GetPlayerName(destinationState.Player)}: " +
                 $"mode={destinationState.AccessMode}, allowed={destinationState.AllowedDestinationCount}, " +
@@ -168,20 +148,57 @@ internal static class DialogStatementGetResponsesPatch
         };
     }
 
-    private static BaseResponseEntry CreateInfoEntry(DialogStatement statement, string id, string text)
+}
+
+[HarmonyPatch(typeof(XUiC_DialogStatementWindow), nameof(XUiC_DialogStatementWindow.GetBindingValueInternal))]
+internal static class DialogStatementWindowGetBindingValuePatch
+{
+    public static bool Prefix(
+        XUiC_DialogStatementWindow __instance,
+        ref string value,
+        string bindingName,
+        ref bool __result)
     {
-        var response = new DialogResponse(id)
+        if (!string.Equals(bindingName, "statement", StringComparison.OrdinalIgnoreCase))
         {
-            Text = text,
-            OwnerDialog = statement.OwnerDialog,
-            Actions = new List<BaseDialogAction>(),
-            NextStatementID = DialogIds.DestinationStatementId
+            return true;
+        }
+
+        Dialog dialog = __instance?.CurrentDialog;
+        if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
+        {
+            return true;
+        }
+
+        value = FormatDestinationStatement(dialog);
+        __result = true;
+        return false;
+    }
+
+    private static string FormatDestinationStatement(Dialog dialog)
+    {
+        DialogDestinationState destinationState = DialogDestinationState.Create(dialog);
+        var lines = new List<string>
+        {
+            VTTLocalization.Get("vtt_statement_destinations"),
+            TraderDialogStatusFormatter.FormatModeLine(destinationState.AccessMode)
         };
 
-        return new DialogResponseEntry(response.ID)
+        if (destinationState.TotalDestinationCount > 0 && destinationState.TotalPages > 1)
         {
-            Response = response
-        };
+            lines.Add(VTTLocalization.Format(
+                "vtt_page_info",
+                destinationState.PageIndex + 1,
+                destinationState.TotalPages,
+                destinationState.TotalDestinationCount));
+        }
+
+        if (destinationState.TotalDestinationCount == 0)
+        {
+            lines.Add(VTTLocalization.Get("vtt_no_destinations"));
+        }
+
+        return string.Join("\n", lines);
     }
 }
 
