@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.8 - 2026-05-26 05:04 JST
+- Smoothed the travel transition so the default trip keeps the camera visible, shows clearer departure and arrival messages, and avoids stacking the generic teleport tooltip on top of the transport message.
+- Changed the sample transition config to `disableCamera="false"`; existing configs keep their current setting.
+- No save reset is required.
+
 ## 0.5.7 - 2026-05-26 04:49 JST
 - Fixed the destination screen heading patch so mode and page status are applied to the response-list heading used by the trader dialog.
 - No save reset is required.

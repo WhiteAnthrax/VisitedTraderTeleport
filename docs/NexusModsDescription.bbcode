@@ -14,7 +14,7 @@ For normal single-player use, install the mod and leave the default settings alo
 [*]Travel between traders you have already visited
 [*]Destination list shows trader name, distance, direction, coordinates, current access mode, and any configured travel cost
 [*]Mode and page status are kept separate from selectable destination choices
-[*]Short trader-transport transition before travel, with an arrival message
+[*]Short trader-transport transition before travel, with clearer departure and arrival messages
 [*]Optional distance-based travel costs, with gas as the default cost item when enabled
 [*]Long destination lists use pages so every visited trader remains reachable
 [*]Known vanilla and Wasteland Mod trader names display cleanly when recognized
@@ -48,7 +48,7 @@ No configuration is needed for normal single-player play.
 
 The default mode is [b]Personal[/b], which means you can travel only to traders you have personally visited in that save.
 
-Travel is free by default. The short transport transition is enabled by default.
+Travel is free by default. The short visible transport transition is enabled by default.
 
 [line]
 
@@ -108,7 +108,7 @@ To charge Duke's casino tokens instead of gas:
 Travel transition:
 
 [quote]
-<TravelTransition enabled="true" durationSeconds="5" disableCamera="true" sound="suv_startup" />
+<TravelTransition enabled="true" durationSeconds="5" disableCamera="false" sound="suv_startup" />
 [/quote]
 
 Restart the dedicated server, host process, or single-player game after changing the config.

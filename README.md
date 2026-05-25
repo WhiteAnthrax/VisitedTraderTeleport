@@ -108,10 +108,10 @@ To charge Duke's casino tokens instead of gas, use `casinoCoin`:
 The travel transition is enabled by default:
 
 ```xml
-<TravelTransition enabled="true" durationSeconds="5" disableCamera="true" sound="suv_startup" />
+<TravelTransition enabled="true" durationSeconds="5" disableCamera="false" sound="suv_startup" />
 ```
 
-Set `enabled="false"` to keep travel instant. Set `disableCamera="false"` or leave `sound` empty to disable only that part of the transition. The sound value must match a loaded game audio key; if it cannot be found, the mod writes a warning to the log.
+Set `enabled="false"` to keep travel instant. Leave `disableCamera="false"` for the smoother default visible transition, or set it to `true` if you prefer the trip to hide the view briefly. Leave `sound` empty to disable only the audio. The sound value must match a loaded game audio key; if it cannot be found, the mod writes a warning to the log.
 
 ## Multiplayer Behavior
 

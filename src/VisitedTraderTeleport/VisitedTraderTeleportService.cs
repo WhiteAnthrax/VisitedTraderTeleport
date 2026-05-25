@@ -13,6 +13,8 @@ internal static class VisitedTraderTeleportService
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshHoldSeconds = 5f;
     private const float ClientVisualRefreshArrivalDistanceSq = 64f * 64f;
+    private const float TransitionArrivalLeadSeconds = 0.35f;
+    private const float HiddenTransitionTeleportMaxDelaySeconds = 1.5f;
 
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> ClientVisualRefreshObservers = new();
@@ -166,7 +168,7 @@ internal static class VisitedTraderTeleportService
         return GameManager.IsDedicatedServer || world.IsChunkAreaCollidersLoaded(target);
     }
 
-    private static void ExecuteTeleport(EntityPlayer player, TraderDestination destination, Vector3 target)
+    private static void ExecuteTeleport(EntityPlayer player, TraderDestination destination, Vector3 target, bool showTooltip)
     {
         try
         {
@@ -181,7 +183,7 @@ internal static class VisitedTraderTeleportService
                 SendTeleportPackage(player, target);
             }
 
-            if (player is EntityPlayerLocal localForTooltip)
+            if (showTooltip && player is EntityPlayerLocal localForTooltip)
             {
                 GameManager.ShowTooltip(localForTooltip, VTTLocalization.Format("vtt_teleported_to", TraderDestinationFormatter.FormatName(destination)), false, false, 4f);
             }
@@ -204,7 +206,7 @@ internal static class VisitedTraderTeleportService
                 return;
             }
 
-            ExecuteTeleport(player, destination, target);
+            ExecuteTeleport(player, destination, target, true);
             return;
         }
 
@@ -216,7 +218,7 @@ internal static class VisitedTraderTeleportService
                 return;
             }
 
-            ExecuteTeleport(player, destination, target);
+            ExecuteTeleport(player, destination, target, true);
             return;
         }
 
@@ -245,15 +247,21 @@ internal static class VisitedTraderTeleportService
             string destinationName = TraderDestinationFormatter.FormatName(destination);
             PlayTravelTransition(player, destinationName, paidCost, settings);
 
-            float finishAt = Time.realtimeSinceStartup + settings.DurationSeconds;
-            while (Time.realtimeSinceStartup < finishAt)
+            float teleportAt = Time.realtimeSinceStartup + GetTeleportDelay(settings);
+            while (Time.realtimeSinceStartup < teleportAt)
             {
                 yield return null;
             }
 
             if (player != null && destination != null)
             {
-                ExecuteTeleport(player, destination, target);
+                ExecuteTeleport(player, destination, target, false);
+            }
+
+            float finishAt = Time.realtimeSinceStartup + GetTransitionHoldAfterTeleport(settings);
+            while (Time.realtimeSinceStartup < finishAt)
+            {
+                yield return null;
             }
         }
         finally
@@ -334,9 +342,9 @@ internal static class VisitedTraderTeleportService
         TravelTransitionSettings settings)
     {
         string message = paidCost > 0
-            ? VTTLocalization.Format("vtt_transport_departure_paid", paidCost, GetEffectiveCostItemDisplayName())
-            : VTTLocalization.Get("vtt_transport_departure");
-        GameManager.ShowTooltip(player, message, false, false, 3f);
+            ? VTTLocalization.Format("vtt_transport_departure_paid", paidCost, GetEffectiveCostItemDisplayName(), destinationName)
+            : VTTLocalization.Format("vtt_transport_departure", destinationName);
+        GameManager.ShowTooltip(player, message, false, false, Math.Max(3f, settings.DurationSeconds));
 
         if (settings.DisableCamera)
         {
@@ -470,6 +478,29 @@ internal static class VisitedTraderTeleportService
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Could not restore camera after travel transition: {ex.Message}");
         }
+    }
+
+    private static float GetTeleportDelay(TravelTransitionSettings settings)
+    {
+        float duration = Math.Max(0f, settings?.DurationSeconds ?? 0f);
+        if (duration <= 0f)
+        {
+            return 0f;
+        }
+
+        if (settings.DisableCamera)
+        {
+            return Math.Min(HiddenTransitionTeleportMaxDelaySeconds, duration * 0.35f);
+        }
+
+        return Math.Max(0f, duration - TransitionArrivalLeadSeconds);
+    }
+
+    private static float GetTransitionHoldAfterTeleport(TravelTransitionSettings settings)
+    {
+        float duration = Math.Max(0f, settings?.DurationSeconds ?? 0f);
+        float hold = duration - GetTeleportDelay(settings);
+        return Math.Max(TransitionArrivalLeadSeconds, hold);
     }
 
     private static void StartClientVisualRefresh(EntityPlayerLocal player, Vector3 target)
