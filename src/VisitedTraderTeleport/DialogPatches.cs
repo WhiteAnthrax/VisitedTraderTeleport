@@ -209,15 +209,33 @@ internal static class DialogRespondentNameGetBindingValuePatch
             return true;
         }
 
-        string respondentName = dialog.CurrentOwner?.EntityName;
-        if (string.IsNullOrWhiteSpace(respondentName))
+        value = DestinationStatementFormatter.FormatHeading(dialog, value);
+        __result = true;
+        return false;
+    }
+}
+
+[HarmonyPatch(typeof(XUiC_DialogResponseList), nameof(XUiC_DialogResponseList.GetBindingValueInternal))]
+internal static class DialogResponseListGetBindingValuePatch
+{
+    public static bool Prefix(
+        XUiC_DialogResponseList __instance,
+        ref string value,
+        string bindingName,
+        ref bool __result)
+    {
+        if (!string.Equals(bindingName, "respondentname", StringComparison.OrdinalIgnoreCase))
         {
-            respondentName = value;
+            return true;
         }
 
-        value = string.IsNullOrWhiteSpace(respondentName)
-            ? DestinationStatementFormatter.FormatCompactStatus(dialog)
-            : respondentName + " - " + DestinationStatementFormatter.FormatCompactStatus(dialog);
+        Dialog dialog = __instance?.CurrentDialog;
+        if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
+        {
+            return true;
+        }
+
+        value = DestinationStatementFormatter.FormatHeading(dialog, value);
         __result = true;
         return false;
     }
@@ -266,6 +284,20 @@ internal static class DestinationStatementFormatter
         }
 
         return VTTLocalization.Format("vtt_compact_status", modeName);
+    }
+
+    public static string FormatHeading(Dialog dialog, string fallbackName)
+    {
+        string respondentName = dialog?.CurrentOwner?.EntityName;
+        if (string.IsNullOrWhiteSpace(respondentName))
+        {
+            respondentName = fallbackName;
+        }
+
+        string status = FormatCompactStatus(dialog);
+        return string.IsNullOrWhiteSpace(respondentName)
+            ? status
+            : respondentName + " - " + status;
     }
 }
 
