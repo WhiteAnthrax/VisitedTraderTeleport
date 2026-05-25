@@ -364,7 +364,6 @@ internal static class VisitedTraderTeleportService
         try
         {
             Audio.Manager.PlayInsidePlayerHead(soundName, player.entityId);
-            return;
         }
         catch (Exception ex)
         {
@@ -378,6 +377,7 @@ internal static class VisitedTraderTeleportService
                 soundName,
                 AudioRolloffMode.Linear,
                 player.entityId);
+            Audio.Manager.BroadcastPlayByLocalPlayer(player.position, soundName);
         }
         catch (Exception ex)
         {
