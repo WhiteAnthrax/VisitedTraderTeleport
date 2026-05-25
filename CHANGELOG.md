@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.4 - 2026-05-26 02:03 JST
+- Moved destination screen status lines out of the selectable response list so only real actions show as selectable dialog choices.
+- No save reset is required.
+
 ## 0.5.3 - 2026-05-26 01:38 JST
 - Added `perMeter` travel cost configuration for finer distance-based cost tuning while keeping older `perKilometer` configs compatible.
 - Destination choices now show the configured travel cost before selecting a trip.
