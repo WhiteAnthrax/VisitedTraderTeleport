@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Xml.Linq;
@@ -87,7 +88,7 @@ internal static class VisitedTraderTeleportConfig
                 $"[VisitedTraderTeleport] Loaded config from '{path}': " +
                 $"accessMode={loadedMode}, " +
                 $"travelCostEnabled={loadedTravelCost.Enabled}, item={loadedTravelCost.ItemName}, " +
-                $"perKilometer={loadedTravelCost.PerKilometer}, minimum={loadedTravelCost.Minimum}, " +
+                $"perMeter={loadedTravelCost.PerMeter:0.####}, minimum={loadedTravelCost.Minimum}, " +
                 $"transitionEnabled={loadedTravelTransition.Enabled}, " +
                 $"duration={loadedTravelTransition.DurationSeconds:0.##}, " +
                 $"disableCamera={loadedTravelTransition.DisableCamera}, sound={loadedTravelTransition.Sound}.");
@@ -112,9 +113,17 @@ internal static class VisitedTraderTeleportConfig
         settings.Enabled = TryParseBool(GetAttributeValue(element, "enabled"));
         settings.ItemName = GetStringAttribute(element, "item", settings.ItemName);
         settings.ItemDisplayName = GetStringAttribute(element, "displayName", settings.ItemDisplayName);
-        settings.PerKilometer = Math.Max(0, GetIntAttribute(element, "perKilometer", settings.PerKilometer));
+        settings.PerMeter = Math.Max(0f, GetFloatAttribute(element, "perMeter", GetLegacyPerMeter(element, settings.PerMeter)));
         settings.Minimum = Math.Max(0, GetIntAttribute(element, "minimum", settings.Minimum));
         return settings;
+    }
+
+    private static float GetLegacyPerMeter(XElement element, float fallback)
+    {
+        string value = GetAttributeValue(element, "perKilometer");
+        return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed)
+            ? parsed / 1000f
+            : fallback;
     }
 
     private static TravelTransitionSettings ParseTravelTransition(XElement element)
@@ -164,7 +173,7 @@ internal static class VisitedTraderTeleportConfig
     private static float GetFloatAttribute(XElement element, string name, float fallback)
     {
         string value = GetAttributeValue(element, name);
-        return float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float parsed)
+        return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed)
             ? parsed
             : fallback;
     }

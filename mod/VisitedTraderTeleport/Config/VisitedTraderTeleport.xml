@@ -9,10 +9,11 @@
 
   <!-- Optional travel cost. Leave enabled=false for the current free-travel behavior. -->
   <!-- item is the internal item name to consume. ammoGasCan is vanilla gas. -->
-  <!-- perKilometer is charged by straight-line distance and rounded up to a whole item count. -->
-  <TravelCost enabled="false" item="ammoGasCan" displayName="gas" perKilometer="1500" minimum="0" />
+  <!-- perMeter is charged by straight-line distance and rounded up to a whole item count. -->
+  <!-- perKilometer from older configs is still supported; perMeter takes priority when both are set. -->
+  <TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="1.5" minimum="0" />
 
   <!-- Short transport-style transition before travel. -->
-  <!-- disableCamera briefly hides the trip. sound uses a game-defined audio key; set sound empty to disable audio. -->
+  <!-- disableCamera briefly hides the trip. sound uses a loaded game audio key; set sound empty to disable audio. -->
   <TravelTransition enabled="true" durationSeconds="5" disableCamera="true" sound="suv_startup" />
 </VisitedTraderTeleport>

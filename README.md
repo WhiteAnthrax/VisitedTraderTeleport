@@ -11,7 +11,7 @@
 - Known vanilla and Wasteland Mod trader names are displayed cleanly when recognized.
 - The destination screen shows the active access mode and explains when no destinations are available.
 - Choosing a destination starts a short trader-transport transition, then moves the player to that trader's recorded position.
-- Optional distance-based travel costs can be enabled in config. The default cost item is gas.
+- Optional distance-based travel costs can be enabled in config. The default cost item is gas, and destination choices show the cost before travel.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting. If the area still is not ready, the teleport is aborted instead of forcing the player into an unsafe destination.
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
@@ -80,7 +80,7 @@ Travel is free by default. To charge for travel, edit:
 Change `TravelCost`:
 
 ```xml
-<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perKilometer="1500" minimum="0" />
+<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="1.5" minimum="0" />
 ```
 
 Useful values:
@@ -91,10 +91,12 @@ Useful values:
   Internal item name to consume. The default `ammoGasCan` is vanilla gas.
 - `displayName`
   Text shown in destination labels and messages.
-- `perKilometer`
-  Item count charged per kilometer of straight-line distance.
+- `perMeter`
+  Item count charged per meter of straight-line distance. Decimal values are supported, so `0.001` means 1 item per kilometer.
 - `minimum`
   Minimum item count for any paid trip.
+
+Older configs that use `perKilometer` still work. If both `perMeter` and `perKilometer` are present, `perMeter` is used.
 
 The travel transition is enabled by default:
 
@@ -102,7 +104,7 @@ The travel transition is enabled by default:
 <TravelTransition enabled="true" durationSeconds="5" disableCamera="true" sound="suv_startup" />
 ```
 
-Set `enabled="false"` to keep travel instant. Set `disableCamera="false"` or leave `sound` empty to disable only that part of the transition.
+Set `enabled="false"` to keep travel instant. Set `disableCamera="false"` or leave `sound` empty to disable only that part of the transition. The sound value must match a loaded game audio key; if it cannot be found, the mod writes a warning to the log.
 
 ## Multiplayer Behavior
 
@@ -150,6 +152,7 @@ Upgrade behavior:
 - Version `0.4.24` and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data.
 - Version `0.4.25` and newer load `VisitedTraderTeleport.xml` from the actual installed mod folder, so access mode settings work even if the folder is renamed.
 - Version `0.4.26` and newer add paging controls for long destination lists.
+- Version `0.5.3` and newer support `perMeter` travel cost tuning while still reading older `perKilometer` configs.
 - Before automatic JSON normalization, a one-time backup is created as `VisitedTraderTeleportData.before-0.4.16.json`.
 
 If you want extra safety before upgrading a server, stop the server and copy `VisitedTraderTeleportData.json` and `VisitedTraderTeleportVisited.txt` from the save folder first.
