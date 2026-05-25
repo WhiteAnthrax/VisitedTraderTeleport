@@ -5,7 +5,7 @@ internal sealed class TravelCostSettings
     public bool Enabled { get; set; }
     public string ItemName { get; set; } = "ammoGasCan";
     public string ItemDisplayName { get; set; } = "gas";
-    public float PerMeter { get; set; } = 1.5f;
+    public float PerMeter { get; set; } = 0.1f;
     public int Minimum { get; set; }
 
     public static TravelCostSettings Disabled()

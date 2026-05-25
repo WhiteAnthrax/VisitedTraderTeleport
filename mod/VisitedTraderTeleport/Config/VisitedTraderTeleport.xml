@@ -11,7 +11,9 @@
   <!-- item is the internal item name to consume. ammoGasCan is vanilla gas. -->
   <!-- perMeter is charged by straight-line distance and rounded up to a whole item count. -->
   <!-- perKilometer from older configs is still supported; perMeter takes priority when both are set. -->
-  <TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="1.5" minimum="0" />
+  <TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="0.1" minimum="0" />
+  <!-- Example using Duke's casino tokens instead of gas: -->
+  <!-- <TravelCost enabled="true" item="casinoCoin" displayName="Dukes" perMeter="1" minimum="0" /> -->
 
   <!-- Short transport-style transition before travel. -->
   <!-- disableCamera briefly hides the trip. sound uses a loaded game audio key; set sound empty to disable audio. -->
