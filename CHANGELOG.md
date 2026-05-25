@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.3 - 2026-05-26 01:38 JST
+- Added `perMeter` travel cost configuration for finer distance-based cost tuning while keeping older `perKilometer` configs compatible.
+- Destination choices now show the configured travel cost before selecting a trip.
+- Added sound-key diagnostics for the optional travel transition sound and tried both bracketed and unbracketed sound keys when matching loaded audio data.
+- No save reset is required.
+
 ## 0.5.2 - 2026-05-26 01:22 JST
 - Fixed config loading for the travel cost and transition settings by using the active mod folder path provided by the game.
 - Added clearer startup logging for the loaded travel cost and transition settings.

@@ -361,6 +361,66 @@ internal static class VisitedTraderTeleportService
         }
 
         string soundName = sound.Trim();
+        bool foundSound = false;
+        foreach (string candidate in GetSoundCandidates(soundName))
+        {
+            if (!IsKnownSound(candidate))
+            {
+                continue;
+            }
+
+            foundSound = true;
+            PlayKnownTravelSound(player, candidate);
+            return;
+        }
+
+        if (!foundSound)
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Travel sound '{soundName}' was not found in loaded audio data. " +
+                "Try a sound key from the game's sounds.xml, or leave sound empty to disable it.");
+        }
+    }
+
+    private static IEnumerable<string> GetSoundCandidates(string soundName)
+    {
+        yield return soundName;
+        if (soundName.StartsWith("[", StringComparison.Ordinal) && soundName.EndsWith("]", StringComparison.Ordinal))
+        {
+            yield return soundName.Substring(1, soundName.Length - 2);
+        }
+        else
+        {
+            yield return "[" + soundName + "]";
+        }
+    }
+
+    private static bool IsKnownSound(string soundName)
+    {
+        try
+        {
+            return Audio.Manager.audioData != null && Audio.Manager.audioData.ContainsKey(soundName);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not inspect loaded audio data for '{soundName}': {ex.Message}");
+            return true;
+        }
+    }
+
+    private static void PlayKnownTravelSound(EntityPlayerLocal player, string soundName)
+    {
+        Debug.Log($"[VisitedTraderTeleport] Playing travel sound '{soundName}'.");
+
+        try
+        {
+            Audio.Manager.Play(player, soundName, 1f, false);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not play travel sound '{soundName}' on player entity: {ex.Message}");
+        }
+
         try
         {
             Audio.Manager.PlayInsidePlayerHead(soundName, player.entityId);

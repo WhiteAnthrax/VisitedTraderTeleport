@@ -33,7 +33,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
             Enabled = reader.ReadBoolean(),
             ItemName = reader.ReadString(),
             ItemDisplayName = reader.ReadString(),
-            PerKilometer = reader.ReadInt32(),
+            PerMeter = reader.ReadSingle(),
             Minimum = reader.ReadInt32()
         };
         destinations.Clear();
@@ -60,7 +60,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
         writer.ReadWrite(travelCost.Enabled);
         writer.ReadWrite(travelCost.ItemName ?? string.Empty);
         writer.ReadWrite(travelCost.ItemDisplayName ?? string.Empty);
-        writer.ReadWrite(travelCost.PerKilometer);
+        writer.ReadWrite(travelCost.PerMeter);
         writer.ReadWrite(travelCost.Minimum);
         writer.ReadWrite(destinations.Count);
 

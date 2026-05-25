@@ -5,19 +5,17 @@ namespace VisitedTraderTeleport;
 
 internal static class TravelCostService
 {
-    private const float MetersPerKilometer = 1000f;
-
     public static int CalculateCost(TraderDestination destination, EntityPlayer player, TravelCostSettings settings = null)
     {
         settings ??= GetEffectiveSettings();
-        if (destination == null || player == null || settings == null || !settings.Enabled || settings.PerKilometer <= 0)
+        if (destination == null || player == null || settings == null || !settings.Enabled || settings.PerMeter <= 0f)
         {
             return 0;
         }
 
         Vector3 delta = destination.Position - player.position;
         delta.y = 0f;
-        int distanceCost = Mathf.CeilToInt(delta.magnitude * settings.PerKilometer / MetersPerKilometer);
+        int distanceCost = Mathf.CeilToInt(delta.magnitude * settings.PerMeter);
         return Math.Max(settings.Minimum, distanceCost);
     }
 
