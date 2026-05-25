@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
@@ -10,6 +11,8 @@ internal static class DialogIds
     public const string TraderDialogId = "trader";
     public const string DestinationStatementId = "vtt_destinations";
     public const string DynamicResponsePrefix = "vtt_destination_";
+    public const string PagePreviousResponseId = "vtt_destination_page_previous";
+    public const string PageNextResponseId = "vtt_destination_page_next";
 }
 
 [HarmonyPatch(typeof(Dialog), nameof(Dialog.GetFirstStatment))]
@@ -42,6 +45,8 @@ internal static class DialogGetFirstStatementPatch
 [HarmonyPatch(typeof(DialogStatement), nameof(DialogStatement.GetResponses))]
 internal static class DialogStatementGetResponsesPatch
 {
+    internal const int DestinationsPerPage = 5;
+
     public static void Postfix(DialogStatement __instance, ref List<BaseResponseEntry> __result)
     {
         if (__instance?.ID != DialogIds.DestinationStatementId || __result == null)
@@ -59,9 +64,42 @@ internal static class DialogStatementGetResponsesPatch
 
         if (destinations.Count > 0)
         {
+            if (destinationState.TotalPages > 1)
+            {
+                dynamicEntries.Add(CreateInfoEntry(
+                    __instance,
+                    "vtt_page_info",
+                    VTTLocalization.Format(
+                        "vtt_page_info",
+                        destinationState.PageIndex + 1,
+                        destinationState.TotalPages,
+                        destinationState.TotalDestinationCount)));
+            }
+
             foreach (TraderDestination destination in destinations)
             {
                 dynamicEntries.Add(CreateDestinationEntry(__instance, destination, destinationState.Player));
+            }
+
+            if (destinationState.TotalPages > 1)
+            {
+                if (destinationState.PageIndex > 0)
+                {
+                    dynamicEntries.Add(CreatePageEntry(
+                        __instance,
+                        DialogIds.PagePreviousResponseId,
+                        VTTLocalization.Get("vtt_page_previous"),
+                        -1));
+                }
+
+                if (destinationState.PageIndex < destinationState.TotalPages - 1)
+                {
+                    dynamicEntries.Add(CreatePageEntry(
+                        __instance,
+                        DialogIds.PageNextResponseId,
+                        VTTLocalization.Get("vtt_page_next"),
+                        1));
+                }
             }
         }
 
@@ -105,6 +143,31 @@ internal static class DialogStatementGetResponsesPatch
         };
     }
 
+    private static BaseResponseEntry CreatePageEntry(DialogStatement statement, string id, string text, int delta)
+    {
+        var response = new DialogResponse(id)
+        {
+            Text = text,
+            OwnerDialog = statement.OwnerDialog,
+            Actions = new List<BaseDialogAction>(),
+            NextStatementID = DialogIds.DestinationStatementId
+        };
+
+        var action = new DialogActionVisitedTraderPage
+        {
+            ID = "page",
+            Value = delta.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            OwnerDialog = statement.OwnerDialog,
+            Owner = response
+        };
+        response.Actions.Add(action);
+
+        return new DialogResponseEntry(response.ID)
+        {
+            Response = response
+        };
+    }
+
     private static BaseResponseEntry CreateInfoEntry(DialogStatement statement, string id, string text)
     {
         var response = new DialogResponse(id)
@@ -128,6 +191,9 @@ internal sealed class DialogDestinationState
     public TraderDestination CurrentTrader;
     public AccessMode AccessMode;
     public int AllowedDestinationCount;
+    public int TotalDestinationCount;
+    public int PageIndex;
+    public int TotalPages;
     public List<TraderDestination> VisibleDestinations = new();
 
     public string CurrentTraderText => CurrentTrader?.DialogText ?? "unknown trader";
@@ -152,13 +218,26 @@ internal sealed class DialogDestinationState
             .ThenBy(destination => destination.AreaZ)
             .ToList();
 
+        int totalDestinationCount = visibleDestinations.Count;
+        int totalPages = Math.Max(1, (totalDestinationCount + DialogStatementGetResponsesPatch.DestinationsPerPage - 1) / DialogStatementGetResponsesPatch.DestinationsPerPage);
+        int pageIndex = Math.Min(Math.Max(0, DialogSessionStore.GetDestinationPage(dialog)), totalPages - 1);
+        DialogSessionStore.SetDestinationPage(dialog, pageIndex);
+
+        List<TraderDestination> pageDestinations = visibleDestinations
+            .Skip(pageIndex * DialogStatementGetResponsesPatch.DestinationsPerPage)
+            .Take(DialogStatementGetResponsesPatch.DestinationsPerPage)
+            .ToList();
+
         return new DialogDestinationState
         {
             Player = player,
             CurrentTrader = currentTrader,
             AccessMode = GetCurrentAccessMode(),
             AllowedDestinationCount = allowedDestinations.Count,
-            VisibleDestinations = visibleDestinations
+            TotalDestinationCount = totalDestinationCount,
+            PageIndex = pageIndex,
+            TotalPages = totalPages,
+            VisibleDestinations = pageDestinations
         };
     }
 

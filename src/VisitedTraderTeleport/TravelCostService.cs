@@ -45,6 +45,9 @@ internal static class TravelCostService
         }
 
         RemoveItems(player, itemValue, cost);
+        Debug.Log(
+            $"[VisitedTraderTeleport] Consumed travel cost for {GetPlayerName(player)}: " +
+            $"{cost} {settings.ItemName}.");
         return true;
     }
 
@@ -178,5 +181,12 @@ internal static class TravelCostService
         {
             GameManager.ShowTooltipMP(player, string.Empty, message);
         }
+    }
+
+    private static string GetPlayerName(EntityPlayer player)
+    {
+        return string.IsNullOrWhiteSpace(player?.PlayerDisplayName)
+            ? "unknown player"
+            : player.PlayerDisplayName;
     }
 }

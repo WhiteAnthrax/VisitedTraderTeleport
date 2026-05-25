@@ -350,23 +350,38 @@ internal static class VisitedTraderTeleportService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(settings.Sound))
+        PlayTravelSound(player, settings.Sound);
+    }
+
+    private static void PlayTravelSound(EntityPlayerLocal player, string sound)
+    {
+        if (player == null || string.IsNullOrWhiteSpace(sound))
         {
-            try
-            {
-                if (Audio.Manager.CheckGlobalPlayRequirements(settings.Sound))
-                {
-                    GameManager.Instance.PlaySoundAtPositionClient(player.position, settings.Sound, AudioRolloffMode.Linear, player.entityId);
-                }
-                else
-                {
-                    Debug.LogWarning($"[VisitedTraderTeleport] Travel sound '{settings.Sound}' did not meet play requirements and was skipped.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[VisitedTraderTeleport] Could not play travel sound '{settings.Sound}': {ex.Message}");
-            }
+            return;
+        }
+
+        string soundName = sound.Trim();
+        try
+        {
+            Audio.Manager.PlayInsidePlayerHead(soundName, player.entityId);
+            return;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not play travel sound '{soundName}' in player audio: {ex.Message}");
+        }
+
+        try
+        {
+            GameManager.Instance?.PlaySoundAtPositionClient(
+                player.position,
+                soundName,
+                AudioRolloffMode.Linear,
+                player.entityId);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not play travel sound '{soundName}' at player position: {ex.Message}");
         }
     }
 
