@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.9 - 2026-05-26 19:58 JST
+- Fixed a startup error when the optional destination-heading patch could not find the response-list binding method in the running game build.
+- No save reset is required.
+
 ## 0.5.8 - 2026-05-26 05:04 JST
 - Smoothed the travel transition so the default trip keeps the camera visible, shows clearer departure and arrival messages, and avoids stacking the generic teleport tooltip on top of the transport message.
 - Changed the sample transition config to `disableCamera="false"`; existing configs keep their current setting.

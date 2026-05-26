@@ -215,9 +215,37 @@ internal static class DialogRespondentNameGetBindingValuePatch
     }
 }
 
-[HarmonyPatch(typeof(XUiC_DialogResponseList), nameof(XUiC_DialogResponseList.GetBindingValueInternal))]
 internal static class DialogResponseListGetBindingValuePatch
 {
+    public static void Apply(Harmony harmony)
+    {
+        if (harmony == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var target = AccessTools.Method(
+                typeof(XUiC_DialogResponseList),
+                "GetBindingValueInternal",
+                new[] { typeof(string).MakeByRefType(), typeof(string) });
+
+            if (target == null)
+            {
+                Debug.LogWarning("[VisitedTraderTeleport] Dialog response-list heading patch was skipped because the game method was not found.");
+                return;
+            }
+
+            var prefix = AccessTools.Method(typeof(DialogResponseListGetBindingValuePatch), nameof(Prefix));
+            harmony.Patch(target, prefix: new HarmonyMethod(prefix));
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Dialog response-list heading patch was skipped: {ex.Message}");
+        }
+    }
+
     public static bool Prefix(
         XUiC_DialogResponseList __instance,
         ref string value,
