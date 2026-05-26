@@ -26,6 +26,10 @@
       <HintPath>..\..\refs\managed\UnityEngine.AudioModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>..\..\refs\managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\refs\managed\UnityEngine.dll</HintPath>
       <Private>false</Private>

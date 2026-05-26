@@ -11,7 +11,7 @@
 - Long destination lists are split into pages so every visited trader remains reachable.
 - Known vanilla and Wasteland Mod trader names are displayed cleanly when recognized.
 - The destination screen shows the active access mode and explains when no destinations are available.
-- Choosing a destination starts a short trader-transport transition, then moves the player to that trader's recorded position.
+- Choosing a destination shows a full-screen trader-transport overlay while travel is preparing and in progress, then moves the player to that trader's recorded position.
 - Optional distance-based travel costs can be enabled in config. The default cost item is gas, and destination choices show the cost before travel.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting. If the area still is not ready, the teleport is aborted instead of forcing the player into an unsafe destination.
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
