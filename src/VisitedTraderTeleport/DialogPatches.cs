@@ -227,7 +227,7 @@ internal static class DialogResponseListGetBindingValuePatch
         try
         {
             var target = AccessTools.Method(
-                typeof(XUiC_DialogResponseList),
+                typeof(XUiController),
                 "GetBindingValueInternal",
                 new[] { typeof(string).MakeByRefType(), typeof(string) });
 
@@ -247,23 +247,28 @@ internal static class DialogResponseListGetBindingValuePatch
     }
 
     public static bool Prefix(
-        XUiC_DialogResponseList __instance,
-        ref string value,
-        string bindingName,
+        XUiController __instance,
+        ref string _value,
+        string _bindingName,
         ref bool __result)
     {
-        if (!string.Equals(bindingName, "respondentname", StringComparison.OrdinalIgnoreCase))
+        if (__instance is not XUiC_DialogResponseList responseList)
         {
             return true;
         }
 
-        Dialog dialog = __instance?.CurrentDialog;
+        if (!string.Equals(_bindingName, "respondentname", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        Dialog dialog = responseList.CurrentDialog;
         if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
         {
             return true;
         }
 
-        value = DestinationStatementFormatter.FormatHeading(dialog, value);
+        _value = DestinationStatementFormatter.FormatHeading(dialog, _value);
         __result = true;
         return false;
     }
