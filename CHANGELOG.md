@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.14 - 2026-05-27 01:38 JST
+- Shortened travel-cost labels in trader dialog choices so Japanese and other localized item names are less likely to be clipped by the game's dialog panel.
+- No save reset is required.
+
 ## 0.5.13 - 2026-05-27 00:43 JST
 - Removed the `disableCamera` transition config option; travel now uses the full-screen transition without exposing a separate camera toggle.
 - Added the configured travel-cost rate to the main "Travel to a visited trader" dialog choice.
