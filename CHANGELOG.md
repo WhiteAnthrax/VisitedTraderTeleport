@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.16 - 2026-05-27 02:41 JST
+- Fixed long-distance transport failing when the destination chunk preparation never reached the game's ready state.
+- Made the destination screen update the visible response-list heading directly so the current access mode and page status are shown reliably.
+- No save reset is required.
+
 ## 0.5.15 - 2026-05-27 01:54 JST
 - Renamed the trader dialog entry to better match the transport-service style of travel while keeping the label short enough for the dialog panel.
 - No save reset is required.
