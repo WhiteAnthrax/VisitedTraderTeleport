@@ -60,7 +60,6 @@ internal static class DialogStatementGetResponsesPatch
         if (__instance.OwnerDialog?.ID == DialogIds.TraderDialogId && __instance.ID == DialogIds.StartStatementId)
         {
             UpdateOpenResponseText(__result);
-            InsertStatusEntry(__instance, __result, DialogIds.StartStatusResponseId, DestinationStatementFormatter.FormatStartStatus());
             return;
         }
 
@@ -296,14 +295,6 @@ internal static class DestinationStatementFormatter
         }
 
         return VTTLocalization.Format("vtt_compact_status", modeName);
-    }
-
-    public static string FormatStartStatus()
-    {
-        string mode = VTTLocalization.Format(
-            "vtt_compact_status",
-            TraderDialogStatusFormatter.FormatModeName(DialogDestinationState.GetCurrentAccessMode()));
-        return FormatStatusResponse(mode);
     }
 
     public static string FormatDestinationStatus(DialogDestinationState destinationState)
