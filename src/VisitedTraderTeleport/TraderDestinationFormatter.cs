@@ -45,11 +45,6 @@ internal static class TraderDestinationFormatter
         return FormatTraderName(destination?.DisplayName);
     }
 
-    public static string FormatEntityName(EntityTrader trader)
-    {
-        return FormatTraderName(trader?.EntityName);
-    }
-
     public static string FormatTransportDestination(TraderDestination destination)
     {
         if (destination == null)

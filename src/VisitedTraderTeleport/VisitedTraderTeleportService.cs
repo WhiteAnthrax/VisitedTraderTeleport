@@ -253,7 +253,6 @@ internal static class VisitedTraderTeleportService
         string message = paidCost > 0
             ? VTTLocalization.Format("vtt_transport_departure_paid", paidCost, GetEffectiveCostItemDisplayName(), destinationName)
             : VTTLocalization.Format("vtt_transport_departure", destinationName);
-        GameManager.ShowTooltip(player, message, false, false, Math.Max(3f, settings.DurationSeconds));
         TravelTransitionOverlay.Show(message);
 
         try

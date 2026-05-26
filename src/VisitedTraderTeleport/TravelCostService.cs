@@ -97,6 +97,11 @@ internal static class TravelCostService
 
     public static string FormatOpenResponseCostSuffix()
     {
+        return string.Empty;
+    }
+
+    public static string FormatStatusCostInfo()
+    {
         TravelCostSettings settings = GetEffectiveSettings();
         if (settings == null || !settings.Enabled || settings.PerMeter <= 0f)
         {
@@ -106,8 +111,8 @@ internal static class TravelCostService
         GetDisplayRate(settings.PerMeter, out int amount, out int meters);
         string itemName = FormatItemDisplayName(settings);
         return settings.Minimum > 0
-            ? VTTLocalization.Format("vtt_open_cost_suffix_minimum", amount, itemName, meters, settings.Minimum)
-            : VTTLocalization.Format("vtt_open_cost_suffix", amount, itemName, meters);
+            ? VTTLocalization.Format("vtt_cost_info_minimum", amount, itemName, meters, settings.Minimum)
+            : VTTLocalization.Format("vtt_cost_info", amount, itemName, meters);
     }
 
     public static string FormatItemDisplayName(TravelCostSettings settings)
