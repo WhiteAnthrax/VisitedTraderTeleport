@@ -12,7 +12,7 @@
 - Known vanilla and Wasteland Mod trader names are displayed cleanly when recognized.
 - The destination screen shows the active access mode and explains when no destinations are available.
 - Choosing a destination shows a full-screen trader-transport overlay while travel is preparing and in progress, then moves the player to that trader's recorded position.
-- Optional distance-based travel costs can be enabled in config. The default cost item is gas, and destination choices show the cost before travel.
+- Optional distance-based travel costs can be enabled in config. The default cost item is gas, and the dialog shows the configured rate plus the trip cost before travel.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting. If the area still is not ready, the teleport is aborted instead of forcing the player into an unsafe destination.
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
@@ -81,7 +81,7 @@ Travel is free by default. To charge for travel, edit:
 Change `TravelCost`:
 
 ```xml
-<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="0.1" minimum="0" />
+<TravelCost enabled="false" item="ammoGasCan" perMeter="0.1" minimum="0" />
 ```
 
 Useful values:
@@ -91,27 +91,27 @@ Useful values:
 - `item`
   Internal item name to consume. The default `ammoGasCan` is vanilla gas.
 - `displayName`
-  Text shown in destination labels and messages.
+  Optional fallback text for custom items that do not have a game localization entry. Vanilla items use the game's localized item name.
 - `perMeter`
   Item count charged per meter of straight-line distance. Decimal values are supported, so `0.001` means 1 item per kilometer.
 - `minimum`
   Minimum item count for any paid trip.
 
-Older configs that use `perKilometer` still work. If both `perMeter` and `perKilometer` are present, `perMeter` is used.
+Older configs that use `perKilometer` still work. If both `perMeter` and `perKilometer` are present, `perMeter` is used. Invalid negative, zero, or extremely large cost values are corrected during config load and logged.
 
 To charge Duke's casino tokens instead of gas, use `casinoCoin`:
 
 ```xml
-<TravelCost enabled="true" item="casinoCoin" displayName="Dukes" perMeter="1" minimum="0" />
+<TravelCost enabled="true" item="casinoCoin" perMeter="1" minimum="0" />
 ```
 
 The travel transition is enabled by default:
 
 ```xml
-<TravelTransition enabled="true" durationSeconds="5" disableCamera="false" sound="suv_startup" soundRepeatSeconds="2" />
+<TravelTransition enabled="true" durationSeconds="5" sound="suv_startup" soundRepeatSeconds="2" />
 ```
 
-Set `enabled="false"` to keep travel instant. Leave `disableCamera="false"` for the smoother default visible transition, or set it to `true` if you prefer the trip to hide the view briefly. Leave `sound` empty to disable only the audio. Set `soundRepeatSeconds="0"` to play the configured sound only once. The sound value must match a loaded game audio key; if it cannot be found, the mod writes a warning to the log.
+Set `enabled="false"` to keep travel instant. Leave `sound` empty to disable only the audio. Set `soundRepeatSeconds="0"` to play the configured sound only once. The sound value must match a loaded game audio key; if it cannot be found, the mod writes a warning to the log.
 
 ## Multiplayer Behavior
 

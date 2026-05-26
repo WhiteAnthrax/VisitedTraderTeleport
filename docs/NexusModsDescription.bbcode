@@ -94,21 +94,21 @@ Use [b]personal[/b], [b]party[/b], or [b]shared[/b].
 Optional travel cost:
 
 [quote]
-<TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="0.1" minimum="0" />
+<TravelCost enabled="false" item="ammoGasCan" perMeter="0.1" minimum="0" />
 [/quote]
 
-Set [b]enabled[/b] to [b]true[/b] to charge for travel. The default item is vanilla gas. New configs can use [b]perMeter[/b] for finer tuning; older [b]perKilometer[/b] configs still work.
+Set [b]enabled[/b] to [b]true[/b] to charge for travel. The default item is vanilla gas, shown with the game's localized item name. New configs can use [b]perMeter[/b] for finer tuning; older [b]perKilometer[/b] configs still work. Invalid negative, zero, or extremely large cost values are corrected during config load and logged. [b]displayName[/b] is only needed as a fallback for custom items without a game localization entry.
 
 To charge Duke's casino tokens instead of gas:
 
 [quote]
-<TravelCost enabled="true" item="casinoCoin" displayName="Dukes" perMeter="1" minimum="0" />
+<TravelCost enabled="true" item="casinoCoin" perMeter="1" minimum="0" />
 [/quote]
 
 Travel transition:
 
 [quote]
-<TravelTransition enabled="true" durationSeconds="5" disableCamera="false" sound="suv_startup" soundRepeatSeconds="2" />
+<TravelTransition enabled="true" durationSeconds="5" sound="suv_startup" soundRepeatSeconds="2" />
 [/quote]
 
 Restart the dedicated server, host process, or single-player game after changing the config.

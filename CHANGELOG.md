@@ -1,5 +1,12 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.13 - 2026-05-27 00:43 JST
+- Removed the `disableCamera` transition config option; travel now uses the full-screen transition without exposing a separate camera toggle.
+- Added the configured travel-cost rate to the main "Travel to a visited trader" dialog choice.
+- Travel cost labels now prefer the game's localized item name, with `displayName` kept only as a fallback for custom items.
+- Clamped invalid travel-cost and transition config values during load so negative, zero, or extreme numbers do not produce unsafe behavior.
+- No save reset is required.
+
 ## 0.5.12 - 2026-05-27 00:29 JST
 - Restored the destination screen access mode and page status by applying the response-list heading patch to the base dialog binding method used by the game.
 - Stopped directly toggling the player camera during travel so `disableCamera` no longer flips camera-control behavior while the overlay is active.

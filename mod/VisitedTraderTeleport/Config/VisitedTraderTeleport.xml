@@ -9,13 +9,15 @@
 
   <!-- Optional travel cost. Leave enabled=false for the current free-travel behavior. -->
   <!-- item is the internal item name to consume. ammoGasCan is vanilla gas. -->
+  <!-- displayName is optional and only used when the item has no game localization entry. -->
   <!-- perMeter is charged by straight-line distance and rounded up to a whole item count. -->
+  <!-- Invalid negative, zero, or extremely large cost values are corrected during config load. -->
   <!-- perKilometer from older configs is still supported; perMeter takes priority when both are set. -->
-  <TravelCost enabled="false" item="ammoGasCan" displayName="gas" perMeter="0.1" minimum="0" />
+  <TravelCost enabled="false" item="ammoGasCan" perMeter="0.1" minimum="0" />
   <!-- Example using Duke's casino tokens instead of gas: -->
-  <!-- <TravelCost enabled="true" item="casinoCoin" displayName="Dukes" perMeter="1" minimum="0" /> -->
+  <!-- <TravelCost enabled="true" item="casinoCoin" perMeter="1" minimum="0" /> -->
 
   <!-- Short transport-style transition before travel. -->
-  <!-- sound uses a loaded game audio key; set sound empty to disable audio. Set disableCamera true only if you prefer a hidden-view transition. -->
-  <TravelTransition enabled="true" durationSeconds="5" disableCamera="false" sound="suv_startup" soundRepeatSeconds="2" />
+  <!-- sound uses a loaded game audio key; set sound empty to disable audio. -->
+  <TravelTransition enabled="true" durationSeconds="5" sound="suv_startup" soundRepeatSeconds="2" />
 </VisitedTraderTeleport>

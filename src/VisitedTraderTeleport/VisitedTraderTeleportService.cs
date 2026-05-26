@@ -466,9 +466,7 @@ internal static class VisitedTraderTeleportService
         TravelCostSettings settings = VisitedTraderNetwork.IsClientOnly
             ? VisitedTraderClientState.ServerTravelCost
             : VisitedTraderTeleportConfig.TravelCost;
-        return string.IsNullOrWhiteSpace(settings.ItemDisplayName)
-            ? settings.ItemName
-            : settings.ItemDisplayName;
+        return TravelCostService.FormatItemDisplayName(settings);
     }
 
     private static void ClearClientTransitionEffect(EntityPlayerLocal player, TravelTransitionSettings settings)
@@ -496,12 +494,7 @@ internal static class VisitedTraderTeleportService
             return 0f;
         }
 
-        if (settings.DisableCamera)
-        {
-            return Math.Min(HiddenTransitionTeleportMaxDelaySeconds, duration * 0.35f);
-        }
-
-        return Math.Max(0f, duration - TransitionArrivalLeadSeconds);
+        return Math.Min(HiddenTransitionTeleportMaxDelaySeconds, duration * 0.35f);
     }
 
     private static float GetTransitionHoldAfterTeleport(TravelTransitionSettings settings)
