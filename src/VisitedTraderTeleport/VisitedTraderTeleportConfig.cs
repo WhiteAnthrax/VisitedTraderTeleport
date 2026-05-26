@@ -91,7 +91,8 @@ internal static class VisitedTraderTeleportConfig
                 $"perMeter={loadedTravelCost.PerMeter:0.####}, minimum={loadedTravelCost.Minimum}, " +
                 $"transitionEnabled={loadedTravelTransition.Enabled}, " +
                 $"duration={loadedTravelTransition.DurationSeconds:0.##}, " +
-                $"disableCamera={loadedTravelTransition.DisableCamera}, sound={loadedTravelTransition.Sound}.");
+                $"disableCamera={loadedTravelTransition.DisableCamera}, sound={loadedTravelTransition.Sound}, " +
+                $"soundRepeatSeconds={loadedTravelTransition.SoundRepeatSeconds:0.##}.");
         }
         catch (Exception ex)
         {
@@ -148,6 +149,7 @@ internal static class VisitedTraderTeleportConfig
         }
 
         settings.Sound = GetStringAttribute(element, "sound", settings.Sound);
+        settings.SoundRepeatSeconds = Math.Max(0f, GetFloatAttribute(element, "soundRepeatSeconds", settings.SoundRepeatSeconds));
         return settings;
     }
 

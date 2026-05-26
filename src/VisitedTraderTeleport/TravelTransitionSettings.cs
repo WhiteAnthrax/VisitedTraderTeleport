@@ -6,6 +6,7 @@ internal sealed class TravelTransitionSettings
     public float DurationSeconds { get; set; } = 5f;
     public bool DisableCamera { get; set; } = false;
     public string Sound { get; set; } = "suv_startup";
+    public float SoundRepeatSeconds { get; set; } = 2f;
 
     public static TravelTransitionSettings Default()
     {
@@ -19,7 +20,8 @@ internal sealed class TravelTransitionSettings
             Enabled = Enabled,
             DurationSeconds = DurationSeconds,
             DisableCamera = DisableCamera,
-            Sound = Sound
+            Sound = Sound,
+            SoundRepeatSeconds = SoundRepeatSeconds
         };
     }
 }

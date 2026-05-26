@@ -298,8 +298,15 @@ internal static class VisitedTraderTeleportService
             ApplyClientTransitionStart(player, destinationName, paidCost, settings);
 
             float finishAt = Time.realtimeSinceStartup + Math.Max(0f, settings.DurationSeconds);
+            float nextSoundAt = Time.realtimeSinceStartup + settings.SoundRepeatSeconds;
             while (Time.realtimeSinceStartup < finishAt)
             {
+                if (settings.SoundRepeatSeconds > 0f && Time.realtimeSinceStartup >= nextSoundAt)
+                {
+                    PlayTravelSound(player, settings.Sound);
+                    nextSoundAt = Time.realtimeSinceStartup + settings.SoundRepeatSeconds;
+                }
+
                 yield return null;
             }
 
@@ -348,6 +355,16 @@ internal static class VisitedTraderTeleportService
             : VTTLocalization.Format("vtt_transport_departure", destinationName);
         GameManager.ShowTooltip(player, message, false, false, Math.Max(3f, settings.DurationSeconds));
         TravelTransitionOverlay.Show(message);
+
+        try
+        {
+            player.SetControllable(false);
+            player.ClearMovementInputs();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not block player control for travel transition: {ex.Message}");
+        }
 
         if (settings.DisableCamera)
         {
@@ -468,18 +485,22 @@ internal static class VisitedTraderTeleportService
 
     private static void ClearClientTransitionEffect(EntityPlayerLocal player, TravelTransitionSettings settings)
     {
-        if (player == null || !settings.DisableCamera)
+        if (player == null)
         {
             return;
         }
 
         try
         {
-            player.EnableCamera(true);
+            player.SetControllable(true);
+            if (settings.DisableCamera)
+            {
+                player.EnableCamera(true);
+            }
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[VisitedTraderTeleport] Could not restore camera after travel transition: {ex.Message}");
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not restore player control after travel transition: {ex.Message}");
         }
     }
 
@@ -621,6 +642,16 @@ internal static class VisitedTraderTeleportService
                 ? VTTLocalization.Get("vtt_preparing_travel")
                 : VTTLocalization.Format("vtt_preparing_travel_to", destinationName);
             TravelTransitionOverlay.Show(message);
+            try
+            {
+                localPlayer.SetControllable(false);
+                localPlayer.ClearMovementInputs();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[VisitedTraderTeleport] Could not block player control while preparing travel: {ex.Message}");
+            }
+
             GameManager.ShowTooltip(localPlayer, message, false, false, 2f);
         }
     }
@@ -630,6 +661,15 @@ internal static class VisitedTraderTeleportService
         if (player is EntityPlayerLocal localPlayer)
         {
             TravelTransitionOverlay.Hide();
+            try
+            {
+                localPlayer.SetControllable(true);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[VisitedTraderTeleport] Could not restore player control after failed travel preparation: {ex.Message}");
+            }
+
             GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_destination_not_ready"), false, false, 4f);
         }
     }
