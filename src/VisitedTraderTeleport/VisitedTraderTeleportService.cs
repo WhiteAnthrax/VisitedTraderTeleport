@@ -8,7 +8,6 @@ namespace VisitedTraderTeleport;
 internal static class VisitedTraderTeleportService
 {
     private const float TeleportVerticalClearance = 0.25f;
-    private const float PrepareTimeoutSeconds = 8f;
     private const int PrepareChunkViewDim = 3;
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshHoldSeconds = 5f;
@@ -16,7 +15,6 @@ internal static class VisitedTraderTeleportService
     private const float TransitionArrivalLeadSeconds = 0.35f;
     private const float HiddenTransitionTeleportMaxDelaySeconds = 1.5f;
 
-    private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> ClientVisualRefreshObservers = new();
     private static readonly HashSet<int> PendingTeleports = new();
 
@@ -34,42 +32,12 @@ internal static class VisitedTraderTeleportService
         }
 
         Vector3 target = ResolveTarget(destination);
-        World world = GameManager.Instance?.World;
         if (!TravelCostService.HasRequiredCost(player, destination))
         {
             return;
         }
 
-        if (NeedsPreparation(world, target) && TryStartPreparedTeleport(player, destination, target))
-        {
-            Debug.Log(
-                $"[VisitedTraderTeleport] Preparing destination for {player.PlayerDisplayName}: " +
-                $"{destination.DialogText}, target=({target.x:0.##}, {target.y:0.##}, {target.z:0.##}), " +
-                $"timeout={PrepareTimeoutSeconds:0.#}s.");
-            ShowPreparingTravel(player, destination);
-            return;
-        }
-
         StartTransitionAndTeleport(player, destination, target, false);
-    }
-
-    private static bool TryStartPreparedTeleport(EntityPlayer player, TraderDestination destination, Vector3 target)
-    {
-        GameManager gameManager = GameManager.Instance;
-        World world = gameManager?.World;
-        if (gameManager == null || world == null)
-        {
-            return false;
-        }
-
-        int entityId = player.entityId;
-        if (PreparationObservers.ContainsKey(entityId))
-        {
-            return true;
-        }
-
-        gameManager.StartCoroutine(PrepareAndTeleport(player, destination, target));
-        return true;
     }
 
     public static void PrepareClientDestinationVisuals(EntityPlayerLocal player, TraderDestination destination)
@@ -80,82 +48,6 @@ internal static class VisitedTraderTeleportService
         }
 
         StartClientVisualRefresh(player, ResolveTarget(destination));
-    }
-
-    private static IEnumerator PrepareAndTeleport(EntityPlayer player, TraderDestination destination, Vector3 initialTarget)
-    {
-        GameManager gameManager = GameManager.Instance;
-        World world = gameManager?.World;
-        ChunkManager.ChunkObserver observer = null;
-        int entityId = player?.entityId ?? -1;
-
-        try
-        {
-            if (gameManager != null && world != null && player != null)
-            {
-                observer = gameManager.AddChunkObserver(
-                    initialTarget,
-                    !GameManager.IsDedicatedServer,
-                    PrepareChunkViewDim,
-                    player.entityId);
-                PreparationObservers[player.entityId] = observer;
-            }
-
-            float timeoutAt = Time.realtimeSinceStartup + PrepareTimeoutSeconds;
-            while (player != null &&
-                   world != null &&
-                   !IsDestinationReady(world, initialTarget) &&
-                   Time.realtimeSinceStartup < timeoutAt)
-            {
-                yield return null;
-            }
-
-            if (player == null || destination == null || world == null)
-            {
-                yield break;
-            }
-
-            Vector3 finalTarget = ResolveTarget(destination);
-            if (!IsDestinationReady(world, finalTarget))
-            {
-                Debug.LogWarning(
-                    $"[VisitedTraderTeleport] Destination was not ready after preparation; teleport aborted for " +
-                    $"{player.PlayerDisplayName}: {destination.DialogText}, " +
-                    $"target=({finalTarget.x:0.##}, {finalTarget.y:0.##}, {finalTarget.z:0.##}).");
-                ShowDestinationNotReadyTooltip(player);
-                yield break;
-            }
-
-            if (player != null && destination != null)
-            {
-                Debug.Log(
-                    $"[VisitedTraderTeleport] Destination ready after preparation for {player.PlayerDisplayName}: " +
-                    $"{destination.DialogText}.");
-                if (!TravelCostService.TryConsumeCost(player, destination, out int _))
-                {
-                    yield break;
-                }
-
-                StartTransitionAndTeleport(player, destination, finalTarget, true);
-            }
-        }
-        finally
-        {
-            if (gameManager != null && observer != null)
-            {
-                gameManager.RemoveChunkObserver(observer);
-            }
-
-            if (entityId >= 0)
-            {
-                PreparationObservers.Remove(entityId);
-            }
-        }
-    }
-
-    private static bool NeedsPreparation(World world, Vector3 target)
-    {
-        return world != null && !IsDestinationReady(world, target);
     }
 
     private static bool IsDestinationReady(World world, Vector3 target)
@@ -607,47 +499,6 @@ internal static class VisitedTraderTeleportService
         catch (Exception ex)
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Could not force client chunk visual update: {ex.Message}");
-        }
-    }
-
-    private static void ShowPreparingTravel(EntityPlayer player, TraderDestination destination)
-    {
-        if (player is EntityPlayerLocal localPlayer)
-        {
-            string destinationName = TraderDestinationFormatter.FormatName(destination);
-            string message = string.IsNullOrWhiteSpace(destinationName)
-                ? VTTLocalization.Get("vtt_preparing_travel")
-                : VTTLocalization.Format("vtt_preparing_travel_to", destinationName);
-            TravelTransitionOverlay.Show(message);
-            try
-            {
-                localPlayer.SetControllable(false);
-                localPlayer.ClearMovementInputs();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[VisitedTraderTeleport] Could not block player control while preparing travel: {ex.Message}");
-            }
-
-            GameManager.ShowTooltip(localPlayer, message, false, false, 2f);
-        }
-    }
-
-    private static void ShowDestinationNotReadyTooltip(EntityPlayer player)
-    {
-        if (player is EntityPlayerLocal localPlayer)
-        {
-            TravelTransitionOverlay.Hide();
-            try
-            {
-                localPlayer.SetControllable(true);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[VisitedTraderTeleport] Could not restore player control after failed travel preparation: {ex.Message}");
-            }
-
-            GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_destination_not_ready"), false, false, 4f);
         }
     }
 

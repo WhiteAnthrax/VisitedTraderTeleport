@@ -4,7 +4,7 @@
   <DisplayName value="Travel Between Visited Traders" />
   <Description value="Adds a trader dialog option to travel to traders you have already visited." />
   <Author value="WhiteAnthrax" />
-  <Version value="0.5.15" />
+  <Version value="0.5.16" />
   <Website value="" />
   <SkipWithAntiCheat value="true" />
 </xml>

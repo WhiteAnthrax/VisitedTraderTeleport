@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 
@@ -298,6 +299,52 @@ internal static class DialogResponseListGetBindingValuePatch
     }
 }
 
+[HarmonyPatch(typeof(XUiC_DialogResponseList))]
+internal static class DialogResponseListHeadingPatch
+{
+    private static readonly FieldInfo ResponderNameField = AccessTools.Field(
+        typeof(XUiC_DialogResponseList),
+        "lblResponderName");
+
+    [HarmonyPostfix]
+    [HarmonyPatch(nameof(XUiC_DialogResponseList.OnOpen))]
+    public static void OnOpenPostfix(XUiC_DialogResponseList __instance)
+    {
+        UpdateHeading(__instance);
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(nameof(XUiC_DialogResponseList.Refresh))]
+    public static void RefreshPostfix(XUiC_DialogResponseList __instance)
+    {
+        UpdateHeading(__instance);
+    }
+
+    private static void UpdateHeading(XUiC_DialogResponseList responseList)
+    {
+        try
+        {
+            Dialog dialog = responseList?.CurrentDialog;
+            if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
+            {
+                return;
+            }
+
+            if (ResponderNameField?.GetValue(responseList) is not XUiV_Label label)
+            {
+                return;
+            }
+
+            string heading = DestinationStatementFormatter.FormatHeading(dialog, label.Text);
+            label.SetTextImmediately(heading);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not update destination heading: {ex.Message}");
+        }
+    }
+}
+
 internal static class DestinationStatementFormatter
 {
     public static string Format(Dialog dialog)
@@ -329,6 +376,11 @@ internal static class DestinationStatementFormatter
     public static string FormatCompactStatus(Dialog dialog)
     {
         DialogDestinationState destinationState = DialogDestinationState.Create(dialog);
+        return FormatCompactStatus(destinationState);
+    }
+
+    public static string FormatCompactStatus(DialogDestinationState destinationState)
+    {
         string modeName = TraderDialogStatusFormatter.FormatModeName(destinationState.AccessMode);
         if (destinationState.TotalDestinationCount > 0 && destinationState.TotalPages > 1)
         {
