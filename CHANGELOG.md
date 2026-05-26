@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.11 - 2026-05-27 00:08 JST
+- Blocked player control and overlay input during the travel transition so the trip cannot be played through like a normal dialog moment.
+- Added `soundRepeatSeconds` to keep the configured travel sound active during longer transitions.
+- No save reset is required.
+
 ## 0.5.10 - 2026-05-26 20:08 JST
 - Added a full-screen travel overlay while trader transport is preparing and in progress, then clears it before showing the arrival message.
 - No save reset is required.

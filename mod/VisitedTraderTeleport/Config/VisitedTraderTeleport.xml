@@ -17,5 +17,5 @@
 
   <!-- Short transport-style transition before travel. -->
   <!-- sound uses a loaded game audio key; set sound empty to disable audio. Set disableCamera true only if you prefer a hidden-view transition. -->
-  <TravelTransition enabled="true" durationSeconds="5" disableCamera="false" sound="suv_startup" />
+  <TravelTransition enabled="true" durationSeconds="5" disableCamera="false" sound="suv_startup" soundRepeatSeconds="2" />
 </VisitedTraderTeleport>

@@ -75,6 +75,16 @@ internal sealed class TravelTransitionOverlay : MonoBehaviour
         GUI.Label(new Rect(x, y, width, 80f), message, messageStyle);
         GUI.Label(new Rect(x, y + 74f, width, 44f), VTTLocalization.Get("vtt_transport_overlay_hint"), hintStyle);
         GUI.color = previousColor;
+
+        Event current = Event.current;
+        if (current != null &&
+            (current.isMouse ||
+             current.isKey ||
+             current.type == EventType.ScrollWheel ||
+             current.type == EventType.MouseDrag))
+        {
+            current.Use();
+        }
     }
 
     private void EnsureStyles()

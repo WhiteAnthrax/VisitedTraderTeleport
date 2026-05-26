@@ -25,7 +25,8 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
             Enabled = reader.ReadBoolean(),
             DurationSeconds = reader.ReadSingle(),
             DisableCamera = reader.ReadBoolean(),
-            Sound = reader.ReadString()
+            Sound = reader.ReadString(),
+            SoundRepeatSeconds = reader.ReadSingle()
         };
     }
 
@@ -38,11 +39,12 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
         writer.ReadWrite(settings.DurationSeconds);
         writer.ReadWrite(settings.DisableCamera);
         writer.ReadWrite(settings.Sound ?? string.Empty);
+        writer.ReadWrite(settings.SoundRepeatSeconds);
     }
 
     public override int GetLength()
     {
-        return 24 +
+        return 28 +
                (destinationName?.Length ?? 0) +
                (settings.Sound?.Length ?? 0);
     }
