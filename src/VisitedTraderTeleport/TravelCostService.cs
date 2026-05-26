@@ -42,17 +42,24 @@ internal static class TravelCostService
             return false;
         }
 
-        int available = CountItems(player, itemValue);
+        int available = CountItems(player, itemValue, out int inventoryCount, out int bagCount);
         if (available < cost)
         {
+            Debug.Log(
+                $"[VisitedTraderTeleport] Travel cost blocked for {GetPlayerName(player)}: " +
+                $"need {cost} {settings.ItemName}, available {available} " +
+                $"(inventory={inventoryCount}, bag={bagCount}).");
             ShowInsufficientCost(player, cost, available, settings);
             return false;
         }
 
         RemoveItems(player, itemValue, cost);
+        int remaining = CountItems(player, itemValue, out int remainingInventory, out int remainingBag);
         Debug.Log(
             $"[VisitedTraderTeleport] Consumed travel cost for {GetPlayerName(player)}: " +
-            $"{cost} {settings.ItemName}.");
+            $"{cost} {settings.ItemName}; before={available} " +
+            $"(inventory={inventoryCount}, bag={bagCount}), after={remaining} " +
+            $"(inventory={remainingInventory}, bag={remainingBag}).");
         return true;
     }
 
@@ -72,9 +79,13 @@ internal static class TravelCostService
             return false;
         }
 
-        int available = CountItems(player, itemValue);
+        int available = CountItems(player, itemValue, out int inventoryCount, out int bagCount);
         if (available < cost)
         {
+            Debug.Log(
+                $"[VisitedTraderTeleport] Travel cost check failed for {GetPlayerName(player)}: " +
+                $"need {cost} {settings.ItemName}, available {available} " +
+                $"(inventory={inventoryCount}, bag={bagCount}).");
             ShowInsufficientCost(player, cost, available, settings);
             return false;
         }
@@ -160,25 +171,26 @@ internal static class TravelCostService
         return itemValue != null;
     }
 
-    private static int CountItems(EntityPlayer player, ItemValue itemValue)
+    private static int CountItems(EntityPlayer player, ItemValue itemValue, out int inventoryCount, out int bagCount)
     {
+        inventoryCount = 0;
+        bagCount = 0;
         if (player == null || itemValue == null)
         {
             return 0;
         }
 
-        int count = 0;
         if (player.inventory != null)
         {
-            count += player.inventory.GetItemCount(itemValue, false, -1, -1, false);
+            inventoryCount = player.inventory.GetItemCount(itemValue, false, -1, -1, false);
         }
 
         if (player.bag != null)
         {
-            count += player.bag.GetItemCount(itemValue, -1, -1, false);
+            bagCount = player.bag.GetItemCount(itemValue, -1, -1, false);
         }
 
-        return count;
+        return inventoryCount + bagCount;
     }
 
     private static void RemoveItems(EntityPlayer player, ItemValue itemValue, int count)

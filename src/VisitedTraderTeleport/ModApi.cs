@@ -11,26 +11,40 @@ public sealed class ModApi : IModApi
     private const int PreferredSnapshotPackageId = 242;
     private const int PreferredTeleportRequestPackageId = 243;
     private const int PreferredTravelTransitionPackageId = 244;
+    private static bool isRegisteringNetPackages;
 
     public void InitMod(Mod _modInstance)
     {
         VisitedTraderTeleportConfig.Configure(_modInstance);
-        RegisterNetPackages();
         var harmony = new Harmony("anthr.7d2d.visitedtraderteleport");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
+        RegisterNetPackages("mod init");
         Debug.Log("[VisitedTraderTeleport] Loaded.");
     }
 
-    private static void RegisterNetPackages()
+    internal static void RegisterNetPackages(string reason)
     {
-        RegisterNetPackage(PreferredVisitReportPackageId, typeof(NetPackageVisitedTraderVisitReport));
-        RegisterNetPackage(PreferredSnapshotRequestPackageId, typeof(NetPackageVisitedTraderSnapshotRequest));
-        RegisterNetPackage(PreferredSnapshotPackageId, typeof(NetPackageVisitedTraderSnapshot));
-        RegisterNetPackage(PreferredTeleportRequestPackageId, typeof(NetPackageVisitedTraderTeleportRequest));
-        RegisterNetPackage(PreferredTravelTransitionPackageId, typeof(NetPackageVisitedTraderTravelTransition));
+        if (isRegisteringNetPackages)
+        {
+            return;
+        }
+
+        isRegisteringNetPackages = true;
+        try
+        {
+            RegisterNetPackage(PreferredVisitReportPackageId, typeof(NetPackageVisitedTraderVisitReport), reason);
+            RegisterNetPackage(PreferredSnapshotRequestPackageId, typeof(NetPackageVisitedTraderSnapshotRequest), reason);
+            RegisterNetPackage(PreferredSnapshotPackageId, typeof(NetPackageVisitedTraderSnapshot), reason);
+            RegisterNetPackage(PreferredTeleportRequestPackageId, typeof(NetPackageVisitedTraderTeleportRequest), reason);
+            RegisterNetPackage(PreferredTravelTransitionPackageId, typeof(NetPackageVisitedTraderTravelTransition), reason);
+        }
+        finally
+        {
+            isRegisteringNetPackages = false;
+        }
     }
 
-    private static void RegisterNetPackage(int preferredPackageId, System.Type packageType)
+    private static void RegisterNetPackage(int preferredPackageId, System.Type packageType, string reason)
     {
         try
         {
@@ -38,7 +52,7 @@ public sealed class ModApi : IModApi
             if (mappings == null || mappings.Length == 0)
             {
                 Debug.LogWarning(
-                    $"[VisitedTraderTeleport] Could not register {packageType.Name}: package mappings are not available.");
+                    $"[VisitedTraderTeleport] Could not register {packageType.Name} during {reason}: package mappings are not available.");
                 return;
             }
 
@@ -52,7 +66,7 @@ public sealed class ModApi : IModApi
             if (packageId < 0)
             {
                 Debug.LogWarning(
-                    $"[VisitedTraderTeleport] Could not register {packageType.Name}: no free package id was found.");
+                    $"[VisitedTraderTeleport] Could not register {packageType.Name} during {reason}: no free package id was found.");
                 return;
             }
 
@@ -65,16 +79,16 @@ public sealed class ModApi : IModApi
             if (existingType != null)
             {
                 Debug.LogWarning(
-                    $"[VisitedTraderTeleport] Could not register {packageType.Name}: package id {packageId} is already used by {existingType.Name}.");
+                    $"[VisitedTraderTeleport] Could not register {packageType.Name} during {reason}: package id {packageId} is already used by {existingType.Name}.");
                 return;
             }
 
             NetPackageManager.AddPackageMapping(packageId, packageType);
-            Debug.Log($"[VisitedTraderTeleport] Registered {packageType.Name} as net package id {packageId}.");
+            Debug.Log($"[VisitedTraderTeleport] Registered {packageType.Name} as net package id {packageId} during {reason}.");
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"[VisitedTraderTeleport] Could not register {packageType.Name}: {ex.Message}");
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not register {packageType.Name} during {reason}: {ex.Message}");
         }
     }
 
@@ -108,5 +122,14 @@ public sealed class ModApi : IModApi
         {
             return -1;
         }
+    }
+}
+
+[HarmonyPatch(typeof(NetPackageManager), "SetupBaseMapping")]
+internal static class NetPackageManagerSetupBaseMappingPatch
+{
+    public static void Postfix()
+    {
+        ModApi.RegisterNetPackages("net package base mapping setup");
     }
 }

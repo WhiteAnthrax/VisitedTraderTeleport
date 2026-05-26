@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.20 - 2026-05-27 07:18 JST
+- Retry multiplayer package registration after the game rebuilds its base net package mapping, improving dedicated-server reliability.
+- Added clearer server-side travel-cost logs showing required cost and inventory/bag counts when transport is allowed or blocked.
+- No save reset is required.
+
 ## 0.5.19 - 2026-05-27 06:05 JST
 - Show the mode, page, and travel-cost rate only on the destination selection screen, keeping the main trader dialog cleaner.
 - Fixed multiplayer package registration so server-side transport requests, visited-trader snapshots, and travel-cost settings can sync on game builds with a smaller net package ID range.
