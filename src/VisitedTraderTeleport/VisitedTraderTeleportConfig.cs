@@ -10,6 +10,10 @@ namespace VisitedTraderTeleport;
 internal static class VisitedTraderTeleportConfig
 {
     private const string ConfigFileName = "VisitedTraderTeleport.xml";
+    private const float MaxTravelCostPerMeter = 1000f;
+    private const int MaxTravelCostMinimum = 1000000;
+    private const float MaxTravelTransitionDurationSeconds = 60f;
+    private const float MaxTravelSoundRepeatSeconds = 60f;
     private static string modPath;
     private static string loadedPath;
     private static AccessMode loadedMode = AccessMode.Personal;
@@ -91,7 +95,7 @@ internal static class VisitedTraderTeleportConfig
                 $"perMeter={loadedTravelCost.PerMeter:0.####}, minimum={loadedTravelCost.Minimum}, " +
                 $"transitionEnabled={loadedTravelTransition.Enabled}, " +
                 $"duration={loadedTravelTransition.DurationSeconds:0.##}, " +
-                $"disableCamera={loadedTravelTransition.DisableCamera}, sound={loadedTravelTransition.Sound}, " +
+                $"sound={loadedTravelTransition.Sound}, " +
                 $"soundRepeatSeconds={loadedTravelTransition.SoundRepeatSeconds:0.##}.");
         }
         catch (Exception ex)
@@ -114,8 +118,15 @@ internal static class VisitedTraderTeleportConfig
         settings.Enabled = TryParseBool(GetAttributeValue(element, "enabled"));
         settings.ItemName = GetStringAttribute(element, "item", settings.ItemName);
         settings.ItemDisplayName = GetStringAttribute(element, "displayName", settings.ItemDisplayName);
-        settings.PerMeter = Math.Max(0f, GetFloatAttribute(element, "perMeter", GetLegacyPerMeter(element, settings.PerMeter)));
-        settings.Minimum = Math.Max(0, GetIntAttribute(element, "minimum", settings.Minimum));
+        float perMeter = GetFloatAttribute(element, "perMeter", GetLegacyPerMeter(element, settings.PerMeter));
+        if (settings.Enabled && !(perMeter > 0f))
+        {
+            Debug.LogWarning("[VisitedTraderTeleport] TravelCost perMeter must be greater than 0 when travel costs are enabled; using 0.1.");
+            perMeter = 0.1f;
+        }
+
+        settings.PerMeter = ClampFloatAttribute("TravelCost perMeter", perMeter, 0f, MaxTravelCostPerMeter);
+        settings.Minimum = ClampIntAttribute("TravelCost minimum", GetIntAttribute(element, "minimum", settings.Minimum), 0, MaxTravelCostMinimum);
         return settings;
     }
 
@@ -141,16 +152,46 @@ internal static class VisitedTraderTeleportConfig
             settings.Enabled = TryParseBool(rawEnabled);
         }
 
-        settings.DurationSeconds = Math.Max(0f, GetFloatAttribute(element, "durationSeconds", settings.DurationSeconds));
-        string rawDisableCamera = GetAttributeValue(element, "disableCamera");
-        if (!string.IsNullOrWhiteSpace(rawDisableCamera))
+        settings.DurationSeconds = ClampFloatAttribute(
+            "TravelTransition durationSeconds",
+            GetFloatAttribute(element, "durationSeconds", settings.DurationSeconds),
+            0f,
+            MaxTravelTransitionDurationSeconds);
+        settings.Sound = GetStringAttribute(element, "sound", settings.Sound);
+        settings.SoundRepeatSeconds = ClampFloatAttribute(
+            "TravelTransition soundRepeatSeconds",
+            GetFloatAttribute(element, "soundRepeatSeconds", settings.SoundRepeatSeconds),
+            0f,
+            MaxTravelSoundRepeatSeconds);
+        return settings;
+    }
+
+    private static float ClampFloatAttribute(string label, float value, float min, float max)
+    {
+        if (float.IsNaN(value) || float.IsInfinity(value))
         {
-            settings.DisableCamera = TryParseBool(rawDisableCamera);
+            Debug.LogWarning($"[VisitedTraderTeleport] Invalid {label}; using {min:0.####}.");
+            return min;
         }
 
-        settings.Sound = GetStringAttribute(element, "sound", settings.Sound);
-        settings.SoundRepeatSeconds = Math.Max(0f, GetFloatAttribute(element, "soundRepeatSeconds", settings.SoundRepeatSeconds));
-        return settings;
+        float clamped = Math.Max(min, Math.Min(max, value));
+        if (Math.Abs(clamped - value) > 0.0001f)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] {label} was outside {min:0.####}-{max:0.####}; using {clamped:0.####}.");
+        }
+
+        return clamped;
+    }
+
+    private static int ClampIntAttribute(string label, int value, int min, int max)
+    {
+        int clamped = Math.Max(min, Math.Min(max, value));
+        if (clamped != value)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] {label} was outside {min}-{max}; using {clamped}.");
+        }
+
+        return clamped;
     }
 
     private static string GetAttributeValue(XElement element, string name)

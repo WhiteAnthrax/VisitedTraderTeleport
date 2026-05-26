@@ -9,6 +9,7 @@ namespace VisitedTraderTeleport;
 internal static class DialogIds
 {
     public const string TraderDialogId = "trader";
+    public const string StartStatementId = "start";
     public const string DestinationStatementId = "vtt_destinations";
     public const string DynamicResponsePrefix = "vtt_destination_";
     public const string PagePreviousResponseId = "vtt_destination_page_previous";
@@ -49,7 +50,18 @@ internal static class DialogStatementGetResponsesPatch
 
     public static void Postfix(DialogStatement __instance, ref List<BaseResponseEntry> __result)
     {
-        if (__instance?.ID != DialogIds.DestinationStatementId || __result == null)
+        if (__instance == null || __result == null)
+        {
+            return;
+        }
+
+        if (__instance.OwnerDialog?.ID == DialogIds.TraderDialogId && __instance.ID == DialogIds.StartStatementId)
+        {
+            UpdateOpenResponseText(__result);
+            return;
+        }
+
+        if (__instance.ID != DialogIds.DestinationStatementId)
         {
             return;
         }
@@ -147,6 +159,18 @@ internal static class DialogStatementGetResponsesPatch
         {
             Response = response
         };
+    }
+
+    private static void UpdateOpenResponseText(List<BaseResponseEntry> responses)
+    {
+        string text = VTTLocalization.Get("vtt_response_open") + TravelCostService.FormatOpenResponseCostSuffix();
+        foreach (BaseResponseEntry entry in responses)
+        {
+            if (entry?.Response?.ID == "vtt_open")
+            {
+                entry.Response.Text = text;
+            }
+        }
     }
 
 }

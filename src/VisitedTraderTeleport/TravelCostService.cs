@@ -5,6 +5,8 @@ namespace VisitedTraderTeleport;
 
 internal static class TravelCostService
 {
+    private const int MaxCalculatedCost = 1000000;
+
     public static int CalculateCost(TraderDestination destination, EntityPlayer player, TravelCostSettings settings = null)
     {
         settings ??= GetEffectiveSettings();
@@ -15,8 +17,13 @@ internal static class TravelCostService
 
         Vector3 delta = destination.Position - player.position;
         delta.y = 0f;
-        int distanceCost = Mathf.CeilToInt(delta.magnitude * settings.PerMeter);
-        return Math.Max(settings.Minimum, distanceCost);
+        double rawDistanceCost = delta.magnitude * settings.PerMeter;
+        int distanceCost = double.IsNaN(rawDistanceCost) ||
+                           double.IsInfinity(rawDistanceCost) ||
+                           rawDistanceCost >= MaxCalculatedCost
+            ? MaxCalculatedCost
+            : Mathf.CeilToInt((float)rawDistanceCost);
+        return Math.Min(MaxCalculatedCost, Math.Max(settings.Minimum, distanceCost));
     }
 
     public static bool TryConsumeCost(EntityPlayer player, TraderDestination destination, out int cost)
@@ -84,10 +91,48 @@ internal static class TravelCostService
             return string.Empty;
         }
 
-        string itemName = string.IsNullOrWhiteSpace(settings.ItemDisplayName)
+        string itemName = FormatItemDisplayName(settings);
+        return VTTLocalization.Format("vtt_destination_cost_suffix", cost, itemName);
+    }
+
+    public static string FormatOpenResponseCostSuffix()
+    {
+        TravelCostSettings settings = GetEffectiveSettings();
+        if (settings == null || !settings.Enabled || settings.PerMeter <= 0f)
+        {
+            return string.Empty;
+        }
+
+        GetDisplayRate(settings.PerMeter, out int amount, out int meters);
+        string itemName = FormatItemDisplayName(settings);
+        return settings.Minimum > 0
+            ? VTTLocalization.Format("vtt_open_cost_suffix_minimum", amount, itemName, meters, settings.Minimum)
+            : VTTLocalization.Format("vtt_open_cost_suffix", amount, itemName, meters);
+    }
+
+    public static string FormatItemDisplayName(TravelCostSettings settings)
+    {
+        if (settings == null)
+        {
+            return string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.ItemName))
+        {
+            return string.IsNullOrWhiteSpace(settings.ItemDisplayName)
+                ? string.Empty
+                : settings.ItemDisplayName;
+        }
+
+        string localized = VTTLocalization.Get(settings.ItemName);
+        if (!string.IsNullOrWhiteSpace(localized) && !string.Equals(localized, settings.ItemName, StringComparison.Ordinal))
+        {
+            return localized;
+        }
+
+        return string.IsNullOrWhiteSpace(settings.ItemDisplayName)
             ? settings.ItemName
             : settings.ItemDisplayName;
-        return VTTLocalization.Format("vtt_destination_cost_suffix", cost, itemName);
     }
 
     private static TravelCostSettings GetEffectiveSettings()
@@ -163,10 +208,21 @@ internal static class TravelCostService
 
     private static void ShowInsufficientCost(EntityPlayer player, int cost, int available, TravelCostSettings settings)
     {
-        string itemName = string.IsNullOrWhiteSpace(settings.ItemDisplayName)
-            ? settings.ItemName
-            : settings.ItemDisplayName;
+        string itemName = FormatItemDisplayName(settings);
         ShowTooltip(player, VTTLocalization.Format("vtt_not_enough_travel_cost", cost, itemName, available));
+    }
+
+    private static void GetDisplayRate(float perMeter, out int amount, out int meters)
+    {
+        if (perMeter >= 1f)
+        {
+            amount = Mathf.CeilToInt(perMeter);
+            meters = 1;
+            return;
+        }
+
+        amount = 1;
+        meters = Math.Max(1, Mathf.RoundToInt(1f / perMeter));
     }
 
     private static void ShowTooltip(EntityPlayer player, string message)
