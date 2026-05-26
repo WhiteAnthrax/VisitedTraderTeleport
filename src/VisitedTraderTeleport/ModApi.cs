@@ -16,7 +16,9 @@ public sealed class ModApi : IModApi
     {
         VisitedTraderTeleportConfig.Configure(_modInstance);
         RegisterNetPackages();
-        new Harmony("anthr.7d2d.visitedtraderteleport").PatchAll(Assembly.GetExecutingAssembly());
+        var harmony = new Harmony("anthr.7d2d.visitedtraderteleport");
+        harmony.PatchAll(Assembly.GetExecutingAssembly());
+        DialogResponseListGetBindingValuePatch.Apply(harmony);
         Debug.Log("[VisitedTraderTeleport] Loaded.");
     }
 
