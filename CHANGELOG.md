@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.15 - 2026-05-27 01:54 JST
+- Renamed the trader dialog entry to better match the transport-service style of travel while keeping the label short enough for the dialog panel.
+- No save reset is required.
+
 ## 0.5.14 - 2026-05-27 01:38 JST
 - Shortened travel-cost labels in trader dialog choices so Japanese and other localized item names are less likely to be clipped by the game's dialog panel.
 - No save reset is required.
