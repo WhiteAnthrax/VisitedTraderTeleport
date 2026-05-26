@@ -366,18 +366,6 @@ internal static class VisitedTraderTeleportService
             Debug.LogWarning($"[VisitedTraderTeleport] Could not block player control for travel transition: {ex.Message}");
         }
 
-        if (settings.DisableCamera)
-        {
-            try
-            {
-                player.EnableCamera(false);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[VisitedTraderTeleport] Could not disable camera for travel transition: {ex.Message}");
-            }
-        }
-
         PlayTravelSound(player, settings.Sound);
     }
 
@@ -493,10 +481,6 @@ internal static class VisitedTraderTeleportService
         try
         {
             player.SetControllable(true);
-            if (settings.DisableCamera)
-            {
-                player.EnableCamera(true);
-            }
         }
         catch (Exception ex)
         {

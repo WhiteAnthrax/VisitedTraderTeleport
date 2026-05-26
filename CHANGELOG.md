@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.12 - 2026-05-27 00:29 JST
+- Restored the destination screen access mode and page status by applying the response-list heading patch to the base dialog binding method used by the game.
+- Stopped directly toggling the player camera during travel so `disableCamera` no longer flips camera-control behavior while the overlay is active.
+- No save reset is required.
+
 ## 0.5.11 - 2026-05-27 00:08 JST
 - Blocked player control and overlay input during the travel transition so the trip cannot be played through like a normal dialog moment.
 - Added `soundRepeatSeconds` to keep the configured travel sound active during longer transitions.
