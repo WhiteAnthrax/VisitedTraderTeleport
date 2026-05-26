@@ -137,7 +137,8 @@ internal static class VisitedTraderTeleportService
         {
             int paidCost = TravelCostService.CalculateCost(destination, player);
             string destinationName = TraderDestinationFormatter.FormatName(destination);
-            PlayTravelTransition(player, destinationName, paidCost, settings);
+            string transportDestination = TraderDestinationFormatter.FormatTransportDestination(destination);
+            PlayTravelTransition(player, destinationName, transportDestination, paidCost, settings);
 
             float teleportAt = Time.realtimeSinceStartup + GetTeleportDelay(settings);
             while (Time.realtimeSinceStartup < teleportAt)
@@ -168,6 +169,7 @@ internal static class VisitedTraderTeleportService
     public static void PlayClientTravelTransition(
         EntityPlayerLocal player,
         string destinationName,
+        string transportDestination,
         int paidCost,
         TravelTransitionSettings settings)
     {
@@ -176,18 +178,19 @@ internal static class VisitedTraderTeleportService
             return;
         }
 
-        GameManager.Instance?.StartCoroutine(ClientTravelTransition(player, destinationName, paidCost, settings));
+        GameManager.Instance?.StartCoroutine(ClientTravelTransition(player, destinationName, transportDestination, paidCost, settings));
     }
 
     private static IEnumerator ClientTravelTransition(
         EntityPlayerLocal player,
         string destinationName,
+        string transportDestination,
         int paidCost,
         TravelTransitionSettings settings)
     {
         try
         {
-            ApplyClientTransitionStart(player, destinationName, paidCost, settings);
+            ApplyClientTransitionStart(player, transportDestination, paidCost, settings);
 
             float finishAt = Time.realtimeSinceStartup + Math.Max(0f, settings.DurationSeconds);
             float nextSoundAt = Time.realtimeSinceStartup + settings.SoundRepeatSeconds;
@@ -215,11 +218,16 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    private static void PlayTravelTransition(EntityPlayer player, string destinationName, int paidCost, TravelTransitionSettings settings)
+    private static void PlayTravelTransition(
+        EntityPlayer player,
+        string destinationName,
+        string transportDestination,
+        int paidCost,
+        TravelTransitionSettings settings)
     {
         if (player is EntityPlayerLocal localPlayer)
         {
-            PlayClientTravelTransition(localPlayer, destinationName, paidCost, settings);
+            PlayClientTravelTransition(localPlayer, destinationName, transportDestination, paidCost, settings);
             return;
         }
 
@@ -228,7 +236,7 @@ internal static class VisitedTraderTeleportService
             ClientInfo clientInfo = ConnectionManager.Instance?.Clients?.ForEntityId(player.entityId);
             clientInfo?.SendPackage(
                 NetPackageManager.GetPackage<NetPackageVisitedTraderTravelTransition>()
-                    .Setup(destinationName, paidCost, settings));
+                    .Setup(destinationName, transportDestination, paidCost, settings));
         }
         catch (Exception ex)
         {

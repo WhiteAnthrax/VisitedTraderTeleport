@@ -3,14 +3,20 @@ namespace VisitedTraderTeleport;
 public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
 {
     private string destinationName = string.Empty;
+    private string transportDestination = string.Empty;
     private int cost;
     private TravelTransitionSettings settings = TravelTransitionSettings.Default();
 
     public override NetPackageDirection PackageDirection => NetPackageDirection.ToClient;
 
-    internal NetPackageVisitedTraderTravelTransition Setup(string name, int paidCost, TravelTransitionSettings transitionSettings)
+    internal NetPackageVisitedTraderTravelTransition Setup(
+        string name,
+        string transportName,
+        int paidCost,
+        TravelTransitionSettings transitionSettings)
     {
         destinationName = name ?? string.Empty;
+        transportDestination = string.IsNullOrWhiteSpace(transportName) ? destinationName : transportName;
         cost = paidCost;
         settings = transitionSettings?.Clone() ?? TravelTransitionSettings.Default();
         return this;
@@ -19,6 +25,7 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
     public override void read(PooledBinaryReader reader)
     {
         destinationName = reader.ReadString();
+        transportDestination = reader.ReadString();
         cost = reader.ReadInt32();
         settings = new TravelTransitionSettings
         {
@@ -33,6 +40,7 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
     {
         base.write(writer);
         writer.ReadWrite(destinationName ?? string.Empty);
+        writer.ReadWrite(transportDestination ?? string.Empty);
         writer.ReadWrite(cost);
         writer.ReadWrite(settings.Enabled);
         writer.ReadWrite(settings.DurationSeconds);
@@ -44,12 +52,13 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
     {
         return 27 +
                (destinationName?.Length ?? 0) +
+               (transportDestination?.Length ?? 0) +
                (settings.Sound?.Length ?? 0);
     }
 
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         EntityPlayerLocal player = GameManager.Instance?.World?.GetPrimaryPlayer();
-        VisitedTraderTeleportService.PlayClientTravelTransition(player, destinationName, cost, settings);
+        VisitedTraderTeleportService.PlayClientTravelTransition(player, destinationName, transportDestination, cost, settings);
     }
 }

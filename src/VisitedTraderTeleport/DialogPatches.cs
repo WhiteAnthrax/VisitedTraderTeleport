@@ -325,17 +325,19 @@ internal static class DialogResponseListHeadingPatch
         try
         {
             Dialog dialog = responseList?.CurrentDialog;
-            if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
-            {
-                return;
-            }
-
             if (ResponderNameField?.GetValue(responseList) is not XUiV_Label label)
             {
                 return;
             }
 
-            string heading = DestinationStatementFormatter.FormatHeading(dialog, label.Text);
+            if (dialog?.ID != DialogIds.TraderDialogId)
+            {
+                return;
+            }
+
+            string heading = dialog.CurrentStatement?.ID == DialogIds.DestinationStatementId
+                ? DestinationStatementFormatter.FormatHeading(dialog, label.Text)
+                : DestinationStatementFormatter.FormatStartHeading(dialog, label.Text);
             label.SetTextImmediately(heading);
         }
         catch (Exception ex)
@@ -397,16 +399,36 @@ internal static class DestinationStatementFormatter
 
     public static string FormatHeading(Dialog dialog, string fallbackName)
     {
-        string respondentName = dialog?.CurrentOwner?.EntityName;
-        if (string.IsNullOrWhiteSpace(respondentName))
-        {
-            respondentName = fallbackName;
-        }
-
+        DialogDestinationState destinationState = DialogDestinationState.Create(dialog);
+        string respondentName = FormatTraderHeadingName(dialog, destinationState.CurrentTrader, fallbackName);
         string status = FormatCompactStatus(dialog);
         return string.IsNullOrWhiteSpace(respondentName)
             ? status
-            : respondentName + " - " + status;
+            : respondentName + " / " + status;
+    }
+
+    public static string FormatStartHeading(Dialog dialog, string fallbackName)
+    {
+        string respondentName = FormatTraderHeadingName(dialog, null, fallbackName);
+        string status = VTTLocalization.Format(
+            "vtt_compact_status",
+            TraderDialogStatusFormatter.FormatModeName(DialogDestinationState.GetCurrentAccessMode()));
+        return string.IsNullOrWhiteSpace(respondentName)
+            ? status
+            : respondentName + " / " + status;
+    }
+
+    private static string FormatTraderHeadingName(Dialog dialog, TraderDestination currentTrader, string fallbackName)
+    {
+        string respondentName = TraderDestinationFormatter.FormatName(currentTrader);
+        if (string.IsNullOrWhiteSpace(respondentName) || respondentName == VTTLocalization.Get("vtt_trader_name_generic"))
+        {
+            respondentName = TraderDestinationFormatter.FormatEntityName(dialog?.CurrentOwner as EntityTrader);
+        }
+
+        return string.IsNullOrWhiteSpace(respondentName)
+            ? fallbackName
+            : respondentName;
     }
 }
 
@@ -473,7 +495,7 @@ internal sealed class DialogDestinationState
             : player.PlayerDisplayName;
     }
 
-    private static AccessMode GetCurrentAccessMode()
+    public static AccessMode GetCurrentAccessMode()
     {
         return VisitedTraderNetwork.IsClientOnly
             ? VisitedTraderClientState.ServerAccessMode
