@@ -46,7 +46,7 @@ internal static class VisitedTraderTeleportService
                 $"[VisitedTraderTeleport] Preparing destination for {player.PlayerDisplayName}: " +
                 $"{destination.DialogText}, target=({target.x:0.##}, {target.y:0.##}, {target.z:0.##}), " +
                 $"timeout={PrepareTimeoutSeconds:0.#}s.");
-            ShowPreparingTooltip(player);
+            ShowPreparingTravel(player, destination);
             return;
         }
 
@@ -305,11 +305,13 @@ internal static class VisitedTraderTeleportService
 
             if (!string.IsNullOrWhiteSpace(destinationName))
             {
+                TravelTransitionOverlay.Hide();
                 GameManager.ShowTooltip(player, VTTLocalization.Format("vtt_transport_arrival", destinationName), false, false, 4f);
             }
         }
         finally
         {
+            TravelTransitionOverlay.Hide();
             ClearClientTransitionEffect(player, settings);
         }
     }
@@ -345,6 +347,7 @@ internal static class VisitedTraderTeleportService
             ? VTTLocalization.Format("vtt_transport_departure_paid", paidCost, GetEffectiveCostItemDisplayName(), destinationName)
             : VTTLocalization.Format("vtt_transport_departure", destinationName);
         GameManager.ShowTooltip(player, message, false, false, Math.Max(3f, settings.DurationSeconds));
+        TravelTransitionOverlay.Show(message);
 
         if (settings.DisableCamera)
         {
@@ -609,11 +612,16 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    private static void ShowPreparingTooltip(EntityPlayer player)
+    private static void ShowPreparingTravel(EntityPlayer player, TraderDestination destination)
     {
         if (player is EntityPlayerLocal localPlayer)
         {
-            GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_preparing_travel"), false, false, 2f);
+            string destinationName = TraderDestinationFormatter.FormatName(destination);
+            string message = string.IsNullOrWhiteSpace(destinationName)
+                ? VTTLocalization.Get("vtt_preparing_travel")
+                : VTTLocalization.Format("vtt_preparing_travel_to", destinationName);
+            TravelTransitionOverlay.Show(message);
+            GameManager.ShowTooltip(localPlayer, message, false, false, 2f);
         }
     }
 
@@ -621,6 +629,7 @@ internal static class VisitedTraderTeleportService
     {
         if (player is EntityPlayerLocal localPlayer)
         {
+            TravelTransitionOverlay.Hide();
             GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_destination_not_ready"), false, false, 4f);
         }
     }

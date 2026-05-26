@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.10 - 2026-05-26 20:08 JST
+- Added a full-screen travel overlay while trader transport is preparing and in progress, then clears it before showing the arrival message.
+- No save reset is required.
+
 ## 0.5.9 - 2026-05-26 19:58 JST
 - Fixed a startup error when the optional destination-heading patch could not find the response-list binding method in the running game build.
 - No save reset is required.
