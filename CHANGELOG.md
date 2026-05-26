@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.17 - 2026-05-27 03:08 JST
+- Shortened transport choice and travel cost labels so Japanese item names are less likely to be clipped in the trader dialog.
+- Fixed trader dialog headings so localized trader names and the current access mode are shown consistently on both the main and destination screens.
+- Expanded the travel overlay departure message to show the trader destination and coordinates.
+- No save reset is required.
+
 ## 0.5.16 - 2026-05-27 02:41 JST
 - Fixed long-distance transport failing when the destination chunk preparation never reached the game's ready state.
 - Made the destination screen update the visible response-list heading directly so the current access mode and page status are shown reliably.
