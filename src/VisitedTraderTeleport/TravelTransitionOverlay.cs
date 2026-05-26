@@ -70,10 +70,15 @@ internal sealed class TravelTransitionOverlay : MonoBehaviour
         GUI.color = Color.white;
         float width = Mathf.Min(Screen.width * 0.82f, 900f);
         float x = (Screen.width - width) * 0.5f;
-        float y = (Screen.height - 160f) * 0.5f;
+        float messageHeight = Mathf.Max(96f, messageStyle.CalcHeight(new GUIContent(message), width));
+        string hint = VTTLocalization.Get("vtt_transport_overlay_hint");
+        float hintHeight = Mathf.Max(36f, hintStyle.CalcHeight(new GUIContent(hint), width));
+        float gap = 18f;
+        float totalHeight = messageHeight + gap + hintHeight;
+        float y = (Screen.height - totalHeight) * 0.5f;
 
-        GUI.Label(new Rect(x, y, width, 80f), message, messageStyle);
-        GUI.Label(new Rect(x, y + 74f, width, 44f), VTTLocalization.Get("vtt_transport_overlay_hint"), hintStyle);
+        GUI.Label(new Rect(x, y, width, messageHeight), message, messageStyle);
+        GUI.Label(new Rect(x, y + messageHeight + gap, width, hintHeight), hint, hintStyle);
         GUI.color = previousColor;
 
         Event current = Event.current;

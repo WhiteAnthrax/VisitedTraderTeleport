@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 
@@ -12,6 +11,8 @@ internal static class DialogIds
     public const string TraderDialogId = "trader";
     public const string StartStatementId = "start";
     public const string DestinationStatementId = "vtt_destinations";
+    public const string StartStatusResponseId = "vtt_status_start";
+    public const string DestinationStatusResponseId = "vtt_status_destinations";
     public const string DynamicResponsePrefix = "vtt_destination_";
     public const string PagePreviousResponseId = "vtt_destination_page_previous";
     public const string PageNextResponseId = "vtt_destination_page_next";
@@ -59,6 +60,7 @@ internal static class DialogStatementGetResponsesPatch
         if (__instance.OwnerDialog?.ID == DialogIds.TraderDialogId && __instance.ID == DialogIds.StartStatementId)
         {
             UpdateOpenResponseText(__result);
+            InsertStatusEntry(__instance, __result, DialogIds.StartStatusResponseId, DestinationStatementFormatter.FormatStartStatus());
             return;
         }
 
@@ -70,7 +72,13 @@ internal static class DialogStatementGetResponsesPatch
         __instance.Text = DestinationStatementFormatter.Format(__instance.OwnerDialog);
         DialogDestinationState destinationState = DialogDestinationState.Create(__instance.OwnerDialog);
         List<TraderDestination> destinations = destinationState.VisibleDestinations;
-        var dynamicEntries = new List<BaseResponseEntry>();
+        var dynamicEntries = new List<BaseResponseEntry>
+        {
+            CreateStatusEntry(
+                __instance,
+                DialogIds.DestinationStatusResponseId,
+                DestinationStatementFormatter.FormatDestinationStatus(destinationState))
+        };
 
         if (destinations.Count > 0)
         {
@@ -130,6 +138,32 @@ internal static class DialogStatementGetResponsesPatch
             Owner = response
         };
         response.Actions.Add(action);
+
+        return new DialogResponseEntry(response.ID)
+        {
+            Response = response
+        };
+    }
+
+    private static void InsertStatusEntry(DialogStatement statement, List<BaseResponseEntry> responses, string id, string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        responses.Insert(0, CreateStatusEntry(statement, id, text));
+    }
+
+    private static BaseResponseEntry CreateStatusEntry(DialogStatement statement, string id, string text)
+    {
+        var response = new DialogResponse(id)
+        {
+            Text = text,
+            OwnerDialog = statement.OwnerDialog,
+            Actions = new List<BaseDialogAction>(),
+            NextStatementID = statement.ID
+        };
 
         return new DialogResponseEntry(response.ID)
         {
@@ -214,139 +248,6 @@ internal static class DialogStatementWindowGetBindingValuePatch
     }
 }
 
-[HarmonyPatch(typeof(XUiC_DialogRespondentName), nameof(XUiC_DialogRespondentName.GetBindingValueInternal))]
-internal static class DialogRespondentNameGetBindingValuePatch
-{
-    public static bool Prefix(
-        XUiC_DialogRespondentName __instance,
-        ref string value,
-        string bindingName,
-        ref bool __result)
-    {
-        if (!string.Equals(bindingName, "respondentname", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        Dialog dialog = __instance?.CurrentDialog;
-        if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
-        {
-            return true;
-        }
-
-        value = DestinationStatementFormatter.FormatHeading(dialog, value);
-        __result = true;
-        return false;
-    }
-}
-
-internal static class DialogResponseListGetBindingValuePatch
-{
-    public static void Apply(Harmony harmony)
-    {
-        if (harmony == null)
-        {
-            return;
-        }
-
-        try
-        {
-            var target = AccessTools.Method(
-                typeof(XUiController),
-                "GetBindingValueInternal",
-                new[] { typeof(string).MakeByRefType(), typeof(string) });
-
-            if (target == null)
-            {
-                Debug.LogWarning("[VisitedTraderTeleport] Dialog response-list heading patch was skipped because the game method was not found.");
-                return;
-            }
-
-            var prefix = AccessTools.Method(typeof(DialogResponseListGetBindingValuePatch), nameof(Prefix));
-            harmony.Patch(target, prefix: new HarmonyMethod(prefix));
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[VisitedTraderTeleport] Dialog response-list heading patch was skipped: {ex.Message}");
-        }
-    }
-
-    public static bool Prefix(
-        XUiController __instance,
-        ref string _value,
-        string _bindingName,
-        ref bool __result)
-    {
-        if (__instance is not XUiC_DialogResponseList responseList)
-        {
-            return true;
-        }
-
-        if (!string.Equals(_bindingName, "respondentname", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        Dialog dialog = responseList.CurrentDialog;
-        if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
-        {
-            return true;
-        }
-
-        _value = DestinationStatementFormatter.FormatHeading(dialog, _value);
-        __result = true;
-        return false;
-    }
-}
-
-[HarmonyPatch(typeof(XUiC_DialogResponseList))]
-internal static class DialogResponseListHeadingPatch
-{
-    private static readonly FieldInfo ResponderNameField = AccessTools.Field(
-        typeof(XUiC_DialogResponseList),
-        "lblResponderName");
-
-    [HarmonyPostfix]
-    [HarmonyPatch(nameof(XUiC_DialogResponseList.OnOpen))]
-    public static void OnOpenPostfix(XUiC_DialogResponseList __instance)
-    {
-        UpdateHeading(__instance);
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(nameof(XUiC_DialogResponseList.Refresh))]
-    public static void RefreshPostfix(XUiC_DialogResponseList __instance)
-    {
-        UpdateHeading(__instance);
-    }
-
-    private static void UpdateHeading(XUiC_DialogResponseList responseList)
-    {
-        try
-        {
-            Dialog dialog = responseList?.CurrentDialog;
-            if (ResponderNameField?.GetValue(responseList) is not XUiV_Label label)
-            {
-                return;
-            }
-
-            if (dialog?.ID != DialogIds.TraderDialogId)
-            {
-                return;
-            }
-
-            string heading = dialog.CurrentStatement?.ID == DialogIds.DestinationStatementId
-                ? DestinationStatementFormatter.FormatHeading(dialog, label.Text)
-                : DestinationStatementFormatter.FormatStartHeading(dialog, label.Text);
-            label.SetTextImmediately(heading);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[VisitedTraderTeleport] Could not update destination heading: {ex.Message}");
-        }
-    }
-}
-
 internal static class DestinationStatementFormatter
 {
     public static string Format(Dialog dialog)
@@ -397,38 +298,25 @@ internal static class DestinationStatementFormatter
         return VTTLocalization.Format("vtt_compact_status", modeName);
     }
 
-    public static string FormatHeading(Dialog dialog, string fallbackName)
+    public static string FormatStartStatus()
     {
-        DialogDestinationState destinationState = DialogDestinationState.Create(dialog);
-        string respondentName = FormatTraderHeadingName(dialog, destinationState.CurrentTrader, fallbackName);
-        string status = FormatCompactStatus(dialog);
-        return string.IsNullOrWhiteSpace(respondentName)
-            ? status
-            : respondentName + " / " + status;
-    }
-
-    public static string FormatStartHeading(Dialog dialog, string fallbackName)
-    {
-        string respondentName = FormatTraderHeadingName(dialog, null, fallbackName);
-        string status = VTTLocalization.Format(
+        string mode = VTTLocalization.Format(
             "vtt_compact_status",
             TraderDialogStatusFormatter.FormatModeName(DialogDestinationState.GetCurrentAccessMode()));
-        return string.IsNullOrWhiteSpace(respondentName)
-            ? status
-            : respondentName + " / " + status;
+        return FormatStatusResponse(mode);
     }
 
-    private static string FormatTraderHeadingName(Dialog dialog, TraderDestination currentTrader, string fallbackName)
+    public static string FormatDestinationStatus(DialogDestinationState destinationState)
     {
-        string respondentName = TraderDestinationFormatter.FormatName(currentTrader);
-        if (string.IsNullOrWhiteSpace(respondentName) || respondentName == VTTLocalization.Get("vtt_trader_name_generic"))
-        {
-            respondentName = TraderDestinationFormatter.FormatEntityName(dialog?.CurrentOwner as EntityTrader);
-        }
+        return FormatStatusResponse(FormatCompactStatus(destinationState));
+    }
 
-        return string.IsNullOrWhiteSpace(respondentName)
-            ? fallbackName
-            : respondentName;
+    private static string FormatStatusResponse(string status)
+    {
+        string cost = TravelCostService.FormatStatusCostInfo();
+        return string.IsNullOrWhiteSpace(cost)
+            ? VTTLocalization.Format("vtt_status_response", status)
+            : VTTLocalization.Format("vtt_status_response_with_cost", status, cost);
     }
 }
 

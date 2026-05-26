@@ -1,5 +1,12 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.18 - 2026-05-27 03:49 JST
+- Restored the full main trader dialog label for requesting transport.
+- Moved mode, page, and travel-cost rate details into a separate status row so the main transport choice is less likely to be clipped.
+- Fixed the transition overlay text layout so long transport messages do not overlap the wait hint.
+- Stopped overriding trader dialog headings so the current trader name does not carry over after transport.
+- No save reset is required.
+
 ## 0.5.17 - 2026-05-27 03:08 JST
 - Shortened transport choice and travel cost labels so Japanese item names are less likely to be clipped in the trader dialog.
 - Fixed trader dialog headings so localized trader names and the current access mode are shown consistently on both the main and destination screens.
