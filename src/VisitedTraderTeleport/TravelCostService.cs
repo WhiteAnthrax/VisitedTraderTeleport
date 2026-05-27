@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace VisitedTraderTeleport;
@@ -53,11 +54,33 @@ internal static class TravelCostService
             return false;
         }
 
-        RemoveItems(player, itemValue, cost);
+        int removed = RemoveItems(player, itemValue, cost);
         int remaining = CountItems(player, itemValue, out int remainingInventory, out int remainingBag);
+        int expectedRemaining = available - cost;
+        if (remaining > expectedRemaining)
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Travel cost removal failed for {GetPlayerName(player)}: " +
+                $"need to remove {cost} {settings.ItemName}, removed={removed}, " +
+                $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
+                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}). Travel blocked.");
+            ShowCostUnavailable(player);
+            return false;
+        }
+
+        if (remaining < expectedRemaining)
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Travel cost removal removed more than expected for {GetPlayerName(player)}: " +
+                $"cost={cost} {settings.ItemName}, removed={removed}, " +
+                $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
+                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}).");
+        }
+
+        ShowLocalCostRemoval(player, itemValue, cost);
         Debug.Log(
             $"[VisitedTraderTeleport] Consumed travel cost for {GetPlayerName(player)}: " +
-            $"{cost} {settings.ItemName}; before={available} " +
+            $"{cost} {settings.ItemName}; removed={removed}, before={available} " +
             $"(inventory={inventoryCount}, bag={bagCount}), after={remaining} " +
             $"(inventory={remainingInventory}, bag={remainingBag}).");
         return true;
@@ -193,27 +216,41 @@ internal static class TravelCostService
         return inventoryCount + bagCount;
     }
 
-    private static void RemoveItems(EntityPlayer player, ItemValue itemValue, int count)
+    private static int RemoveItems(EntityPlayer player, ItemValue itemValue, int count)
     {
         if (player == null || itemValue == null || count <= 0)
         {
-            return;
+            return 0;
         }
 
         int remaining = count;
+        int removed = 0;
+        IList<ItemStack> removedItems = new List<ItemStack>();
         if (player.inventory != null)
         {
             int inventoryCount = player.inventory.GetItemCount(itemValue);
             int fromInventory = Math.Min(inventoryCount, remaining);
             if (fromInventory > 0)
             {
-                remaining -= player.inventory.DecItem(itemValue, fromInventory);
+                int removedFromInventory = player.inventory.DecItem(itemValue, fromInventory, true, removedItems);
+                removed += removedFromInventory;
+                remaining -= removedFromInventory;
             }
         }
 
         if (remaining > 0 && player.bag != null)
         {
-            player.bag.DecItem(itemValue, remaining, false);
+            removed += player.bag.DecItem(itemValue, remaining, true, removedItems);
+        }
+
+        return removed;
+    }
+
+    private static void ShowLocalCostRemoval(EntityPlayer player, ItemValue itemValue, int count)
+    {
+        if (player is EntityPlayerLocal localPlayer && count > 0)
+        {
+            localPlayer.AddUIHarvestingItem(new ItemStack(itemValue, -count));
         }
     }
 
