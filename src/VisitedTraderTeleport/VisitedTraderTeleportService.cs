@@ -9,6 +9,7 @@ internal static class VisitedTraderTeleportService
 {
     private const float TeleportVerticalClearance = 0.25f;
     private const float PrepareTimeoutSeconds = 12f;
+    private const float TransitionVisualReadyMaxExtraSeconds = 15f;
     private const int PrepareChunkViewDim = 3;
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshHoldSeconds = 5f;
@@ -358,6 +359,31 @@ internal static class VisitedTraderTeleportService
                 }
 
                 yield return null;
+            }
+
+            World destinationWorld = GameManager.Instance?.World;
+            if (destinationWorld != null && player != null)
+            {
+                float visualReadyDeadline = Time.realtimeSinceStartup + TransitionVisualReadyMaxExtraSeconds;
+                bool forcedRefresh = false;
+                while (player != null && Time.realtimeSinceStartup < visualReadyDeadline)
+                {
+                    Vector3 here = player.position;
+                    if (destinationWorld.IsChunkAreaLoaded(here) && destinationWorld.IsChunkAreaCollidersLoaded(here))
+                    {
+                        if (!forcedRefresh)
+                        {
+                            ForceClientChunkVisualUpdate(destinationWorld);
+                            forcedRefresh = true;
+                            yield return null;
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    yield return null;
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(destinationName))
