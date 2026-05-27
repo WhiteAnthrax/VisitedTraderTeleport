@@ -29,7 +29,7 @@ internal static class TravelCostService
 
     public static bool TryConsumeCost(EntityPlayer player, TraderDestination destination, out int cost)
     {
-        TravelCostSettings settings = VisitedTraderTeleportConfig.TravelCost;
+        TravelCostSettings settings = GetEffectiveSettings();
         cost = CalculateCost(destination, player, settings);
         if (cost <= 0)
         {
@@ -135,7 +135,7 @@ internal static class TravelCostService
 
     public static bool HasRequiredCost(EntityPlayer player, TraderDestination destination)
     {
-        TravelCostSettings settings = VisitedTraderTeleportConfig.TravelCost;
+        TravelCostSettings settings = GetEffectiveSettings();
         int cost = CalculateCost(destination, player, settings);
         if (cost <= 0)
         {

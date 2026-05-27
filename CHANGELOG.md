@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.26 - 2026-05-28 04:45 JST
+- Fixed the client-side travel-cost check so the configured cost is actually applied when starting a trip; previously the check used an empty default and let the trip proceed even when the player had no gas.
+- Travel overlay now stays visible after the configured transition duration until the destination chunk is loaded on the client, so the trader you arrive at is rendered before the arrival message appears.
+- Capped the additional overlay hold to 15 seconds so a missing or slow-loading area cannot lock the overlay forever.
+- No save reset is required.
+
 ## 0.5.25 - 2026-05-28 04:06 JST
 - Fixed travel-cost consumption on dedicated servers so the configured item is actually deducted from the player's inventory after a paid trip.
 - Travel-cost item count is now checked and consumed on the client; the server no longer tries to mutate a remote player's inventory directly.
