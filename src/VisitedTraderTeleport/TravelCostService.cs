@@ -182,12 +182,12 @@ internal static class TravelCostService
 
         if (player.inventory != null)
         {
-            inventoryCount = player.inventory.GetItemCount(itemValue, false, -1, -1, false);
+            inventoryCount = player.inventory.GetItemCount(itemValue);
         }
 
         if (player.bag != null)
         {
-            bagCount = player.bag.GetItemCount(itemValue, -1, -1, false);
+            bagCount = player.bag.GetItemCount(itemValue);
         }
 
         return inventoryCount + bagCount;
@@ -203,18 +203,17 @@ internal static class TravelCostService
         int remaining = count;
         if (player.inventory != null)
         {
-            int inventoryCount = player.inventory.GetItemCount(itemValue, false, -1, -1, false);
+            int inventoryCount = player.inventory.GetItemCount(itemValue);
             int fromInventory = Math.Min(inventoryCount, remaining);
             if (fromInventory > 0)
             {
-                player.inventory.DecItem(itemValue, fromInventory, false, null);
-                remaining -= fromInventory;
+                remaining -= player.inventory.DecItem(itemValue, fromInventory);
             }
         }
 
         if (remaining > 0 && player.bag != null)
         {
-            player.bag.DecItem(itemValue, remaining, false, null);
+            player.bag.DecItem(itemValue, remaining, false);
         }
     }
 
