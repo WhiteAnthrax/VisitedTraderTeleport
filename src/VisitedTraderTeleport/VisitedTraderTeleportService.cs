@@ -8,6 +8,7 @@ namespace VisitedTraderTeleport;
 internal static class VisitedTraderTeleportService
 {
     private const float TeleportVerticalClearance = 0.25f;
+    private const float PrepareTimeoutSeconds = 8f;
     private const int PrepareChunkViewDim = 3;
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshHoldSeconds = 5f;
@@ -15,6 +16,7 @@ internal static class VisitedTraderTeleportService
     private const float TransitionArrivalLeadSeconds = 0.35f;
     private const float HiddenTransitionTeleportMaxDelaySeconds = 1.5f;
 
+    private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> ClientVisualRefreshObservers = new();
     private static readonly HashSet<int> PendingTeleports = new();
 
@@ -35,6 +37,30 @@ internal static class VisitedTraderTeleportService
         if (!TravelCostService.HasRequiredCost(player, destination))
         {
             return;
+        }
+
+        World world = GameManager.Instance?.World;
+        if (NeedsPreparation(world, target))
+        {
+            if (GameManager.IsDedicatedServer)
+            {
+                Debug.LogWarning(
+                    $"[VisitedTraderTeleport] Destination is not loaded on the server; transport blocked without charging " +
+                    $"{player.PlayerDisplayName}: {destination.DialogText}, " +
+                    $"target=({target.x:0.##}, {target.y:0.##}, {target.z:0.##}).");
+                ShowDestinationNotReadyTooltip(player);
+                return;
+            }
+
+            if (TryStartPreparedTransport(player, destination, target))
+            {
+                Debug.Log(
+                    $"[VisitedTraderTeleport] Preparing destination for {player.PlayerDisplayName}: " +
+                    $"{destination.DialogText}, target=({target.x:0.##}, {target.y:0.##}, {target.z:0.##}), " +
+                    $"timeout={PrepareTimeoutSeconds:0.#}s.");
+                ShowPreparingTooltip(player);
+                return;
+            }
         }
 
         StartTransitionAndTeleport(player, destination, target, false);
@@ -58,6 +84,100 @@ internal static class VisitedTraderTeleportService
         }
 
         return GameManager.IsDedicatedServer || world.IsChunkAreaCollidersLoaded(target);
+    }
+
+    private static bool NeedsPreparation(World world, Vector3 target)
+    {
+        return world != null && !IsDestinationReady(world, target);
+    }
+
+    private static bool TryStartPreparedTransport(EntityPlayer player, TraderDestination destination, Vector3 target)
+    {
+        GameManager gameManager = GameManager.Instance;
+        World world = gameManager?.World;
+        if (gameManager == null || world == null || player == null)
+        {
+            return false;
+        }
+
+        int entityId = player.entityId;
+        if (PendingTeleports.Contains(entityId) || PreparationObservers.ContainsKey(entityId))
+        {
+            return true;
+        }
+
+        PendingTeleports.Add(entityId);
+        gameManager.StartCoroutine(PrepareAndStartTransport(player, destination, target));
+        return true;
+    }
+
+    private static IEnumerator PrepareAndStartTransport(EntityPlayer player, TraderDestination destination, Vector3 initialTarget)
+    {
+        GameManager gameManager = GameManager.Instance;
+        World world = gameManager?.World;
+        ChunkManager.ChunkObserver observer = null;
+        int entityId = player?.entityId ?? -1;
+        bool handedOffToTransition = false;
+
+        try
+        {
+            if (gameManager != null && world != null && player != null)
+            {
+                observer = gameManager.AddChunkObserver(
+                    initialTarget,
+                    true,
+                    PrepareChunkViewDim,
+                    player.entityId);
+                PreparationObservers[player.entityId] = observer;
+                ForceClientChunkVisualUpdate(world);
+            }
+
+            float timeoutAt = Time.realtimeSinceStartup + PrepareTimeoutSeconds;
+            while (player != null &&
+                   world != null &&
+                   !IsDestinationReady(world, initialTarget) &&
+                   Time.realtimeSinceStartup < timeoutAt)
+            {
+                yield return null;
+            }
+
+            if (player == null || destination == null || world == null)
+            {
+                yield break;
+            }
+
+            Vector3 finalTarget = ResolveTarget(destination);
+            if (!IsDestinationReady(world, finalTarget))
+            {
+                Debug.LogWarning(
+                    $"[VisitedTraderTeleport] Destination was not ready after preparation; transport aborted without charging " +
+                    $"{player.PlayerDisplayName}: {destination.DialogText}, " +
+                    $"target=({finalTarget.x:0.##}, {finalTarget.y:0.##}, {finalTarget.z:0.##}).");
+                ShowDestinationNotReadyTooltip(player);
+                yield break;
+            }
+
+            Debug.Log(
+                $"[VisitedTraderTeleport] Destination ready after preparation for {player.PlayerDisplayName}: " +
+                $"{destination.DialogText}.");
+            handedOffToTransition = StartTransitionAndTeleport(player, destination, finalTarget, false, true);
+        }
+        finally
+        {
+            if (gameManager != null && observer != null)
+            {
+                gameManager.RemoveChunkObserver(observer);
+            }
+
+            if (entityId >= 0)
+            {
+                PreparationObservers.Remove(entityId);
+                if (!handedOffToTransition)
+                {
+                    PendingTeleports.Remove(entityId);
+                }
+            }
+        }
     }
 
     private static void ExecuteTeleport(EntityPlayer player, TraderDestination destination, Vector3 target, bool showTooltip)
@@ -88,46 +208,80 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    private static void StartTransitionAndTeleport(EntityPlayer player, TraderDestination destination, Vector3 target, bool costAlreadyConsumed)
+    private static bool StartTransitionAndTeleport(
+        EntityPlayer player,
+        TraderDestination destination,
+        Vector3 target,
+        bool costAlreadyConsumed,
+        bool pendingAlreadySet = false)
     {
         TravelTransitionSettings settings = VisitedTraderTeleportConfig.TravelTransition;
         if (settings == null || !settings.Enabled || settings.DurationSeconds <= 0f)
         {
+            if (!pendingAlreadySet && PendingTeleports.Contains(player.entityId))
+            {
+                return false;
+            }
+
+            if (!pendingAlreadySet)
+            {
+                PendingTeleports.Add(player.entityId);
+            }
+
             if (!costAlreadyConsumed && !TravelCostService.TryConsumeCost(player, destination, out int _))
             {
-                return;
+                PendingTeleports.Remove(player.entityId);
+                return false;
             }
 
             ExecuteTeleport(player, destination, target, true);
-            return;
+            PendingTeleports.Remove(player.entityId);
+            return true;
         }
 
         GameManager gameManager = GameManager.Instance;
         if (gameManager == null)
         {
+            if (!pendingAlreadySet && PendingTeleports.Contains(player.entityId))
+            {
+                return false;
+            }
+
+            if (!pendingAlreadySet)
+            {
+                PendingTeleports.Add(player.entityId);
+            }
+
             if (!costAlreadyConsumed && !TravelCostService.TryConsumeCost(player, destination, out int _))
             {
-                return;
+                PendingTeleports.Remove(player.entityId);
+                return false;
             }
 
             ExecuteTeleport(player, destination, target, true);
-            return;
+            PendingTeleports.Remove(player.entityId);
+            return true;
         }
 
         int entityId = player.entityId;
-        if (PendingTeleports.Contains(entityId))
+        if (!pendingAlreadySet && PendingTeleports.Contains(entityId))
         {
-            return;
+            return false;
         }
 
-        PendingTeleports.Add(entityId);
+        if (!pendingAlreadySet)
+        {
+            PendingTeleports.Add(entityId);
+        }
+
         if (!costAlreadyConsumed && !TravelCostService.TryConsumeCost(player, destination, out int _))
         {
             PendingTeleports.Remove(entityId);
-            return;
+            return false;
         }
 
         gameManager.StartCoroutine(TransitionAndTeleport(player, destination, target, settings));
+        return true;
     }
 
     private static IEnumerator TransitionAndTeleport(EntityPlayer player, TraderDestination destination, Vector3 target, TravelTransitionSettings settings)
@@ -506,6 +660,28 @@ internal static class VisitedTraderTeleportService
         catch (Exception ex)
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Could not force client chunk visual update: {ex.Message}");
+        }
+    }
+
+    private static void ShowPreparingTooltip(EntityPlayer player)
+    {
+        ShowTooltip(player, VTTLocalization.Get("vtt_preparing_travel"));
+    }
+
+    private static void ShowDestinationNotReadyTooltip(EntityPlayer player)
+    {
+        ShowTooltip(player, VTTLocalization.Get("vtt_destination_not_ready"));
+    }
+
+    private static void ShowTooltip(EntityPlayer player, string message)
+    {
+        if (player is EntityPlayerLocal localPlayer)
+        {
+            GameManager.ShowTooltip(localPlayer, message, false, false, 4f);
+        }
+        else
+        {
+            GameManager.ShowTooltipMP(player, string.Empty, message);
         }
     }
 

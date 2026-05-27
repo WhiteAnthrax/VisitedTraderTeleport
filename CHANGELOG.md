@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.21 - 2026-05-27 09:00 JST
+- Block dedicated-server transport before charging if the destination chunk is not already loaded, avoiding unsafe teleports into missing chunks.
+- Restored asynchronous destination preparation for local games so unloaded destinations are prepared before travel cost is consumed.
+- No save reset is required.
+
 ## 0.5.20 - 2026-05-27 07:18 JST
 - Retry multiplayer package registration after the game rebuilds its base net package mapping, improving dedicated-server reliability.
 - Added clearer server-side travel-cost logs showing required cost and inventory/bag counts when transport is allowed or blocked.
