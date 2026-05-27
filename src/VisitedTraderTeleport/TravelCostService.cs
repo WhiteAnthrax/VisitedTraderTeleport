@@ -86,6 +86,53 @@ internal static class TravelCostService
         return true;
     }
 
+    public static void TryConsumeLocalCost(EntityPlayerLocal player, string itemName, int cost)
+    {
+        if (player == null || cost <= 0 || string.IsNullOrWhiteSpace(itemName))
+        {
+            return;
+        }
+
+        if (!TryGetItemValue(itemName, out ItemValue itemValue))
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Travel cost item not found on client: {itemName}. Skipping local consumption.");
+            return;
+        }
+
+        int available = CountItems(player, itemValue, out int inventoryCount, out int bagCount);
+        int removed = RemoveItems(player, itemValue, cost);
+        int remaining = CountItems(player, itemValue, out int remainingInventory, out int remainingBag);
+        int expectedRemaining = Math.Max(0, available - cost);
+        if (remaining > expectedRemaining)
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Local travel cost removal under-consumed for {GetPlayerName(player)}: " +
+                $"cost={cost} {itemName}, removed={removed}, " +
+                $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
+                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}).");
+        }
+        else if (remaining < expectedRemaining)
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Local travel cost removal over-consumed for {GetPlayerName(player)}: " +
+                $"cost={cost} {itemName}, removed={removed}, " +
+                $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
+                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}).");
+        }
+
+        if (removed > 0)
+        {
+            ShowLocalCostRemoval(player, itemValue, removed);
+        }
+
+        Debug.Log(
+            $"[VisitedTraderTeleport] Consumed local travel cost for {GetPlayerName(player)}: " +
+            $"{cost} {itemName}; removed={removed}, before={available} " +
+            $"(inventory={inventoryCount}, bag={bagCount}), after={remaining} " +
+            $"(inventory={remainingInventory}, bag={remainingBag}).");
+    }
+
     public static bool HasRequiredCost(EntityPlayer player, TraderDestination destination)
     {
         TravelCostSettings settings = VisitedTraderTeleportConfig.TravelCost;

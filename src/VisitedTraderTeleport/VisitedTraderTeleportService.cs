@@ -8,7 +8,7 @@ namespace VisitedTraderTeleport;
 internal static class VisitedTraderTeleportService
 {
     private const float TeleportVerticalClearance = 0.25f;
-    private const float PrepareTimeoutSeconds = 8f;
+    private const float PrepareTimeoutSeconds = 12f;
     private const int PrepareChunkViewDim = 3;
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshHoldSeconds = 5f;
@@ -34,7 +34,7 @@ internal static class VisitedTraderTeleportService
         }
 
         Vector3 target = ResolveTarget(destination);
-        if (!TravelCostService.HasRequiredCost(player, destination))
+        if (player is EntityPlayerLocal && !TravelCostService.HasRequiredCost(player, destination))
         {
             return;
         }
@@ -228,7 +228,7 @@ internal static class VisitedTraderTeleportService
                 PendingTeleports.Add(player.entityId);
             }
 
-            if (!costAlreadyConsumed && !TravelCostService.TryConsumeCost(player, destination, out int _))
+            if (!costAlreadyConsumed && player is EntityPlayerLocal && !TravelCostService.TryConsumeCost(player, destination, out int _))
             {
                 PendingTeleports.Remove(player.entityId);
                 return false;
@@ -252,7 +252,7 @@ internal static class VisitedTraderTeleportService
                 PendingTeleports.Add(player.entityId);
             }
 
-            if (!costAlreadyConsumed && !TravelCostService.TryConsumeCost(player, destination, out int _))
+            if (!costAlreadyConsumed && player is EntityPlayerLocal && !TravelCostService.TryConsumeCost(player, destination, out int _))
             {
                 PendingTeleports.Remove(player.entityId);
                 return false;
@@ -274,7 +274,7 @@ internal static class VisitedTraderTeleportService
             PendingTeleports.Add(entityId);
         }
 
-        if (!costAlreadyConsumed && !TravelCostService.TryConsumeCost(player, destination, out int _))
+        if (!costAlreadyConsumed && player is EntityPlayerLocal && !TravelCostService.TryConsumeCost(player, destination, out int _))
         {
             PendingTeleports.Remove(entityId);
             return false;
@@ -290,9 +290,10 @@ internal static class VisitedTraderTeleportService
         try
         {
             int paidCost = TravelCostService.CalculateCost(destination, player);
+            string costItemName = VisitedTraderTeleportConfig.TravelCost?.ItemName ?? string.Empty;
             string destinationName = TraderDestinationFormatter.FormatName(destination);
             string transportDestination = TraderDestinationFormatter.FormatTransportDestination(destination);
-            PlayTravelTransition(player, destinationName, transportDestination, paidCost, settings);
+            PlayTravelTransition(player, destinationName, transportDestination, paidCost, costItemName, settings);
 
             float teleportAt = Time.realtimeSinceStartup + GetTeleportDelay(settings);
             while (Time.realtimeSinceStartup < teleportAt)
@@ -377,6 +378,7 @@ internal static class VisitedTraderTeleportService
         string destinationName,
         string transportDestination,
         int paidCost,
+        string costItemName,
         TravelTransitionSettings settings)
     {
         if (player is EntityPlayerLocal localPlayer)
@@ -390,7 +392,10 @@ internal static class VisitedTraderTeleportService
             ClientInfo clientInfo = ConnectionManager.Instance?.Clients?.ForEntityId(player.entityId);
             clientInfo?.SendPackage(
                 NetPackageManager.GetPackage<NetPackageVisitedTraderTravelTransition>()
-                    .Setup(destinationName, transportDestination, paidCost, settings));
+                    .Setup(destinationName, transportDestination, paidCost, costItemName, settings));
+            Debug.Log(
+                $"[VisitedTraderTeleport] Sending travel transition to {player.PlayerDisplayName}: " +
+                $"paidCost={paidCost} {costItemName}, destination={destinationName}.");
         }
         catch (Exception ex)
         {

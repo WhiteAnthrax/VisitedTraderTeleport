@@ -121,7 +121,7 @@ For multiplayer saves, the server owns trader access:
 - The server records the visit, applies `personal`, `party`, or `shared`, and returns the allowed destination list.
 - The client shows the server's active access mode and travel cost on the destination screen.
 - When a client chooses a teleport destination, the server validates that destination again before performing the teleport.
-- If travel costs are enabled, the server checks and consumes the required item before travel.
+- If travel costs are enabled, the client checks the required item against its own inventory before sending the request, and consumes the item locally once travel begins. This keeps the configured cost in sync with what the player actually sees in the inventory window on dedicated servers.
 - `party` mode checks the player's current party when the destination list is requested.
 
 ## Existing Users Upgrading From Version 0.2.x Or Older

@@ -1,5 +1,12 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.25 - 2026-05-28 04:06 JST
+- Fixed travel-cost consumption on dedicated servers so the configured item is actually deducted from the player's inventory after a paid trip.
+- Travel-cost item count is now checked and consumed on the client; the server no longer tries to mutate a remote player's inventory directly.
+- Added a client-side travel-cost pre-check so insufficient-cost feedback appears immediately when the trip is chosen, instead of relying on the server's view of the inventory.
+- Extended the destination preparation timeout from 8 to 12 seconds for slower dedicated-server chunk loads.
+- No save reset is required.
+
 ## 0.5.24 - 2026-05-28 00:45 JST
 - Fixed travel-cost consumption to use the multiplayer inventory update path so paid transport applies item removal more consistently.
 - Added extra server-side logging around removed item counts and post-payment inventory totals for easier dedicated-server diagnosis.
