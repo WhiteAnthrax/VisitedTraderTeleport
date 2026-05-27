@@ -7,7 +7,6 @@ AGENTS.md
 # Generated build/package outputs
 dist/
 mod/VisitedTraderTeleport/*.dll
-mod/VisitedTraderTeleportTestTools/*.dll
 mod/VisitedTraderTeleport/Changelog.txt
 
 # Local copies of 7 Days to Die assemblies/config used only for compilation
