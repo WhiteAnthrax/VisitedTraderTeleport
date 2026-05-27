@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.22 - 2026-05-27 09:10 JST
+- Prepare unloaded destinations asynchronously on dedicated servers before charging and starting transport, instead of immediately blocking the trip.
+- Keep the no-charge timeout fallback if the server cannot prepare the destination safely.
+- No save reset is required.
+
 ## 0.5.21 - 2026-05-27 09:00 JST
 - Block dedicated-server transport before charging if the destination chunk is not already loaded, avoiding unsafe teleports into missing chunks.
 - Restored asynchronous destination preparation for local games so unloaded destinations are prepared before travel cost is consumed.

@@ -42,16 +42,6 @@ internal static class VisitedTraderTeleportService
         World world = GameManager.Instance?.World;
         if (NeedsPreparation(world, target))
         {
-            if (GameManager.IsDedicatedServer)
-            {
-                Debug.LogWarning(
-                    $"[VisitedTraderTeleport] Destination is not loaded on the server; transport blocked without charging " +
-                    $"{player.PlayerDisplayName}: {destination.DialogText}, " +
-                    $"target=({target.x:0.##}, {target.y:0.##}, {target.z:0.##}).");
-                ShowDestinationNotReadyTooltip(player);
-                return;
-            }
-
             if (TryStartPreparedTransport(player, destination, target))
             {
                 Debug.Log(
@@ -61,6 +51,13 @@ internal static class VisitedTraderTeleportService
                 ShowPreparingTooltip(player);
                 return;
             }
+
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Destination preparation could not start; transport blocked without charging " +
+                $"{player.PlayerDisplayName}: {destination.DialogText}, " +
+                $"target=({target.x:0.##}, {target.y:0.##}, {target.z:0.##}).");
+            ShowDestinationNotReadyTooltip(player);
+            return;
         }
 
         StartTransitionAndTeleport(player, destination, target, false);
@@ -125,11 +122,14 @@ internal static class VisitedTraderTeleportService
             {
                 observer = gameManager.AddChunkObserver(
                     initialTarget,
-                    true,
+                    !GameManager.IsDedicatedServer,
                     PrepareChunkViewDim,
                     player.entityId);
                 PreparationObservers[player.entityId] = observer;
-                ForceClientChunkVisualUpdate(world);
+                if (!GameManager.IsDedicatedServer)
+                {
+                    ForceClientChunkVisualUpdate(world);
+                }
             }
 
             float timeoutAt = Time.realtimeSinceStartup + PrepareTimeoutSeconds;
