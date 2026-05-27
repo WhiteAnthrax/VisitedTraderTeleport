@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.24 - 2026-05-28 00:45 JST
+- Fixed travel-cost consumption to use the multiplayer inventory update path so paid transport applies item removal more consistently.
+- Added extra server-side logging around removed item counts and post-payment inventory totals for easier dedicated-server diagnosis.
+- No save reset is required.
+
 ## 0.5.23 - 2026-05-27 20:03 JST
 - Fixed dedicated-server travel cost checks using the same player inventory and bag item-count APIs used by other server-side mods.
 - Fixed travel cost consumption to use the matching server-side item removal calls.
