@@ -1,0 +1,11 @@
+[heading]Version 0.5.26[/heading]
+
+[list]
+[*]Added a short trader-transport transition before travel, with a brief hidden-view delay, an optional vehicle sound, and an arrival message.
+[*]Added optional distance-based travel costs using a configurable item, with gas as the default. Disabled by default, so nothing changes until you enable it.
+[*]Destination choices show the configured travel cost before you commit to a trip, and the destination screen shows the active access mode and page status.
+[*]Added paging controls so long visited-trader lists stay fully reachable.
+[*]Fixed travel cost on dedicated servers: the cost item is checked and consumed on the client, so the inventory stack count correctly reflects what a trip costs.
+[*]The travel overlay now stays up until the destination area is loaded on the client, so the trader you arrive at is rendered before the arrival message appears.
+[*]No save reset required when updating from 0.4.x.
+[/list]
