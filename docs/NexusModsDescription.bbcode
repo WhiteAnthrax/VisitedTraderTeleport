@@ -2,28 +2,24 @@
 
 [b]Travel Between Visited Traders[/b] adds a trader dialog option that lets you travel back to traders you have already visited.
 
-Talk to a trader once to record that trader for the current save. After that, use [b]Travel to a visited trader[/b] in trader dialog and pick a destination from the list.
+Talk to a trader once to record it for the current save. After that, choose [b]Travel to a visited trader[/b] in trader dialog and pick a destination from the list.
 
-For normal single-player use, install the mod and leave the default settings alone.
+For normal single-player use, install the mod and leave the defaults alone.
 
 [line]
 
 [heading]Main features[/heading]
 
 [list]
-[*]Travel between traders you have already visited
-[*]Destination list shows trader name, distance, direction, coordinates, current access mode, and any configured travel cost
-[*]Mode and page status are kept separate from selectable destination choices
-[*]Full-screen trader-transport overlay while travel is preparing and in progress, with clearer departure and arrival messages
-[*]Optional distance-based travel costs, with gas as the default cost item when enabled
-[*]Long destination lists use pages so every visited trader remains reachable
-[*]Known vanilla and Wasteland Mod trader names display cleanly when recognized
-[*]Supports English and Japanese
-[*]Works in single-player and multiplayer
-[*]Includes Personal, Party, and Shared access modes for servers
-[*]Keeps older visited-trader save data readable
-[*]Reduces duplicate destinations from older records and repeat visits to the same trader
-[*]Prepares distant or unloaded trader areas before travel, and cancels the teleport if the destination is not ready
+[*]Travel back to any trader you have already visited
+[*]Destination list shows trader name, distance, direction, coordinates, access mode, and travel cost
+[*]A short full-screen transport animation with departure and arrival messages
+[*]Optional distance-based travel cost, such as gas or casino money (free by default)
+[*]Long destination lists are split into pages
+[*]Recognized vanilla and Wasteland Mod trader names are shown cleanly
+[*]English and Japanese supported
+[*]Works in single-player and multiplayer, with Personal / Party / Shared access modes for servers
+[*]Prepares distant or unloaded trader areas before travel, and cancels the trip if the destination is not ready
 [/list]
 
 [line]
@@ -36,54 +32,35 @@ Extract the [b]VisitedTraderTeleport[/b] folder into:
 7 Days To Die\Mods\VisitedTraderTeleport
 [/quote]
 
-The mod requires the vanilla [b]0_TFP_Harmony[/b] mod that ships with current 7 Days to Die versions.
+Requires the vanilla [b]0_TFP_Harmony[/b] mod included with current 7 Days to Die versions.
 
-[b]Anti-cheat should be disabled for this DLL mod.[/b]
+[b]Anti-cheat must be disabled for this DLL mod.[/b]
 
-[line]
-
-[heading]Single-player[/heading]
-
-No configuration is needed for normal single-player play.
-
-The default mode is [b]Personal[/b], which means you can travel only to traders you have personally visited in that save.
-
-Travel is free by default. The short visible transport transition is enabled by default.
-
-[line]
-
-[heading]Multiplayer[/heading]
-
-Install the mod on both the server and every client.
-
-In multiplayer, the server controls trader access, travel cost, and teleport validation. Clients show the destination list allowed by the server.
-
-The config is loaded from the installed mod folder beside [b]VisitedTraderTeleport.dll[/b], so custom folder names work as long as the [b]Config[/b] folder stays with the mod.
+For multiplayer, install the mod on both the server and every client.
 
 [line]
 
 [heading]Access modes[/heading]
 
-[b]Personal[/b]
-Each player can travel only to traders they personally visited.
+[b]Personal[/b] - travel only to traders you visited yourself (default).
+[b]Party[/b] - also travel to traders visited by your current party members.
+[b]Shared[/b] - any trader visited by anyone on the server is available to everyone.
 
-[b]Party[/b]
-Players can travel to traders visited by themselves or by their current party members.
-
-[b]Shared[/b]
-Any trader visited by anyone in the active server/save data becomes available to everyone.
+In multiplayer, the server controls access, travel cost, and teleport validation.
 
 [line]
 
 [heading]Configuration[/heading]
 
-For multiplayer, change settings on the server:
+All settings are in:
 
 [quote]
 7 Days To Die\Mods\VisitedTraderTeleport\Config\VisitedTraderTeleport.xml
 [/quote]
 
-Access mode:
+For multiplayer, edit this on the server. Restart the game, host, or dedicated server after changing it.
+
+[b]Access mode[/b]
 
 [quote]
 <AccessMode value="personal" />
@@ -91,43 +68,37 @@ Access mode:
 
 Use [b]personal[/b], [b]party[/b], or [b]shared[/b].
 
-Optional travel cost:
+[b]Travel cost[/b] (free by default)
 
 [quote]
 <TravelCost enabled="false" item="ammoGasCan" perMeter="0.1" minimum="0" />
 [/quote]
 
-Set [b]enabled[/b] to [b]true[/b] to charge for travel. The default item is vanilla gas, shown with the game's localized item name. New configs can use [b]perMeter[/b] for finer tuning; older [b]perKilometer[/b] configs still work. Invalid negative, zero, or extremely large cost values are corrected during config load and logged. [b]displayName[/b] is only needed as a fallback for custom items without a game localization entry.
+[list]
+[*][b]enabled[/b] - set to [b]true[/b] to charge for travel.
+[*][b]item[/b] - the item to consume. Default is gas ([b]ammoGasCan[/b]); use [b]casinoCoin[/b] for Duke's casino tokens, or any item name.
+[*][b]perMeter[/b] - amount charged per meter. For example, 0.1 is one item per 10 meters; 0.001 is one item per kilometer.
+[*][b]minimum[/b] - the lowest cost for any paid trip.
+[/list]
 
-To charge Duke's casino tokens instead of gas:
-
-[quote]
-<TravelCost enabled="true" item="casinoCoin" perMeter="1" minimum="0" />
-[/quote]
-
-Travel transition:
+[b]Travel transition[/b] (enabled by default)
 
 [quote]
 <TravelTransition enabled="true" durationSeconds="5" sound="suv_startup" soundRepeatSeconds="2" />
 [/quote]
 
-Restart the dedicated server, host process, or single-player game after changing the config.
+[list]
+[*][b]enabled[/b] - set to [b]false[/b] for instant travel with no animation.
+[*][b]durationSeconds[/b] - how long the animation is shown.
+[*][b]sound[/b] - sound played during travel. Leave empty to turn it off.
+[*][b]soundRepeatSeconds[/b] - how often the sound repeats. Set to 0 to play it once.
+[/list]
 
 [line]
 
-[heading]Upgrading from older versions[/heading]
+[heading]Upgrading[/heading]
 
-[b]You do not need to reset your save when upgrading.[/b]
-
-Older versions stored visited trader data in [b]VisitedTraderTeleportVisited.txt[/b]. Newer versions use [b]VisitedTraderTeleportData.json[/b].
-
-The old TXT data still loads for compatibility, and new visits are written to the newer JSON file. Existing data is not deleted during upgrade.
-
-When old or duplicate records are found, the mod may tidy them automatically while keeping visited-trader ownership linked to the matching trader records. A one-time backup named [b]VisitedTraderTeleportData.before-0.4.16.json[/b] is created before automatic JSON normalization.
-
-For extra safety before updating a server, stop the server and copy [b]VisitedTraderTeleportData.json[/b] and [b]VisitedTraderTeleportVisited.txt[/b] from the save folder first.
-
-Dedicated servers read legacy data from the machine that owns the active save. Old TXT files that exist only on former clients are not transferred automatically.
+[b]You do not need to reset your save when upgrading.[/b] Existing visited-trader data is kept and loaded automatically, and new visits are saved going forward.
 
 [line]
 
@@ -135,9 +106,7 @@ Dedicated servers read legacy data from the machine that owns the active save. O
 
 [list]
 [*]The current trader is not shown as a destination
-[*]Long destination lists show page controls inside the trader dialog
-[*]If there are no valid destinations, the destination screen explains that none are available in the current mode
-[*]Teleport destinations are based on the position saved when the trader visit was recorded
-[*]If a destination cannot be prepared in time, travel is cancelled instead of forcing the player into an unsafe area
-[*]After multiplayer travel, the client refreshes destination visuals to reduce transparent POI objects
+[*]If there are no valid destinations, the screen explains none are available in the current mode
+[*]Teleport destinations use the position saved when the trader visit was recorded
+[*]If a destination cannot be prepared in time, travel is cancelled instead of forcing you into an unsafe area
 [/list]
