@@ -10,6 +10,11 @@ internal sealed class DialogActionVisitedTraderTeleport : BaseDialogAction
             {
                 if (VisitedTraderClientState.TryGet(Value, out TraderDestination clientDestination))
                 {
+                    if (!TravelCostService.HasRequiredCost(localPlayer, clientDestination))
+                    {
+                        return;
+                    }
+
                     VisitedTraderTeleportService.PrepareClientDestinationVisuals(localPlayer, clientDestination);
                 }
 

@@ -1,5 +1,148 @@
 # Travel Between Visited Traders Changelog
 
+## 0.5.26 - 2026-05-28 04:45 JST
+- Fixed the client-side travel-cost check so the configured cost is actually applied when starting a trip; previously the check used an empty default and let the trip proceed even when the player had no gas.
+- Travel overlay now stays visible after the configured transition duration until the destination chunk is loaded on the client, so the trader you arrive at is rendered before the arrival message appears.
+- Capped the additional overlay hold to 15 seconds so a missing or slow-loading area cannot lock the overlay forever.
+- No save reset is required.
+
+## 0.5.25 - 2026-05-28 04:06 JST
+- Fixed travel-cost consumption on dedicated servers so the configured item is actually deducted from the player's inventory after a paid trip.
+- Travel-cost item count is now checked and consumed on the client; the server no longer tries to mutate a remote player's inventory directly.
+- Added a client-side travel-cost pre-check so insufficient-cost feedback appears immediately when the trip is chosen, instead of relying on the server's view of the inventory.
+- Extended the destination preparation timeout from 8 to 12 seconds for slower dedicated-server chunk loads.
+- No save reset is required.
+
+## 0.5.24 - 2026-05-28 00:45 JST
+- Fixed travel-cost consumption to use the multiplayer inventory update path so paid transport applies item removal more consistently.
+- Added extra server-side logging around removed item counts and post-payment inventory totals for easier dedicated-server diagnosis.
+- No save reset is required.
+
+## 0.5.23 - 2026-05-27 20:03 JST
+- Fixed dedicated-server travel cost checks using the same player inventory and bag item-count APIs used by other server-side mods.
+- Fixed travel cost consumption to use the matching server-side item removal calls.
+- No save reset is required.
+
+## 0.5.22 - 2026-05-27 09:10 JST
+- Prepare unloaded destinations asynchronously on dedicated servers before charging and starting transport, instead of immediately blocking the trip.
+- Keep the no-charge timeout fallback if the server cannot prepare the destination safely.
+- No save reset is required.
+
+## 0.5.21 - 2026-05-27 09:00 JST
+- Block dedicated-server transport before charging if the destination chunk is not already loaded, avoiding unsafe teleports into missing chunks.
+- Restored asynchronous destination preparation for local games so unloaded destinations are prepared before travel cost is consumed.
+- No save reset is required.
+
+## 0.5.20 - 2026-05-27 07:18 JST
+- Retry multiplayer package registration after the game rebuilds its base net package mapping, improving dedicated-server reliability.
+- Added clearer server-side travel-cost logs showing required cost and inventory/bag counts when transport is allowed or blocked.
+- No save reset is required.
+
+## 0.5.19 - 2026-05-27 06:05 JST
+- Show the mode, page, and travel-cost rate only on the destination selection screen, keeping the main trader dialog cleaner.
+- Fixed multiplayer package registration so server-side transport requests, visited-trader snapshots, and travel-cost settings can sync on game builds with a smaller net package ID range.
+- No save reset is required.
+
+## 0.5.18 - 2026-05-27 03:49 JST
+- Restored the full main trader dialog label for requesting transport.
+- Moved mode, page, and travel-cost rate details into a separate status row so the main transport choice is less likely to be clipped.
+- Fixed the transition overlay text layout so long transport messages do not overlap the wait hint.
+- Stopped overriding trader dialog headings so the current trader name does not carry over after transport.
+- No save reset is required.
+
+## 0.5.17 - 2026-05-27 03:08 JST
+- Shortened transport choice and travel cost labels so Japanese item names are less likely to be clipped in the trader dialog.
+- Fixed trader dialog headings so localized trader names and the current access mode are shown consistently on both the main and destination screens.
+- Expanded the travel overlay departure message to show the trader destination and coordinates.
+- No save reset is required.
+
+## 0.5.16 - 2026-05-27 02:41 JST
+- Fixed long-distance transport failing when the destination chunk preparation never reached the game's ready state.
+- Made the destination screen update the visible response-list heading directly so the current access mode and page status are shown reliably.
+- No save reset is required.
+
+## 0.5.15 - 2026-05-27 01:54 JST
+- Renamed the trader dialog entry to better match the transport-service style of travel while keeping the label short enough for the dialog panel.
+- No save reset is required.
+
+## 0.5.14 - 2026-05-27 01:38 JST
+- Shortened travel-cost labels in trader dialog choices so Japanese and other localized item names are less likely to be clipped by the game's dialog panel.
+- No save reset is required.
+
+## 0.5.13 - 2026-05-27 00:43 JST
+- Removed the `disableCamera` transition config option; travel now uses the full-screen transition without exposing a separate camera toggle.
+- Added the configured travel-cost rate to the main "Travel to a visited trader" dialog choice.
+- Travel cost labels now prefer the game's localized item name, with `displayName` kept only as a fallback for custom items.
+- Clamped invalid travel-cost and transition config values during load so negative, zero, or extreme numbers do not produce unsafe behavior.
+- No save reset is required.
+
+## 0.5.12 - 2026-05-27 00:29 JST
+- Restored the destination screen access mode and page status by applying the response-list heading patch to the base dialog binding method used by the game.
+- Stopped directly toggling the player camera during travel so `disableCamera` no longer flips camera-control behavior while the overlay is active.
+- No save reset is required.
+
+## 0.5.11 - 2026-05-27 00:08 JST
+- Blocked player control and overlay input during the travel transition so the trip cannot be played through like a normal dialog moment.
+- Added `soundRepeatSeconds` to keep the configured travel sound active during longer transitions.
+- No save reset is required.
+
+## 0.5.10 - 2026-05-26 20:08 JST
+- Added a full-screen travel overlay while trader transport is preparing and in progress, then clears it before showing the arrival message.
+- No save reset is required.
+
+## 0.5.9 - 2026-05-26 19:58 JST
+- Fixed a startup error when the optional destination-heading patch could not find the response-list binding method in the running game build.
+- No save reset is required.
+
+## 0.5.8 - 2026-05-26 05:04 JST
+- Smoothed the travel transition so the default trip keeps the camera visible, shows clearer departure and arrival messages, and avoids stacking the generic teleport tooltip on top of the transport message.
+- Changed the sample transition config to `disableCamera="false"`; existing configs keep their current setting.
+- No save reset is required.
+
+## 0.5.7 - 2026-05-26 04:49 JST
+- Fixed the destination screen heading patch so mode and page status are applied to the response-list heading used by the trader dialog.
+- No save reset is required.
+
+## 0.5.6 - 2026-05-26 02:48 JST
+- Moved destination mode and page status into the trader name heading on the destination screen so the selectable list stays limited to real choices.
+- No save reset is required.
+
+## 0.5.5 - 2026-05-26 02:14 JST
+- Fixed destination screen status text so the current access mode and page count are shown above the selectable choices again.
+- Changed the sample gas travel cost to `perMeter="0.1"` and added a Duke's casino token example using `casinoCoin`.
+- No save reset is required.
+
+## 0.5.4 - 2026-05-26 02:03 JST
+- Moved destination screen status lines out of the selectable response list so only real actions show as selectable dialog choices.
+- No save reset is required.
+
+## 0.5.3 - 2026-05-26 01:38 JST
+- Added `perMeter` travel cost configuration for finer distance-based cost tuning while keeping older `perKilometer` configs compatible.
+- Destination choices now show the configured travel cost before selecting a trip.
+- Added sound-key diagnostics for the optional travel transition sound and tried both bracketed and unbracketed sound keys when matching loaded audio data.
+- No save reset is required.
+
+## 0.5.2 - 2026-05-26 01:22 JST
+- Fixed config loading for the travel cost and transition settings by using the active mod folder path provided by the game.
+- Added clearer startup logging for the loaded travel cost and transition settings.
+- Tried both player-local and position-based playback for the optional travel sound.
+- No save reset is required.
+
+## 0.5.1 - 2026-05-26 00:31 JST
+- Fixed the trader transport setup so travel costs, multiplayer transition messages, and the optional travel sound can run correctly.
+- Removed leftover local-only verification code from the main mod package.
+- No save reset is required.
+
+## 0.5.0 - 2026-05-25 05:18 JST
+- Added a short trader-transport transition before travel, with a brief hidden-view delay, optional vehicle sound, and arrival message.
+- Added optional distance-based travel costs using configurable items, with gas as the default cost item when enabled.
+- Multiplayer servers now send cost settings to clients so destination labels can show the server-side travel cost.
+- No save reset is required.
+
+## 0.4.26 - 2026-05-25 11:14 JST
+- Added paging controls to the visited-trader destination screen so long lists remain fully reachable.
+- No save reset is required.
+
 ## 0.4.25 - 2026-05-23 23:48 JST
 - Fixed config loading when the installed mod folder is named something other than `VisitedTraderTeleport`, such as `Travel Between Visited Traders`.
 - Access mode settings now load from the actual installed mod folder beside `VisitedTraderTeleport.dll`, with the old path kept as a fallback.

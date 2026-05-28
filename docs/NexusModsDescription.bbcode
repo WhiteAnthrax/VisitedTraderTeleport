@@ -12,7 +12,11 @@ For normal single-player use, install the mod and leave the default settings alo
 
 [list]
 [*]Travel between traders you have already visited
-[*]Destination list shows trader name, distance, direction, coordinates, and the current access mode
+[*]Destination list shows trader name, distance, direction, coordinates, current access mode, and any configured travel cost
+[*]Mode and page status are kept separate from selectable destination choices
+[*]Full-screen trader-transport overlay while travel is preparing and in progress, with clearer departure and arrival messages
+[*]Optional distance-based travel costs, with gas as the default cost item when enabled
+[*]Long destination lists use pages so every visited trader remains reachable
 [*]Known vanilla and Wasteland Mod trader names display cleanly when recognized
 [*]Supports English and Japanese
 [*]Works in single-player and multiplayer
@@ -44,13 +48,15 @@ No configuration is needed for normal single-player play.
 
 The default mode is [b]Personal[/b], which means you can travel only to traders you have personally visited in that save.
 
+Travel is free by default. The short visible transport transition is enabled by default.
+
 [line]
 
 [heading]Multiplayer[/heading]
 
 Install the mod on both the server and every client.
 
-In multiplayer, the server controls trader access and teleport validation. Clients show the destination list allowed by the server.
+In multiplayer, the server controls trader access, travel cost, and teleport validation. Clients show the destination list allowed by the server.
 
 The config is loaded from the installed mod folder beside [b]VisitedTraderTeleport.dll[/b], so custom folder names work as long as the [b]Config[/b] folder stays with the mod.
 
@@ -67,19 +73,45 @@ Players can travel to traders visited by themselves or by their current party me
 [b]Shared[/b]
 Any trader visited by anyone in the active server/save data becomes available to everyone.
 
-For multiplayer, change the access mode on the server:
+[line]
+
+[heading]Configuration[/heading]
+
+For multiplayer, change settings on the server:
 
 [quote]
 7 Days To Die\Mods\VisitedTraderTeleport\Config\VisitedTraderTeleport.xml
 [/quote]
 
-Change:
+Access mode:
 
 [quote]
 <AccessMode value="personal" />
 [/quote]
 
-to [b]personal[/b], [b]party[/b], or [b]shared[/b], then restart the dedicated server or host process.
+Use [b]personal[/b], [b]party[/b], or [b]shared[/b].
+
+Optional travel cost:
+
+[quote]
+<TravelCost enabled="false" item="ammoGasCan" perMeter="0.1" minimum="0" />
+[/quote]
+
+Set [b]enabled[/b] to [b]true[/b] to charge for travel. The default item is vanilla gas, shown with the game's localized item name. New configs can use [b]perMeter[/b] for finer tuning; older [b]perKilometer[/b] configs still work. Invalid negative, zero, or extremely large cost values are corrected during config load and logged. [b]displayName[/b] is only needed as a fallback for custom items without a game localization entry.
+
+To charge Duke's casino tokens instead of gas:
+
+[quote]
+<TravelCost enabled="true" item="casinoCoin" perMeter="1" minimum="0" />
+[/quote]
+
+Travel transition:
+
+[quote]
+<TravelTransition enabled="true" durationSeconds="5" sound="suv_startup" soundRepeatSeconds="2" />
+[/quote]
+
+Restart the dedicated server, host process, or single-player game after changing the config.
 
 [line]
 
@@ -103,6 +135,7 @@ Dedicated servers read legacy data from the machine that owns the active save. O
 
 [list]
 [*]The current trader is not shown as a destination
+[*]Long destination lists show page controls inside the trader dialog
 [*]If there are no valid destinations, the destination screen explains that none are available in the current mode
 [*]Teleport destinations are based on the position saved when the trader visit was recorded
 [*]If a destination cannot be prepared in time, travel is cancelled instead of forcing the player into an unsafe area
