@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,15 +12,12 @@ internal static class VisitedTraderStore
     private const string LegacyFileName = "VisitedTraderTeleportVisited.txt";
     private const string DatabaseFileName = "VisitedTraderTeleportData.json";
     private const string DatabaseNormalizationBackupFileName = "VisitedTraderTeleportData.before-0.4.16.json";
-    private const float TestTraderPreloadTimeoutSeconds = 8f;
-    private const int TestTraderPreloadViewDim = 3;
     private const float TestTraderAreaPadding = 8f;
     private const float SameTraderPositionTolerance = 16f;
     private const float SameDetailedTraderPositionTolerance = 6f;
     private const int TraderPositionKeyBucketSize = 4;
 
     private static readonly Dictionary<string, TraderDestination> LegacyDestinations = new();
-    private static readonly HashSet<string> TestScansInProgress = new(StringComparer.Ordinal);
     private static VisitedTraderDatabase database = new();
     private static string loadedSaveDirectory;
 
@@ -316,13 +312,11 @@ internal static class VisitedTraderStore
         if (!changed)
         {
             Debug.Log($"[VisitedTraderTeleport] Visit already recorded for {player.PlayerDisplayName}: {destination.DialogText}");
-            StartRecordAllKnownTradersForTesting(player);
             return;
         }
 
         SaveDatabase();
         Debug.Log($"[VisitedTraderTeleport] Recorded visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
-        StartRecordAllKnownTradersForTesting(player);
     }
 
     public static void RecordReportedVisit(TraderVisitReport report, EntityPlayer player)
@@ -370,13 +364,11 @@ internal static class VisitedTraderStore
         if (!changed)
         {
             Debug.Log($"[VisitedTraderTeleport] Reported visit already recorded for {player.PlayerDisplayName}: {destination.DialogText}");
-            StartRecordAllKnownTradersForTesting(player);
             return;
         }
 
         SaveDatabase();
         Debug.Log($"[VisitedTraderTeleport] Recorded reported visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
-        StartRecordAllKnownTradersForTesting(player);
     }
 
     private static HashSet<string> GetAllowedNewSchemaKeys(EntityPlayer player)
@@ -558,186 +550,6 @@ internal static class VisitedTraderStore
         return Mathf.RoundToInt(value / TraderPositionKeyBucketSize) * TraderPositionKeyBucketSize;
     }
 
-    private static void StartRecordAllKnownTradersForTesting(EntityPlayer player)
-    {
-        if (!VisitedTraderTeleportConfig.TestRecordAllTradersOnVisit)
-        {
-            return;
-        }
-
-        EnsureLoaded();
-
-        string playerKey = GetPlayerKey(player);
-        if (string.IsNullOrEmpty(playerKey))
-        {
-            Debug.LogWarning("[VisitedTraderTeleport] Test mode could not resolve player key.");
-            return;
-        }
-
-        if (!TestScansInProgress.Add(playerKey))
-        {
-            Debug.Log($"[VisitedTraderTeleport] Test mode scan already in progress for {player.PlayerDisplayName}.");
-            return;
-        }
-
-        GameManager gameManager = GameManager.Instance;
-        if (gameManager == null)
-        {
-            TestScansInProgress.Remove(playerKey);
-            Debug.LogWarning("[VisitedTraderTeleport] Test mode could not start because GameManager is unavailable.");
-            return;
-        }
-
-        gameManager.StartCoroutine(RecordAllKnownTradersForTesting(player, playerKey));
-    }
-
-    private static IEnumerator RecordAllKnownTradersForTesting(EntityPlayer player, string playerKey)
-    {
-        GameManager gameManager = GameManager.Instance;
-        World world = gameManager?.World;
-        var loadedTraderIds = new HashSet<int>();
-        var loadedTraders = new List<EntityTrader>();
-        World.OnEntityLoadedDelegate loadedHandler = CaptureLoadedTrader;
-        ChunkManager.ChunkObserver observer = null;
-
-        try
-        {
-            if (gameManager == null || world == null || player == null)
-            {
-                yield break;
-            }
-
-            List<TraderArea> traderAreas = world?.TraderAreas?
-                .Where(traderArea => traderArea != null)
-                .ToList();
-            if (traderAreas == null || traderAreas.Count == 0)
-            {
-                Debug.LogWarning("[VisitedTraderTeleport] Test mode found no trader areas to record.");
-                yield break;
-            }
-
-            world.EntityLoadedDelegates += loadedHandler;
-
-            if (!database.VisitsByPlayer.TryGetValue(playerKey, out HashSet<string> playerVisits))
-            {
-                playerVisits = new HashSet<string>(StringComparer.Ordinal);
-                database.VisitsByPlayer[playerKey] = playerVisits;
-            }
-
-            Debug.Log(
-                $"[VisitedTraderTeleport] Test mode sequential scan started for {player.PlayerDisplayName}: " +
-                $"areas={traderAreas.Count}, timeoutPerArea={TestTraderPreloadTimeoutSeconds:0.#}s.");
-
-            bool changed = false;
-            int resolvedCount = 0;
-            int observedCount = 0;
-            int unresolvedCount = 0;
-            for (int i = 0; i < traderAreas.Count; i++)
-            {
-                TraderArea traderArea = traderAreas[i];
-                if (TryFindTraderForArea(world, traderArea, loadedTraders, out EntityTrader trader))
-                {
-                    changed |= RecordTestTraderDestination(trader, traderArea, playerVisits);
-                    resolvedCount++;
-                    continue;
-                }
-
-                Vector3 preloadPosition = GetTraderAreaPreloadPosition(traderArea);
-                observer = gameManager.AddChunkObserver(
-                    preloadPosition,
-                    !GameManager.IsDedicatedServer,
-                    TestTraderPreloadViewDim,
-                    -1);
-
-                Debug.Log(
-                    $"[VisitedTraderTeleport] Test mode preload area {i + 1}/{traderAreas.Count}: " +
-                    $"{traderArea.Position.x},{traderArea.Position.z}.");
-
-                float timeoutAt = Time.realtimeSinceStartup + TestTraderPreloadTimeoutSeconds;
-                while (Time.realtimeSinceStartup < timeoutAt &&
-                       !TryFindTraderForArea(world, traderArea, loadedTraders, out trader))
-                {
-                    yield return null;
-                }
-
-                if (trader != null)
-                {
-                    changed |= RecordTestTraderDestination(trader, traderArea, playerVisits);
-                    resolvedCount++;
-                    observedCount++;
-                }
-                else
-                {
-                    unresolvedCount++;
-                    Debug.Log(
-                        $"[VisitedTraderTeleport] Test mode unresolved trader area " +
-                        $"{traderArea.Position.x},{traderArea.Position.z} after preload.");
-                }
-
-                if (observer != null)
-                {
-                    gameManager.RemoveChunkObserver(observer);
-                    observer = null;
-                }
-
-                yield return null;
-            }
-
-            Debug.Log(
-                $"[VisitedTraderTeleport] Test mode scan: areas={traderAreas.Count}, " +
-                $"resolved={resolvedCount}, observed={observedCount}, unresolved={unresolvedCount}, " +
-                $"loadedEvents={loadedTraders.Count}, changed={changed}.");
-
-            if (changed)
-            {
-                SaveDatabase();
-                Debug.Log($"[VisitedTraderTeleport] Test mode saved {resolvedCount} known traders for {player.PlayerDisplayName}.");
-            }
-
-            ClientInfo clientInfo = ConnectionManager.Instance?.Clients?.ForEntityId(player.entityId);
-            if (clientInfo != null)
-            {
-                VisitedTraderNetwork.SendSnapshot(clientInfo);
-            }
-        }
-        finally
-        {
-            if (world != null)
-            {
-                world.EntityLoadedDelegates -= loadedHandler;
-            }
-
-            if (observer != null)
-            {
-                gameManager?.RemoveChunkObserver(observer);
-            }
-
-            TestScansInProgress.Remove(playerKey);
-        }
-
-        void CaptureLoadedTrader(Entity entity)
-        {
-            if (entity is not EntityTrader trader)
-            {
-                return;
-            }
-
-            if (loadedTraderIds.Add(trader.entityId))
-            {
-                loadedTraders.Add(trader);
-            }
-        }
-    }
-
-    private static Vector3 GetTraderAreaPreloadPosition(TraderArea traderArea)
-    {
-        Vector3 position = traderArea.Position;
-        Vector3i size = traderArea.PrefabSize;
-        position.x += size.x * 0.5f;
-        position.z += size.z * 0.5f;
-        return position;
-    }
-
     private static TraderArea FindTraderAreaForPosition(Vector3 position)
     {
         World world = GameManager.Instance?.World;
@@ -775,76 +587,6 @@ internal static class VisitedTraderStore
         return bestArea;
     }
 
-    private static bool TryFindTraderForArea(
-        World world,
-        TraderArea traderArea,
-        IReadOnlyList<EntityTrader> loadedTraders,
-        out EntityTrader trader)
-    {
-        trader = null;
-        if (world == null || traderArea == null)
-        {
-            return false;
-        }
-
-        if (IsTraderForArea(traderArea.owningTrader, traderArea))
-        {
-            trader = traderArea.owningTrader;
-            return true;
-        }
-
-        if (loadedTraders != null)
-        {
-            for (int i = loadedTraders.Count - 1; i >= 0; i--)
-            {
-                EntityTrader loadedTrader = loadedTraders[i];
-                if (IsTraderForArea(loadedTrader, traderArea))
-                {
-                    trader = loadedTrader;
-                    return true;
-                }
-            }
-        }
-
-        var entities = new List<Entity>();
-        foreach (Entity entity in world.GetEntitiesInBounds(typeof(EntityTrader), GetTraderAreaBounds(traderArea), entities))
-        {
-            if (entity is EntityTrader foundTrader && IsTraderForArea(foundTrader, traderArea))
-            {
-                trader = foundTrader;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsTraderForArea(EntityTrader trader, TraderArea traderArea)
-    {
-        if (trader == null || traderArea == null || trader.isUnloaded)
-        {
-            return false;
-        }
-
-        if (IsSameTraderArea(trader.traderArea, traderArea))
-        {
-            return true;
-        }
-
-        return GetTraderAreaBounds(traderArea).Contains(trader.position);
-    }
-
-    private static bool IsSameTraderArea(TraderArea left, TraderArea right)
-    {
-        if (left == null || right == null)
-        {
-            return false;
-        }
-
-        return ReferenceEquals(left, right) ||
-               (left.Position == right.Position && left.PrefabSize == right.PrefabSize);
-    }
-
     private static Bounds GetTraderAreaBounds(TraderArea traderArea)
     {
         Vector3 position = traderArea.Position;
@@ -870,58 +612,6 @@ internal static class VisitedTraderStore
         size.z += TestTraderAreaPadding * 2f;
         return new Bounds(center, size);
     }
-
-    private static bool RecordTestTraderDestination(
-        EntityTrader trader,
-        TraderArea traderArea,
-        HashSet<string> playerVisits)
-    {
-        TraderDestination destination = ReuseExistingTraderKey(
-            CanonicalizeDestination(CreateTestDestination(trader, traderArea), trader.position));
-        bool changed = UpsertTrader(destination);
-        if (playerVisits.Add(destination.Key))
-        {
-            changed = true;
-        }
-
-        return changed;
-    }
-
-    private static TraderDestination CreateTestDestination(EntityTrader trader, TraderArea traderArea)
-    {
-        Vector3 forward = trader.GetForwardVector();
-        forward.y = 0f;
-        if (forward.sqrMagnitude >= 0.001f)
-        {
-            forward.Normalize();
-        }
-        else
-        {
-            forward = Vector3.zero;
-        }
-
-        Vector3 position = trader.position + forward * 2f;
-        int areaX = Mathf.RoundToInt(position.x);
-        int areaZ = Mathf.RoundToInt(position.z);
-
-        TraderArea resolvedArea = trader.traderArea ?? traderArea;
-        if (resolvedArea != null)
-        {
-            areaX = resolvedArea.Position.x;
-            areaZ = resolvedArea.Position.z;
-        }
-
-        return new TraderDestination
-        {
-            Key = GetKey(trader, resolvedArea),
-            DisplayName = GetDisplayName(trader),
-            Position = position,
-            Forward = Vector3.zero,
-            AreaX = areaX,
-            AreaZ = areaZ
-        };
-    }
-
 
     private static TraderVisitReport CreateVisitReport(EntityTrader trader)
     {

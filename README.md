@@ -7,9 +7,12 @@
 - Talking to a trader records that trader as visited for the current save.
 - The trader dialog gains a `Travel to a visited trader` option.
 - Selecting it shows dynamically generated destinations with trader name, distance, direction, and coordinates.
+- Destination screen status is shown in the trader heading, keeping actual selectable actions easier to scan.
+- Long destination lists are split into pages so every visited trader remains reachable.
 - Known vanilla and Wasteland Mod trader names are displayed cleanly when recognized.
 - The destination screen shows the active access mode and explains when no destinations are available.
-- Choosing a destination teleports the player to that trader's recorded position.
+- Choosing a destination shows a full-screen trader-transport overlay while travel is preparing and in progress, then moves the player to that trader's recorded position.
+- Optional distance-based travel costs can be enabled in config. The default cost item is gas, and the dialog shows the configured rate plus the trip cost before travel.
 - If the destination area is not loaded yet, the mod briefly prepares travel before teleporting. If the area still is not ready, the teleport is aborted instead of forcing the player into an unsafe destination.
 - In multiplayer, the client also warms and refreshes destination visuals around teleport to reduce transparent POI objects after travel.
 - Newly recorded visit data is saved in the current save folder as `VisitedTraderTeleportData.json`.
@@ -67,14 +70,58 @@ Restart the affected game process after changing the file:
 - Single-player: restart the game.
 - Multiplayer server: restart the dedicated server or host process.
 
+## Travel Cost And Transition
+
+Travel is free by default. To charge for travel, edit:
+
+```text
+7 Days To Die\Mods\VisitedTraderTeleport\Config\VisitedTraderTeleport.xml
+```
+
+Change `TravelCost`:
+
+```xml
+<TravelCost enabled="false" item="ammoGasCan" perMeter="0.1" minimum="0" />
+```
+
+Useful values:
+
+- `enabled`
+  Set to `true` to charge for travel.
+- `item`
+  Internal item name to consume. The default `ammoGasCan` is vanilla gas.
+- `displayName`
+  Optional fallback text for custom items that do not have a game localization entry. Vanilla items use the game's localized item name.
+- `perMeter`
+  Item count charged per meter of straight-line distance. Decimal values are supported, so `0.001` means 1 item per kilometer.
+- `minimum`
+  Minimum item count for any paid trip.
+
+Older configs that use `perKilometer` still work. If both `perMeter` and `perKilometer` are present, `perMeter` is used. Invalid negative, zero, or extremely large cost values are corrected during config load and logged.
+
+To charge Duke's casino tokens instead of gas, use `casinoCoin`:
+
+```xml
+<TravelCost enabled="true" item="casinoCoin" perMeter="1" minimum="0" />
+```
+
+The travel transition is enabled by default:
+
+```xml
+<TravelTransition enabled="true" durationSeconds="5" sound="suv_startup" soundRepeatSeconds="2" />
+```
+
+Set `enabled="false"` to keep travel instant. Leave `sound` empty to disable only the audio. Set `soundRepeatSeconds="0"` to play the configured sound only once. The sound value must match a loaded game audio key; if it cannot be found, the mod writes a warning to the log.
+
 ## Multiplayer Behavior
 
 For multiplayer saves, the server owns trader access:
 
 - When a client talks to a trader, the client reports that visit to the server.
 - The server records the visit, applies `personal`, `party`, or `shared`, and returns the allowed destination list.
-- The client shows the server's active access mode on the destination screen.
+- The client shows the server's active access mode and travel cost on the destination screen.
 - When a client chooses a teleport destination, the server validates that destination again before performing the teleport.
+- If travel costs are enabled, the client checks the required item against its own inventory before sending the request, and consumes the item locally once travel begins. This keeps the configured cost in sync with what the player actually sees in the inventory window on dedicated servers.
 - `party` mode checks the player's current party when the destination list is requested.
 
 ## Existing Users Upgrading From Version 0.2.x Or Older
@@ -111,6 +158,8 @@ Upgrade behavior:
 - Version `0.4.22` and newer add friendly name mappings for Wasteland Mod traders Gene, Johnny, and Rad Cat.
 - Version `0.4.24` and newer also match compatible raw/internal trader ID variations and reuse existing matching records when recording visits, further reducing duplicate destinations from older data.
 - Version `0.4.25` and newer load `VisitedTraderTeleport.xml` from the actual installed mod folder, so access mode settings work even if the folder is renamed.
+- Version `0.4.26` and newer add paging controls for long destination lists.
+- Version `0.5.3` and newer support `perMeter` travel cost tuning while still reading older `perKilometer` configs.
 - Before automatic JSON normalization, a one-time backup is created as `VisitedTraderTeleportData.before-0.4.16.json`.
 
 If you want extra safety before upgrading a server, stop the server and copy `VisitedTraderTeleportData.json` and `VisitedTraderTeleportVisited.txt` from the save folder first.

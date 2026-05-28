@@ -32,13 +32,30 @@ internal static class TraderDestinationFormatter
         string distance = FormatDistance(destination, player);
         string direction = FormatDirection(destination, player);
         string coordinates = FormatCoordinates(destination);
+        string cost = TravelCostService.FormatCostSuffix(destination, player);
 
-        return VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates);
+        string response = string.IsNullOrEmpty(cost)
+            ? VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates)
+            : VTTLocalization.Format("vtt_destination_response_costed", name, distance, direction);
+        return response + cost;
     }
 
     public static string FormatName(TraderDestination destination)
     {
         return FormatTraderName(destination?.DisplayName);
+    }
+
+    public static string FormatTransportDestination(TraderDestination destination)
+    {
+        if (destination == null)
+        {
+            return VTTLocalization.Get("vtt_trader_name_generic");
+        }
+
+        return VTTLocalization.Format(
+            "vtt_transport_destination",
+            FormatName(destination),
+            FormatCoordinates(destination));
     }
 
     private static string FormatDistance(TraderDestination destination, EntityPlayer player)
