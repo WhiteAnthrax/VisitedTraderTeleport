@@ -20,6 +20,7 @@ internal static class DialogIds
     public const string ConfirmYesResponseId = "vtt_confirm_yes";
     public const string ConfirmNoResponseId = "vtt_confirm_no";
     public const string ConfirmPromptResponseId = "vtt_confirm_promptline";
+    public const string ConfirmCostResponseId = "vtt_confirm_costline";
 }
 
 [HarmonyPatch(typeof(Dialog), nameof(Dialog.GetFirstStatment))]
@@ -174,15 +175,21 @@ internal static class DialogStatementGetResponsesPatch
         string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
         ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
 
-        string prompt = ConfirmationService.FormatPrompt(destination, player);
-        statement.Text = prompt;
+        string question = ConfirmationService.FormatPromptQuestion(destination);
+        string costLine = ConfirmationService.FormatCostLine(destination, player);
+        statement.Text = question;
 
-        // The trader dialog skin renders the response list but not the statement body,
-        // so show the prompt (and cost) as a non-selectable response entry too.
+        // The trader dialog skin renders the response list but not the statement body, so
+        // show the prompt as a non-selectable response entry. The cost goes on its own
+        // entry because a combined line is too wide and gets clipped.
         var entries = new List<BaseResponseEntry>
         {
-            CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, prompt)
+            CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, question)
         };
+        if (!string.IsNullOrWhiteSpace(costLine))
+        {
+            entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmCostResponseId, costLine));
+        }
 
         var yes = new DialogResponse(DialogIds.ConfirmYesResponseId)
         {
@@ -296,7 +303,7 @@ internal static class DialogGetStatementPatch
         EntityPlayer player = DialogSessionStore.GetPlayer(dialog);
         string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
         ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
-        return ConfirmationService.FormatPrompt(destination, player);
+        return ConfirmationService.FormatPromptQuestion(destination);
     }
 }
 

@@ -25,7 +25,7 @@ internal static class ConfirmationService
         return VisitedTraderStore.TryGet(key, player, out destination);
     }
 
-    public static string FormatPrompt(TraderDestination destination, EntityPlayer player)
+    public static string FormatPromptQuestion(TraderDestination destination)
     {
         if (destination == null)
         {
@@ -33,11 +33,19 @@ internal static class ConfirmationService
         }
 
         string name = TraderDestinationFormatter.FormatName(destination);
-        if (TravelCostService.TryGetCostInfo(destination, player, out int cost, out string itemName))
+        return VTTLocalization.Format("vtt_confirm_prompt", name);
+    }
+
+    // The cost goes on its own line because the dialog response width is narrow and a
+    // combined "Travel to X? (Cost: ...)" line gets clipped.
+    public static string FormatCostLine(TraderDestination destination, EntityPlayer player)
+    {
+        if (destination != null &&
+            TravelCostService.TryGetCostInfo(destination, player, out int cost, out string itemName))
         {
-            return VTTLocalization.Format("vtt_confirm_prompt_cost", name, cost, itemName);
+            return VTTLocalization.Format("vtt_confirm_cost_line", cost, itemName);
         }
 
-        return VTTLocalization.Format("vtt_confirm_prompt", name);
+        return string.Empty;
     }
 }
