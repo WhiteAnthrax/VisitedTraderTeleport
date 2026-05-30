@@ -163,6 +163,14 @@ internal static class TravelCostService
         return true;
     }
 
+    public static bool TryGetCostInfo(TraderDestination destination, EntityPlayer player, out int cost, out string itemDisplayName)
+    {
+        TravelCostSettings settings = GetEffectiveSettings();
+        cost = CalculateCost(destination, player, settings);
+        itemDisplayName = cost > 0 ? FormatItemDisplayName(settings) : string.Empty;
+        return cost > 0;
+    }
+
     public static string FormatCostSuffix(TraderDestination destination, EntityPlayer player)
     {
         TravelCostSettings settings = GetEffectiveSettings();

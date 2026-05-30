@@ -7,6 +7,7 @@ internal static class DialogSessionStore
     private static readonly Dictionary<Dialog, EntityPlayer> PlayersByDialog = new();
     private static readonly Dictionary<Dialog, TraderDestination> CurrentTradersByDialog = new();
     private static readonly Dictionary<Dialog, int> DestinationPagesByDialog = new();
+    private static readonly Dictionary<Dialog, string> PendingDestinationsByDialog = new();
 
     public static void Set(Dialog dialog, EntityPlayer player, TraderDestination currentTrader)
     {
@@ -17,6 +18,7 @@ internal static class DialogSessionStore
 
         PlayersByDialog[dialog] = player;
         DestinationPagesByDialog[dialog] = 0;
+        PendingDestinationsByDialog.Remove(dialog);
         if (currentTrader != null)
         {
             CurrentTradersByDialog[dialog] = currentTrader;
@@ -76,6 +78,30 @@ internal static class DialogSessionStore
         SetDestinationPage(dialog, GetDestinationPage(dialog) + delta);
     }
 
+    public static void SetPendingDestination(Dialog dialog, string key)
+    {
+        if (dialog == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(key))
+        {
+            PendingDestinationsByDialog.Remove(dialog);
+        }
+        else
+        {
+            PendingDestinationsByDialog[dialog] = key;
+        }
+    }
+
+    public static string GetPendingDestination(Dialog dialog)
+    {
+        return dialog != null && PendingDestinationsByDialog.TryGetValue(dialog, out string key)
+            ? key
+            : null;
+    }
+
     public static void Remove(Dialog dialog)
     {
         if (dialog != null)
@@ -83,6 +109,7 @@ internal static class DialogSessionStore
             PlayersByDialog.Remove(dialog);
             CurrentTradersByDialog.Remove(dialog);
             DestinationPagesByDialog.Remove(dialog);
+            PendingDestinationsByDialog.Remove(dialog);
         }
     }
 }

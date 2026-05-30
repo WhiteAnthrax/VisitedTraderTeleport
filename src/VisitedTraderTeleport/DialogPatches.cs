@@ -11,11 +11,14 @@ internal static class DialogIds
     public const string TraderDialogId = "trader";
     public const string StartStatementId = "start";
     public const string DestinationStatementId = "vtt_destinations";
+    public const string ConfirmStatementId = "vtt_confirm";
     public const string StartStatusResponseId = "vtt_status_start";
     public const string DestinationStatusResponseId = "vtt_status_destinations";
     public const string DynamicResponsePrefix = "vtt_destination_";
     public const string PagePreviousResponseId = "vtt_destination_page_previous";
     public const string PageNextResponseId = "vtt_destination_page_next";
+    public const string ConfirmYesResponseId = "vtt_confirm_yes";
+    public const string ConfirmNoResponseId = "vtt_confirm_no";
 }
 
 [HarmonyPatch(typeof(Dialog), nameof(Dialog.GetFirstStatment))]
@@ -60,6 +63,12 @@ internal static class DialogStatementGetResponsesPatch
         if (__instance.OwnerDialog?.ID == DialogIds.TraderDialogId && __instance.ID == DialogIds.StartStatementId)
         {
             UpdateOpenResponseText(__result);
+            return;
+        }
+
+        if (__instance.ID == DialogIds.ConfirmStatementId)
+        {
+            BuildConfirmResponses(__instance, __result);
             return;
         }
 
@@ -129,19 +138,70 @@ internal static class DialogStatementGetResponsesPatch
             Actions = new List<BaseDialogAction>()
         };
 
-        var action = new DialogActionVisitedTraderTeleport
+        if (ConfirmationService.RequiresConfirmation(destination, player))
         {
-            ID = "teleport",
-            Value = destination.Key,
-            OwnerDialog = statement.OwnerDialog,
-            Owner = response
-        };
-        response.Actions.Add(action);
+            response.NextStatementID = DialogIds.ConfirmStatementId;
+            response.Actions.Add(new DialogActionVisitedTraderConfirm
+            {
+                ID = "confirm",
+                Value = destination.Key,
+                OwnerDialog = statement.OwnerDialog,
+                Owner = response
+            });
+        }
+        else
+        {
+            response.Actions.Add(new DialogActionVisitedTraderTeleport
+            {
+                ID = "teleport",
+                Value = destination.Key,
+                OwnerDialog = statement.OwnerDialog,
+                Owner = response
+            });
+        }
 
         return new DialogResponseEntry(response.ID)
         {
             Response = response
         };
+    }
+
+    private static void BuildConfirmResponses(DialogStatement statement, List<BaseResponseEntry> responses)
+    {
+        Dialog dialog = statement.OwnerDialog;
+        EntityPlayer player = DialogSessionStore.GetPlayer(dialog);
+        string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
+        ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
+
+        statement.Text = ConfirmationService.FormatPrompt(destination, player);
+
+        var entries = new List<BaseResponseEntry>();
+
+        var yes = new DialogResponse(DialogIds.ConfirmYesResponseId)
+        {
+            Text = VTTLocalization.Get("vtt_confirm_yes"),
+            OwnerDialog = dialog,
+            Actions = new List<BaseDialogAction>()
+        };
+        yes.Actions.Add(new DialogActionVisitedTraderTeleport
+        {
+            ID = "teleport",
+            Value = pendingKey,
+            OwnerDialog = dialog,
+            Owner = yes
+        });
+        entries.Add(new DialogResponseEntry(yes.ID) { Response = yes });
+
+        var no = new DialogResponse(DialogIds.ConfirmNoResponseId)
+        {
+            Text = VTTLocalization.Get("vtt_confirm_no"),
+            OwnerDialog = dialog,
+            Actions = new List<BaseDialogAction>(),
+            NextStatementID = DialogIds.DestinationStatementId
+        };
+        entries.Add(new DialogResponseEntry(no.ID) { Response = no });
+
+        responses.InsertRange(0, entries);
     }
 
     private static void InsertStatusEntry(DialogStatement statement, List<BaseResponseEntry> responses, string id, string text)
@@ -218,6 +278,18 @@ internal static class DialogGetStatementPatch
         {
             __result.Text = DestinationStatementFormatter.Format(__instance);
         }
+        else if (__result?.ID == DialogIds.ConfirmStatementId)
+        {
+            __result.Text = FormatConfirmStatement(__instance);
+        }
+    }
+
+    internal static string FormatConfirmStatement(Dialog dialog)
+    {
+        EntityPlayer player = DialogSessionStore.GetPlayer(dialog);
+        string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
+        ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
+        return ConfirmationService.FormatPrompt(destination, player);
     }
 }
 
@@ -236,14 +308,22 @@ internal static class DialogStatementWindowGetBindingValuePatch
         }
 
         Dialog dialog = __instance?.CurrentDialog;
-        if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
+        string statementId = dialog?.CurrentStatement?.ID;
+        if (statementId == DialogIds.DestinationStatementId)
         {
-            return true;
+            value = DestinationStatementFormatter.Format(dialog);
+            __result = true;
+            return false;
         }
 
-        value = DestinationStatementFormatter.Format(dialog);
-        __result = true;
-        return false;
+        if (statementId == DialogIds.ConfirmStatementId)
+        {
+            value = DialogGetStatementPatch.FormatConfirmStatement(dialog);
+            __result = true;
+            return false;
+        }
+
+        return true;
     }
 }
 
