@@ -18,7 +18,6 @@ internal static class DialogIds
     public const string PagePreviousResponseId = "vtt_destination_page_previous";
     public const string PageNextResponseId = "vtt_destination_page_next";
     public const string ConfirmYesResponseId = "vtt_confirm_yes";
-    public const string ConfirmNoResponseId = "vtt_confirm_no";
     public const string ConfirmPromptResponseId = "vtt_confirm_promptline";
     public const string ConfirmCostResponseId = "vtt_confirm_costline";
 }
@@ -206,15 +205,9 @@ internal static class DialogStatementGetResponsesPatch
         });
         entries.Add(new DialogResponseEntry(yes.ID) { Response = yes });
 
-        var no = new DialogResponse(DialogIds.ConfirmNoResponseId)
-        {
-            Text = VTTLocalization.Get("vtt_confirm_no"),
-            OwnerDialog = dialog,
-            Actions = new List<BaseDialogAction>(),
-            NextStatementID = DialogIds.DestinationStatementId
-        };
-        entries.Add(new DialogResponseEntry(no.ID) { Response = no });
-
+        // "No" is a static response (vtt_confirm_no) defined in dialogs.xml that returns to
+        // the destination list, so the confirmation screen no longer also shows the vanilla
+        // "nevermind" exit. Insert the prompt, cost, and Yes ahead of it.
         responses.InsertRange(0, entries);
     }
 

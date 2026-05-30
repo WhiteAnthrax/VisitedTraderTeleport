@@ -9,9 +9,10 @@
     </statement>
 
     <statement id="vtt_confirm" text="vtt_statement_confirm">
-      <response_entry id="nevermind" />
+      <response_entry id="vtt_confirm_no" />
     </statement>
 
     <response id="vtt_open" text="vtt_response_open" nextstatementid="vtt_destinations" />
+    <response id="vtt_confirm_no" text="vtt_confirm_no" nextstatementid="vtt_destinations" />
   </append>
 </configs>
