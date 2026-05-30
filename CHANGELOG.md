@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.0 - 2026-05-30 09:41 JST
+- Added an optional confirmation prompt before traveling, so an accidental click no longer moves you (and spends travel-cost items) immediately. After picking a destination you get a "Travel to X?" screen with Yes/No; No returns to the list.
+- Configurable in `VisitedTraderTeleport.xml` with `<Confirmation mode="..." />`: `off` keeps instant travel, `always` always asks, and `whenCost` asks only when the trip costs items. The default is `whenCost`.
+- Confirmation is a per-player client-side preference; in multiplayer each player uses their own setting.
+- No save reset is required.
+
 ## 0.5.26 - 2026-05-28 04:45 JST
 - Fixed the client-side travel-cost check so the configured cost is actually applied when starting a trip; previously the check used an empty default and let the trip proceed even when the player had no gas.
 - Travel overlay now stays visible after the configured transition duration until the destination chunk is loaded on the client, so the trader you arrive at is rendered before the arrival message appears.

@@ -95,6 +95,22 @@ Use [b]personal[/b], [b]party[/b], or [b]shared[/b].
 [*][b]soundRepeatSeconds[/b] - how often the sound repeats. Set to 0 to play it once.
 [/list]
 
+[b]Travel confirmation[/b]
+
+[quote]
+<Confirmation mode="whenCost" />
+[/quote]
+
+Ask before traveling so a misclick does not send you (and your travel-cost items) somewhere by accident.
+
+[list]
+[*][b]off[/b] - travel immediately when you pick a destination.
+[*][b]always[/b] - always show a [b]Travel to X?[/b] prompt with Yes/No.
+[*][b]whenCost[/b] - ask only when the trip costs items; free trips stay instant. This is the default.
+[/list]
+
+Confirmation is a per-player setting read from each player's own config, so in multiplayer everyone chooses it for themselves.
+
 [line]
 
 [heading]Upgrading[/heading]

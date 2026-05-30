@@ -8,6 +8,10 @@
       <response_entry id="nevermind" />
     </statement>
 
+    <statement id="vtt_confirm" text="vtt_statement_confirm">
+      <response_entry id="nevermind" />
+    </statement>
+
     <response id="vtt_open" text="vtt_response_open" nextstatementid="vtt_destinations" />
   </append>
 </configs>
