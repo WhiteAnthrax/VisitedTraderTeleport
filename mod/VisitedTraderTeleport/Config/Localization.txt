@@ -72,4 +72,4 @@ vtt_biome_desert,dialogs,Dialog,,,Desert,Desert,Desert,Desert,Desert,Desert,砂�
 vtt_biome_snow,dialogs,Dialog,,,Snow,Snow,Snow,Snow,Snow,Snow,雪原,Snow,Snow,Snow,Snow,Snow,Snow,Snow
 vtt_biome_wasteland,dialogs,Dialog,,,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,荒野,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland
 vtt_biome_burnt_forest,dialogs,Dialog,,,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,燃える森,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest
-vtt_biome_water,dialogs,Dialog,,,Water,Water,Water,Water,Water,Water,水辺,Water,Water,Water,Water,Water,Water,Water
+vtt_biome_water,dialogs,Dialog,,,Underwater,Underwater,Underwater,Underwater,Underwater,Underwater,水中,Underwater,Underwater,Underwater,Underwater,Underwater,Underwater,Underwater

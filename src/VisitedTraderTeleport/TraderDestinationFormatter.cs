@@ -118,6 +118,7 @@ internal static class TraderDestinationFormatter
                 return "vtt_biome_wasteland";
             case "burnt_forest":
                 return "vtt_biome_burnt_forest";
+            case "underwater":
             case "water":
                 return "vtt_biome_water";
             default:
