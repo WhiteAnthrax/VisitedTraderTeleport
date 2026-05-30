@@ -35,12 +35,77 @@ internal static class TraderDestinationFormatter
 
         // The per-destination travel cost is shown on the confirmation screen and as a
         // rate in the status line, so list entries stay consistent for free and paid trips.
-        return VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates);
+        string entry = VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates);
+        return entry + FormatBiomeSuffix(destination);
     }
 
     public static string FormatName(TraderDestination destination)
     {
         return FormatTraderName(destination?.DisplayName);
+    }
+
+    public static string FormatBiomeSuffix(TraderDestination destination)
+    {
+        string label = GetBiomeLabel(destination);
+        return string.IsNullOrEmpty(label)
+            ? string.Empty
+            : VTTLocalization.Format("vtt_destination_biome_suffix", label);
+    }
+
+    private static string GetBiomeLabel(TraderDestination destination)
+    {
+        if (destination == null)
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            World world = GameManager.Instance?.World;
+            BiomeDefinition biome = world?.GetBiome(
+                Mathf.FloorToInt(destination.Position.x),
+                Mathf.FloorToInt(destination.Position.z));
+            if (biome == null)
+            {
+                return string.Empty;
+            }
+
+            string key = GetKnownBiomeKey(biome.m_sBiomeName);
+            if (!string.IsNullOrEmpty(key))
+            {
+                return VTTLocalization.Get(key);
+            }
+
+            return string.IsNullOrWhiteSpace(biome.m_sBiomeName)
+                ? string.Empty
+                : ToTitleWords(biome.m_sBiomeName);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not resolve biome for destination: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
+    private static string GetKnownBiomeKey(string biomeName)
+    {
+        switch ((biomeName ?? string.Empty).Trim().ToLowerInvariant())
+        {
+            case "forest":
+                return "vtt_biome_forest";
+            case "desert":
+                return "vtt_biome_desert";
+            case "snow":
+                return "vtt_biome_snow";
+            case "wasteland":
+                return "vtt_biome_wasteland";
+            case "burnt_forest":
+                return "vtt_biome_burnt_forest";
+            case "water":
+                return "vtt_biome_water";
+            default:
+                return string.Empty;
+        }
     }
 
     public static string FormatTransportDestination(TraderDestination destination)
