@@ -180,8 +180,9 @@ internal static class DialogStatementGetResponsesPatch
         statement.Text = question;
 
         // The trader dialog skin renders the response list but not the statement body, so
-        // show the prompt as a non-selectable response entry. The cost goes on its own
-        // entry because a combined line is too wide and gets clipped.
+        // show the prompt as a response entry. These lines are informational, so dim them
+        // (like the status header) to set them apart from the selectable Yes/No. The cost
+        // goes on its own entry because a combined line is too wide and gets clipped.
         var entries = new List<BaseResponseEntry>();
         if (destination != null)
         {
@@ -190,13 +191,13 @@ internal static class DialogStatementGetResponsesPatch
             entries.Add(CreateStatusEntry(
                 statement,
                 DialogIds.ConfirmInfoResponseId,
-                TraderDestinationFormatter.FormatResponse(destination, player)));
+                DimInfo(TraderDestinationFormatter.FormatResponse(destination, player))));
         }
 
-        entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, question));
+        entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, DimInfo(question)));
         if (!string.IsNullOrWhiteSpace(costLine))
         {
-            entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmCostResponseId, costLine));
+            entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmCostResponseId, DimInfo(costLine)));
         }
 
         var yes = new DialogResponse(DialogIds.ConfirmYesResponseId)
@@ -218,6 +219,14 @@ internal static class DialogStatementGetResponsesPatch
         // the destination list, so the confirmation screen no longer also shows the vanilla
         // "nevermind" exit. Insert the prompt, cost, and Yes ahead of it.
         responses.InsertRange(0, entries);
+    }
+
+    private const string InfoColor = "B0B0B0";
+
+    // Dim informational lines so they read as context, not as selectable options.
+    private static string DimInfo(string text)
+    {
+        return string.IsNullOrEmpty(text) ? text : $"[{InfoColor}]{text}[-]";
     }
 
     private static void InsertStatusEntry(DialogStatement statement, List<BaseResponseEntry> responses, string id, string text)
