@@ -19,6 +19,7 @@ internal static class DialogIds
     public const string PageNextResponseId = "vtt_destination_page_next";
     public const string ConfirmYesResponseId = "vtt_confirm_yes";
     public const string ConfirmNoResponseId = "vtt_confirm_no";
+    public const string ConfirmPromptResponseId = "vtt_confirm_promptline";
 }
 
 [HarmonyPatch(typeof(Dialog), nameof(Dialog.GetFirstStatment))]
@@ -173,9 +174,15 @@ internal static class DialogStatementGetResponsesPatch
         string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
         ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
 
-        statement.Text = ConfirmationService.FormatPrompt(destination, player);
+        string prompt = ConfirmationService.FormatPrompt(destination, player);
+        statement.Text = prompt;
 
-        var entries = new List<BaseResponseEntry>();
+        // The trader dialog skin renders the response list but not the statement body,
+        // so show the prompt (and cost) as a non-selectable response entry too.
+        var entries = new List<BaseResponseEntry>
+        {
+            CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, prompt)
+        };
 
         var yes = new DialogResponse(DialogIds.ConfirmYesResponseId)
         {
