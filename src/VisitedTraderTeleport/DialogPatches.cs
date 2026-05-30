@@ -18,6 +18,7 @@ internal static class DialogIds
     public const string PagePreviousResponseId = "vtt_destination_page_previous";
     public const string PageNextResponseId = "vtt_destination_page_next";
     public const string ConfirmYesResponseId = "vtt_confirm_yes";
+    public const string ConfirmInfoResponseId = "vtt_confirm_infoline";
     public const string ConfirmPromptResponseId = "vtt_confirm_promptline";
     public const string ConfirmCostResponseId = "vtt_confirm_costline";
 }
@@ -181,10 +182,18 @@ internal static class DialogStatementGetResponsesPatch
         // The trader dialog skin renders the response list but not the statement body, so
         // show the prompt as a non-selectable response entry. The cost goes on its own
         // entry because a combined line is too wide and gets clipped.
-        var entries = new List<BaseResponseEntry>
+        var entries = new List<BaseResponseEntry>();
+        if (destination != null)
         {
-            CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, question)
-        };
+            // Carry over the same detail line the destination list showed
+            // (distance, direction, coordinates, biome).
+            entries.Add(CreateStatusEntry(
+                statement,
+                DialogIds.ConfirmInfoResponseId,
+                TraderDestinationFormatter.FormatResponse(destination, player)));
+        }
+
+        entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, question));
         if (!string.IsNullOrWhiteSpace(costLine))
         {
             entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmCostResponseId, costLine));

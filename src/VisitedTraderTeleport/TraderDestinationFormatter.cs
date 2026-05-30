@@ -71,7 +71,7 @@ internal static class TraderDestinationFormatter
 
         string key = GetKnownBiomeKey(biomeName);
         return string.IsNullOrEmpty(key)
-            ? ClampBiomeLabel(ToTitleWords(biomeName))
+            ? ClampBiomeLabel(ToTitleWords(biomeName.Replace('_', ' ').Replace('-', ' ')))
             : VTTLocalization.Get(key);
     }
 
@@ -108,6 +108,7 @@ internal static class TraderDestinationFormatter
         switch ((biomeName ?? string.Empty).Trim().ToLowerInvariant())
         {
             case "forest":
+            case "pine_forest":
                 return "vtt_biome_forest";
             case "desert":
                 return "vtt_biome_desert";
