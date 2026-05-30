@@ -171,19 +171,6 @@ internal static class TravelCostService
         return cost > 0;
     }
 
-    public static string FormatCostSuffix(TraderDestination destination, EntityPlayer player)
-    {
-        TravelCostSettings settings = GetEffectiveSettings();
-        int cost = CalculateCost(destination, player, settings);
-        if (cost <= 0)
-        {
-            return string.Empty;
-        }
-
-        string itemName = FormatItemDisplayName(settings);
-        return VTTLocalization.Format("vtt_destination_cost_suffix", cost, itemName);
-    }
-
     public static string FormatOpenResponseCostSuffix()
     {
         return string.Empty;

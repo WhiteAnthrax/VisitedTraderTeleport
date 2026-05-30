@@ -32,12 +32,10 @@ internal static class TraderDestinationFormatter
         string distance = FormatDistance(destination, player);
         string direction = FormatDirection(destination, player);
         string coordinates = FormatCoordinates(destination);
-        string cost = TravelCostService.FormatCostSuffix(destination, player);
 
-        string response = string.IsNullOrEmpty(cost)
-            ? VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates)
-            : VTTLocalization.Format("vtt_destination_response_costed", name, distance, direction);
-        return response + cost;
+        // The per-destination travel cost is shown on the confirmation screen and as a
+        // rate in the status line, so list entries stay consistent for free and paid trips.
+        return VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates);
     }
 
     public static string FormatName(TraderDestination destination)
