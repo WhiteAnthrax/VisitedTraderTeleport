@@ -66,3 +66,10 @@ vtt_confirm_prompt,dialogs,Dialog,,,Travel to {0}?,Travel to {0}?,Travel to {0}?
 vtt_confirm_prompt_cost,dialogs,Dialog,,,Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),{0} へ移動しますか？（コスト: {2} x{1}）,Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1}),Travel to {0}? (Cost: {2} x{1})
 vtt_confirm_yes,dialogs,Dialog,,,Yes - travel here,Yes - travel here,Yes - travel here,Yes - travel here,Yes - travel here,Yes - travel here,はい（移動する）,Yes - travel here,Yes - travel here,Yes - travel here,Yes - travel here,Yes - travel here,Yes - travel here,Yes - travel here
 vtt_confirm_no,dialogs,Dialog,,,No - go back,No - go back,No - go back,No - go back,No - go back,No - go back,いいえ（戻る）,No - go back,No - go back,No - go back,No - go back,No - go back,No - go back,No - go back
+vtt_destination_biome_suffix,dialogs,Dialog,,, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}
+vtt_biome_forest,dialogs,Dialog,,,Forest,Forest,Forest,Forest,Forest,Forest,森,Forest,Forest,Forest,Forest,Forest,Forest,Forest
+vtt_biome_desert,dialogs,Dialog,,,Desert,Desert,Desert,Desert,Desert,Desert,砂漠,Desert,Desert,Desert,Desert,Desert,Desert,Desert
+vtt_biome_snow,dialogs,Dialog,,,Snow,Snow,Snow,Snow,Snow,Snow,雪原,Snow,Snow,Snow,Snow,Snow,Snow,Snow
+vtt_biome_wasteland,dialogs,Dialog,,,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,荒野,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland,Wasteland
+vtt_biome_burnt_forest,dialogs,Dialog,,,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,燃える森,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest,Burnt Forest
+vtt_biome_water,dialogs,Dialog,,,Water,Water,Water,Water,Water,Water,水辺,Water,Water,Water,Water,Water,Water,Water
