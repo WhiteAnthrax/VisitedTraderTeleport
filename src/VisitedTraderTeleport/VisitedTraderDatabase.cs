@@ -21,4 +21,5 @@ internal sealed class TraderDestinationRecord
     public float ForwardZ;
     public int AreaX;
     public int AreaZ;
+    public string Biome;
 }
