@@ -113,6 +113,25 @@ The travel transition is enabled by default:
 
 Set `enabled="false"` to keep travel instant. Leave `sound` empty to disable only the audio. Set `soundRepeatSeconds="0"` to play the configured sound only once. The sound value must match a loaded game audio key; if it cannot be found, the mod writes a warning to the log.
 
+## Travel Confirmation
+
+To avoid an accidental click sending you (and your travel-cost items) somewhere you did not intend, the mod can ask before traveling:
+
+```xml
+<Confirmation mode="whenCost" />
+```
+
+`mode` options:
+
+- `off`
+  Travel immediately when a destination is picked. This is the original behavior.
+- `always`
+  Always show a `Travel to X?` prompt with Yes/No before moving.
+- `whenCost`
+  Show the prompt only when the trip actually consumes travel cost items. Free trips stay instant.
+
+The default is `whenCost`. Picking `No` returns to the destination list; `Yes` travels as before. This is a per-player, client-side preference: in multiplayer each player uses the setting from their own config, independent of the server's access mode and travel cost.
+
 ## Multiplayer Behavior
 
 For multiplayer saves, the server owns trader access:
