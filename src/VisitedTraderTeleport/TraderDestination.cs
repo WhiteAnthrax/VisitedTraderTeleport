@@ -13,6 +13,10 @@ internal sealed class TraderDestination
     public int AreaX;
     public int AreaZ;
 
+    // Internal biome name (e.g. "forest", "desert") captured when the trader was visited,
+    // because it can only be read reliably while the trader's chunk is loaded.
+    public string Biome;
+
     public string DialogText =>
         $"{DisplayName} ({Mathf.RoundToInt(Position.x)}, {Mathf.RoundToInt(Position.z)})";
 

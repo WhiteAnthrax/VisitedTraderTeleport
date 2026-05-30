@@ -59,26 +59,30 @@ internal static class TraderDestinationFormatter
             return string.Empty;
         }
 
+        // Prefer the biome captured when the trader was visited. Fall back to a live lookup
+        // only for destinations recorded before biomes were stored (works when loaded).
+        string biomeName = string.IsNullOrWhiteSpace(destination.Biome)
+            ? ResolveBiomeNameFromWorld(destination.Position)
+            : destination.Biome;
+        if (string.IsNullOrWhiteSpace(biomeName))
+        {
+            return string.Empty;
+        }
+
+        string key = GetKnownBiomeKey(biomeName);
+        return string.IsNullOrEmpty(key)
+            ? ClampBiomeLabel(ToTitleWords(biomeName))
+            : VTTLocalization.Get(key);
+    }
+
+    private static string ResolveBiomeNameFromWorld(Vector3 position)
+    {
         try
         {
-            World world = GameManager.Instance?.World;
-            BiomeDefinition biome = world?.GetBiome(
-                Mathf.FloorToInt(destination.Position.x),
-                Mathf.FloorToInt(destination.Position.z));
-            if (biome == null)
-            {
-                return string.Empty;
-            }
-
-            string key = GetKnownBiomeKey(biome.m_sBiomeName);
-            if (!string.IsNullOrEmpty(key))
-            {
-                return VTTLocalization.Get(key);
-            }
-
-            return string.IsNullOrWhiteSpace(biome.m_sBiomeName)
-                ? string.Empty
-                : ClampBiomeLabel(ToTitleWords(biome.m_sBiomeName));
+            BiomeDefinition biome = GameManager.Instance?.World?.GetBiome(
+                Mathf.FloorToInt(position.x),
+                Mathf.FloorToInt(position.z));
+            return biome?.m_sBiomeName ?? string.Empty;
         }
         catch (Exception ex)
         {

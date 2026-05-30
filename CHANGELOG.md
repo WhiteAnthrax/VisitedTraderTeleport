@@ -5,7 +5,7 @@
 - Configurable in `VisitedTraderTeleport.xml` with `<Confirmation mode="..." />`: `off` keeps instant travel, `always` always asks, and `whenCost` asks only when the trip costs items. The default is `whenCost`.
 - Confirmation is a per-player client-side preference; in multiplayer each player uses their own setting.
 - Destination entries now always show name, distance, direction, and coordinates, instead of dropping the coordinates on paid trips to fit the cost in. The exact cost is shown on the confirmation screen, and the per-distance rate stays in the destination screen header.
-- Destination entries now also show the biome of each trader (forest, desert, snow, wasteland, burnt forest), since trader locations vary by world.
+- Destination entries now also show the biome of each trader (forest, desert, snow, wasteland, burnt forest), since trader locations vary by world. The biome is captured when you visit a trader and stored with the visit, so it shows correctly for far traders too; traders already visited before this update fill in their biome the next time you talk to them.
 - No save reset is required.
 
 ## 0.5.26 - 2026-05-28 04:45 JST
