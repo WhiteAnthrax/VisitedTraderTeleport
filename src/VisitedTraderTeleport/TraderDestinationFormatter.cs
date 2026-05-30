@@ -78,13 +78,25 @@ internal static class TraderDestinationFormatter
 
             return string.IsNullOrWhiteSpace(biome.m_sBiomeName)
                 ? string.Empty
-                : ToTitleWords(biome.m_sBiomeName);
+                : ClampBiomeLabel(ToTitleWords(biome.m_sBiomeName));
         }
         catch (Exception ex)
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Could not resolve biome for destination: {ex.Message}");
             return string.Empty;
         }
+    }
+
+    // Keep an unrecognized modded biome name from stretching the list line.
+    private static string ClampBiomeLabel(string label)
+    {
+        const int maxLength = 24;
+        if (string.IsNullOrEmpty(label) || label.Length <= maxLength)
+        {
+            return label;
+        }
+
+        return label.Substring(0, maxLength - 1).TrimEnd() + "…";
     }
 
     private static string GetKnownBiomeKey(string biomeName)
