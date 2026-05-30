@@ -19,6 +19,8 @@ internal static class VisitedTraderTeleportConfig
     private static AccessMode loadedMode = AccessMode.Personal;
     private static TravelCostSettings loadedTravelCost = TravelCostSettings.Disabled();
     private static TravelTransitionSettings loadedTravelTransition = TravelTransitionSettings.Default();
+    private const ConfirmationMode DefaultConfirmation = ConfirmationMode.WhenCost;
+    private static ConfirmationMode loadedConfirmation = DefaultConfirmation;
 
     public static void Configure(Mod mod)
     {
@@ -53,6 +55,15 @@ internal static class VisitedTraderTeleportConfig
         }
     }
 
+    public static ConfirmationMode Confirmation
+    {
+        get
+        {
+            EnsureLoaded();
+            return loadedConfirmation;
+        }
+    }
+
     private static void EnsureLoaded()
     {
         string path = GetConfigPath();
@@ -65,6 +76,7 @@ internal static class VisitedTraderTeleportConfig
         loadedMode = AccessMode.Personal;
         loadedTravelCost = TravelCostSettings.Disabled();
         loadedTravelTransition = TravelTransitionSettings.Default();
+        loadedConfirmation = DefaultConfirmation;
 
         try
         {
@@ -88,6 +100,7 @@ internal static class VisitedTraderTeleportConfig
 
             loadedTravelCost = ParseTravelCost(doc.Root?.Element("TravelCost"));
             loadedTravelTransition = ParseTravelTransition(doc.Root?.Element("TravelTransition"));
+            loadedConfirmation = ParseConfirmation(doc.Root?.Element("Confirmation"));
             Debug.Log(
                 $"[VisitedTraderTeleport] Loaded config from '{path}': " +
                 $"accessMode={loadedMode}, " +
@@ -96,13 +109,15 @@ internal static class VisitedTraderTeleportConfig
                 $"transitionEnabled={loadedTravelTransition.Enabled}, " +
                 $"duration={loadedTravelTransition.DurationSeconds:0.##}, " +
                 $"sound={loadedTravelTransition.Sound}, " +
-                $"soundRepeatSeconds={loadedTravelTransition.SoundRepeatSeconds:0.##}.");
+                $"soundRepeatSeconds={loadedTravelTransition.SoundRepeatSeconds:0.##}, " +
+                $"confirmation={loadedConfirmation}.");
         }
         catch (Exception ex)
         {
             loadedMode = AccessMode.Personal;
             loadedTravelCost = TravelCostSettings.Disabled();
             loadedTravelTransition = TravelTransitionSettings.Default();
+            loadedConfirmation = DefaultConfirmation;
             Debug.LogWarning($"[VisitedTraderTeleport] Could not read config, using Personal: {ex.Message}");
         }
     }
@@ -164,6 +179,53 @@ internal static class VisitedTraderTeleportConfig
             0f,
             MaxTravelSoundRepeatSeconds);
         return settings;
+    }
+
+    private static ConfirmationMode ParseConfirmation(XElement element)
+    {
+        if (element == null)
+        {
+            return DefaultConfirmation;
+        }
+
+        string rawValue = GetAttributeValue(element, "mode");
+        if (TryParseConfirmation(rawValue, out ConfirmationMode mode))
+        {
+            return mode;
+        }
+
+        Debug.LogWarning($"[VisitedTraderTeleport] Invalid Confirmation mode '{rawValue}', using {DefaultConfirmation}.");
+        return DefaultConfirmation;
+    }
+
+    private static bool TryParseConfirmation(string value, out ConfirmationMode mode)
+    {
+        mode = ConfirmationMode.Off;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "off":
+            case "false":
+            case "none":
+                mode = ConfirmationMode.Off;
+                return true;
+            case "always":
+            case "true":
+            case "on":
+                mode = ConfirmationMode.Always;
+                return true;
+            case "whencost":
+            case "cost":
+            case "costonly":
+                mode = ConfirmationMode.WhenCost;
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static float ClampFloatAttribute(string label, float value, float min, float max)

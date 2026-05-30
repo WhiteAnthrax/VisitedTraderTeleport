@@ -11,11 +11,16 @@ internal static class DialogIds
     public const string TraderDialogId = "trader";
     public const string StartStatementId = "start";
     public const string DestinationStatementId = "vtt_destinations";
+    public const string ConfirmStatementId = "vtt_confirm";
     public const string StartStatusResponseId = "vtt_status_start";
     public const string DestinationStatusResponseId = "vtt_status_destinations";
     public const string DynamicResponsePrefix = "vtt_destination_";
     public const string PagePreviousResponseId = "vtt_destination_page_previous";
     public const string PageNextResponseId = "vtt_destination_page_next";
+    public const string ConfirmYesResponseId = "vtt_confirm_yes";
+    public const string ConfirmInfoResponseId = "vtt_confirm_infoline";
+    public const string ConfirmPromptResponseId = "vtt_confirm_promptline";
+    public const string ConfirmCostResponseId = "vtt_confirm_costline";
 }
 
 [HarmonyPatch(typeof(Dialog), nameof(Dialog.GetFirstStatment))]
@@ -60,6 +65,12 @@ internal static class DialogStatementGetResponsesPatch
         if (__instance.OwnerDialog?.ID == DialogIds.TraderDialogId && __instance.ID == DialogIds.StartStatementId)
         {
             UpdateOpenResponseText(__result);
+            return;
+        }
+
+        if (__instance.ID == DialogIds.ConfirmStatementId)
+        {
+            BuildConfirmResponses(__instance, __result);
             return;
         }
 
@@ -129,19 +140,93 @@ internal static class DialogStatementGetResponsesPatch
             Actions = new List<BaseDialogAction>()
         };
 
-        var action = new DialogActionVisitedTraderTeleport
+        if (ConfirmationService.RequiresConfirmation(destination, player))
         {
-            ID = "teleport",
-            Value = destination.Key,
-            OwnerDialog = statement.OwnerDialog,
-            Owner = response
-        };
-        response.Actions.Add(action);
+            response.NextStatementID = DialogIds.ConfirmStatementId;
+            response.Actions.Add(new DialogActionVisitedTraderConfirm
+            {
+                ID = "confirm",
+                Value = destination.Key,
+                OwnerDialog = statement.OwnerDialog,
+                Owner = response
+            });
+        }
+        else
+        {
+            response.Actions.Add(new DialogActionVisitedTraderTeleport
+            {
+                ID = "teleport",
+                Value = destination.Key,
+                OwnerDialog = statement.OwnerDialog,
+                Owner = response
+            });
+        }
 
         return new DialogResponseEntry(response.ID)
         {
             Response = response
         };
+    }
+
+    private static void BuildConfirmResponses(DialogStatement statement, List<BaseResponseEntry> responses)
+    {
+        Dialog dialog = statement.OwnerDialog;
+        EntityPlayer player = DialogSessionStore.GetPlayer(dialog);
+        string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
+        ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
+
+        string question = ConfirmationService.FormatPromptQuestion(destination);
+        string costLine = ConfirmationService.FormatCostLine(destination, player);
+        statement.Text = question;
+
+        // The trader dialog skin renders the response list but not the statement body, so
+        // show the prompt as a response entry. These lines are informational, so dim them
+        // (like the status header) to set them apart from the selectable Yes/No. The cost
+        // goes on its own entry because a combined line is too wide and gets clipped.
+        var entries = new List<BaseResponseEntry>();
+        if (destination != null)
+        {
+            // Carry over the same detail line the destination list showed
+            // (distance, direction, coordinates, biome).
+            entries.Add(CreateStatusEntry(
+                statement,
+                DialogIds.ConfirmInfoResponseId,
+                DimInfo(TraderDestinationFormatter.FormatResponse(destination, player))));
+        }
+
+        entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, DimInfo(question)));
+        if (!string.IsNullOrWhiteSpace(costLine))
+        {
+            entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmCostResponseId, DimInfo(costLine)));
+        }
+
+        var yes = new DialogResponse(DialogIds.ConfirmYesResponseId)
+        {
+            Text = VTTLocalization.Get("vtt_confirm_yes"),
+            OwnerDialog = dialog,
+            Actions = new List<BaseDialogAction>()
+        };
+        yes.Actions.Add(new DialogActionVisitedTraderTeleport
+        {
+            ID = "teleport",
+            Value = pendingKey,
+            OwnerDialog = dialog,
+            Owner = yes
+        });
+        entries.Add(new DialogResponseEntry(yes.ID) { Response = yes });
+
+        // "No" is a static response (vtt_confirm_no) defined in dialogs.xml that returns to
+        // the destination list, so the confirmation screen no longer also shows the vanilla
+        // "nevermind" exit. Insert the prompt, cost, and Yes ahead of it.
+        responses.InsertRange(0, entries);
+    }
+
+    private const string InfoColor = "B0B0B0";
+
+    // Dim informational lines so they read as context, not as selectable options.
+    private static string DimInfo(string text)
+    {
+        return string.IsNullOrEmpty(text) ? text : $"[{InfoColor}]{text}[-]";
     }
 
     private static void InsertStatusEntry(DialogStatement statement, List<BaseResponseEntry> responses, string id, string text)
@@ -218,6 +303,18 @@ internal static class DialogGetStatementPatch
         {
             __result.Text = DestinationStatementFormatter.Format(__instance);
         }
+        else if (__result?.ID == DialogIds.ConfirmStatementId)
+        {
+            __result.Text = FormatConfirmStatement(__instance);
+        }
+    }
+
+    internal static string FormatConfirmStatement(Dialog dialog)
+    {
+        EntityPlayer player = DialogSessionStore.GetPlayer(dialog);
+        string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
+        ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
+        return ConfirmationService.FormatPromptQuestion(destination);
     }
 }
 
@@ -236,14 +333,22 @@ internal static class DialogStatementWindowGetBindingValuePatch
         }
 
         Dialog dialog = __instance?.CurrentDialog;
-        if (dialog?.CurrentStatement?.ID != DialogIds.DestinationStatementId)
+        string statementId = dialog?.CurrentStatement?.ID;
+        if (statementId == DialogIds.DestinationStatementId)
         {
-            return true;
+            value = DestinationStatementFormatter.Format(dialog);
+            __result = true;
+            return false;
         }
 
-        value = DestinationStatementFormatter.Format(dialog);
-        __result = true;
-        return false;
+        if (statementId == DialogIds.ConfirmStatementId)
+        {
+            value = DialogGetStatementPatch.FormatConfirmStatement(dialog);
+            __result = true;
+            return false;
+        }
+
+        return true;
     }
 }
 

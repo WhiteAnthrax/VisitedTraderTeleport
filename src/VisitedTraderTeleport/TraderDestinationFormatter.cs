@@ -32,17 +32,98 @@ internal static class TraderDestinationFormatter
         string distance = FormatDistance(destination, player);
         string direction = FormatDirection(destination, player);
         string coordinates = FormatCoordinates(destination);
-        string cost = TravelCostService.FormatCostSuffix(destination, player);
 
-        string response = string.IsNullOrEmpty(cost)
-            ? VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates)
-            : VTTLocalization.Format("vtt_destination_response_costed", name, distance, direction);
-        return response + cost;
+        // The per-destination travel cost is shown on the confirmation screen and as a
+        // rate in the status line, so list entries stay consistent for free and paid trips.
+        string entry = VTTLocalization.Format("vtt_destination_response", name, distance, direction, coordinates);
+        return entry + FormatBiomeSuffix(destination);
     }
 
     public static string FormatName(TraderDestination destination)
     {
         return FormatTraderName(destination?.DisplayName);
+    }
+
+    public static string FormatBiomeSuffix(TraderDestination destination)
+    {
+        string label = GetBiomeLabel(destination);
+        return string.IsNullOrEmpty(label)
+            ? string.Empty
+            : VTTLocalization.Format("vtt_destination_biome_suffix", label);
+    }
+
+    private static string GetBiomeLabel(TraderDestination destination)
+    {
+        if (destination == null)
+        {
+            return string.Empty;
+        }
+
+        // Prefer the biome captured when the trader was visited. Fall back to a live lookup
+        // only for destinations recorded before biomes were stored (works when loaded).
+        string biomeName = string.IsNullOrWhiteSpace(destination.Biome)
+            ? ResolveBiomeNameFromWorld(destination.Position)
+            : destination.Biome;
+        if (string.IsNullOrWhiteSpace(biomeName))
+        {
+            return string.Empty;
+        }
+
+        string key = GetKnownBiomeKey(biomeName);
+        return string.IsNullOrEmpty(key)
+            ? ClampBiomeLabel(ToTitleWords(biomeName.Replace('_', ' ').Replace('-', ' ')))
+            : VTTLocalization.Get(key);
+    }
+
+    private static string ResolveBiomeNameFromWorld(Vector3 position)
+    {
+        try
+        {
+            BiomeDefinition biome = GameManager.Instance?.World?.GetBiome(
+                Mathf.FloorToInt(position.x),
+                Mathf.FloorToInt(position.z));
+            return biome?.m_sBiomeName ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not resolve biome for destination: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
+    // Keep an unrecognized modded biome name from stretching the list line.
+    private static string ClampBiomeLabel(string label)
+    {
+        const int maxLength = 24;
+        if (string.IsNullOrEmpty(label) || label.Length <= maxLength)
+        {
+            return label;
+        }
+
+        return label.Substring(0, maxLength - 1).TrimEnd() + "…";
+    }
+
+    private static string GetKnownBiomeKey(string biomeName)
+    {
+        switch ((biomeName ?? string.Empty).Trim().ToLowerInvariant())
+        {
+            case "forest":
+            case "pine_forest":
+                return "vtt_biome_forest";
+            case "desert":
+                return "vtt_biome_desert";
+            case "snow":
+                return "vtt_biome_snow";
+            case "wasteland":
+                return "vtt_biome_wasteland";
+            case "burnt_forest":
+                return "vtt_biome_burnt_forest";
+            case "underwater":
+            case "water":
+                return "vtt_biome_water";
+            default:
+                return string.Empty;
+        }
     }
 
     public static string FormatTransportDestination(TraderDestination destination)

@@ -48,7 +48,8 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
                 Position = reader.ReadWrite(Vector3.zero),
                 Forward = reader.ReadWrite(Vector3.zero),
                 AreaX = reader.ReadInt32(),
-                AreaZ = reader.ReadInt32()
+                AreaZ = reader.ReadInt32(),
+                Biome = reader.ReadString()
             });
         }
     }
@@ -72,6 +73,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
             writer.ReadWrite(destination.Forward);
             writer.ReadWrite(destination.AreaX);
             writer.ReadWrite(destination.AreaZ);
+            writer.ReadWrite(destination.Biome ?? string.Empty);
         }
     }
 
@@ -86,6 +88,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
             length += 40;
             length += destination.Key?.Length ?? 0;
             length += destination.DisplayName?.Length ?? 0;
+            length += destination.Biome?.Length ?? 0;
         }
 
         return length;

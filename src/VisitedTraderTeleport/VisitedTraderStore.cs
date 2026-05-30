@@ -118,8 +118,27 @@ internal static class VisitedTraderStore
             Position = position,
             Forward = Vector3.zero,
             AreaX = areaX,
-            AreaZ = areaZ
+            AreaZ = areaZ,
+            Biome = ResolveBiomeName(position)
         }, position);
+    }
+
+    // The biome can only be read while the chunk is loaded, which is the case while the
+    // player is at the trader. Capture it here so it survives to the (far, unloaded) list.
+    private static string ResolveBiomeName(Vector3 position)
+    {
+        try
+        {
+            BiomeDefinition biome = GameManager.Instance?.World?.GetBiome(
+                Mathf.FloorToInt(position.x),
+                Mathf.FloorToInt(position.z));
+            return biome?.m_sBiomeName ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Could not resolve biome at record time: {ex.Message}");
+            return string.Empty;
+        }
     }
 
     public static bool IsSameTrader(TraderDestination destination, TraderDestination currentTrader)
@@ -471,12 +490,19 @@ internal static class VisitedTraderStore
             Position = position,
             Forward = Vector3.zero,
             AreaX = areaX,
-            AreaZ = areaZ
+            AreaZ = areaZ,
+            Biome = ResolveBiomeName(trader.position)
         };
     }
 
     private static TraderDestination CreateDestination(TraderVisitReport report, EntityPlayer player)
     {
+        // A client reports a visit while standing at the trader, so the trader chunk is loaded
+        // on the server here; resolve the biome from the reported trader position.
+        Vector3 biomePosition = report.HasTraderPosition
+            ? new Vector3(report.TraderPositionX, report.TraderPositionY, report.TraderPositionZ)
+            : player.position;
+
         return new TraderDestination
         {
             Key = report.Key,
@@ -484,7 +510,8 @@ internal static class VisitedTraderStore
             Position = player.position,
             Forward = Vector3.zero,
             AreaX = report.AreaX,
-            AreaZ = report.AreaZ
+            AreaZ = report.AreaZ,
+            Biome = ResolveBiomeName(biomePosition)
         };
     }
 
@@ -523,7 +550,8 @@ internal static class VisitedTraderStore
             Position = destination.Position,
             Forward = destination.Forward,
             AreaX = traderArea.Position.x,
-            AreaZ = traderArea.Position.z
+            AreaZ = traderArea.Position.z,
+            Biome = destination.Biome
         };
     }
 
@@ -644,6 +672,12 @@ internal static class VisitedTraderStore
             return true;
         }
 
+        // Keep a previously captured biome if this visit could not resolve one.
+        if (string.IsNullOrEmpty(destination.Biome) && !string.IsNullOrEmpty(existing.Biome))
+        {
+            destination.Biome = existing.Biome;
+        }
+
         bool changed =
             existing.DisplayName != destination.DisplayName ||
             existing.PositionX != destination.Position.x ||
@@ -653,7 +687,8 @@ internal static class VisitedTraderStore
             existing.ForwardY != destination.Forward.y ||
             existing.ForwardZ != destination.Forward.z ||
             existing.AreaX != destination.AreaX ||
-            existing.AreaZ != destination.AreaZ;
+            existing.AreaZ != destination.AreaZ ||
+            (existing.Biome ?? string.Empty) != (destination.Biome ?? string.Empty);
 
         if (changed)
         {
@@ -682,7 +717,8 @@ internal static class VisitedTraderStore
             Position = new Vector3(record.PositionX, record.PositionY, record.PositionZ),
             Forward = new Vector3(record.ForwardX, record.ForwardY, record.ForwardZ),
             AreaX = record.AreaX,
-            AreaZ = record.AreaZ
+            AreaZ = record.AreaZ,
+            Biome = record.Biome
         };
     }
 
@@ -699,7 +735,8 @@ internal static class VisitedTraderStore
             ForwardY = destination.Forward.y,
             ForwardZ = destination.Forward.z,
             AreaX = destination.AreaX,
-            AreaZ = destination.AreaZ
+            AreaZ = destination.AreaZ,
+            Biome = destination.Biome
         };
     }
 
@@ -946,7 +983,8 @@ internal static class VisitedTraderStore
             Position = destination.Position,
             Forward = destination.Forward,
             AreaX = destination.AreaX,
-            AreaZ = destination.AreaZ
+            AreaZ = destination.AreaZ,
+            Biome = destination.Biome
         };
     }
 
@@ -984,7 +1022,8 @@ internal static class VisitedTraderStore
             Position = new Vector3(record.PositionX, record.PositionY, record.PositionZ),
             Forward = new Vector3(record.ForwardX, record.ForwardY, record.ForwardZ),
             AreaX = record.AreaX,
-            AreaZ = record.AreaZ
+            AreaZ = record.AreaZ,
+            Biome = record.Biome
         };
     }
 
@@ -1004,7 +1043,8 @@ internal static class VisitedTraderStore
                left.ForwardY == right.ForwardY &&
                left.ForwardZ == right.ForwardZ &&
                left.AreaX == right.AreaX &&
-               left.AreaZ == right.AreaZ;
+               left.AreaZ == right.AreaZ &&
+               (left.Biome ?? string.Empty) == (right.Biome ?? string.Empty);
     }
 
     private static void SaveDatabase()
