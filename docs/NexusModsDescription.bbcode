@@ -13,7 +13,7 @@ For normal single-player use, install the mod and leave the defaults alone.
 [list]
 [*]Travel back to any trader you have already visited
 [*]Destination list shows trader name, distance, direction, coordinates, access mode, and travel cost
-[*]A short full-screen transport animation with departure and arrival messages
+[*]A short full-screen transport screen with departure and arrival messages
 [*]Optional distance-based travel cost, such as gas or casino money (free by default)
 [*]Long destination lists are split into pages
 [*]Recognized vanilla and Wasteland Mod trader names are shown cleanly
@@ -89,8 +89,8 @@ Use [b]personal[/b], [b]party[/b], or [b]shared[/b].
 [/quote]
 
 [list]
-[*][b]enabled[/b] - set to [b]false[/b] for instant travel with no animation.
-[*][b]durationSeconds[/b] - how long the animation is shown.
+[*][b]enabled[/b] - set to [b]false[/b] for instant travel with no transport screen.
+[*][b]durationSeconds[/b] - how long the transport screen is shown.
 [*][b]sound[/b] - sound played during travel. Leave empty to turn it off.
 [*][b]soundRepeatSeconds[/b] - how often the sound repeats. Set to 0 to play it once.
 [/list]
@@ -119,7 +119,7 @@ Confirmation is a per-player setting read from each player's own config, so in m
 The mod only records traders you talk to while it is installed, so it cannot see anyone you met beforehand. Just talk to each trader once after installing and they are added to your travel list - a normal visit is all it takes. If you used an earlier version of this mod, your already-recorded traders carry over.
 
 [b]A "Traveling..." screen with a sound appears when I travel. Is that an error?[/b]
-No, that is the built-in transport transition, not an error or a mod conflict. It plays for a few seconds before you arrive at the trader. If you would rather travel instantly, set [b]enabled="false"[/b] on the TravelTransition line in the config, or leave [b]sound[/b] empty to keep the animation but turn the audio off.
+No, that is the built-in transport transition, not an error or a mod conflict. It plays for a few seconds before you arrive at the trader. If you would rather travel instantly, set [b]enabled="false"[/b] on the TravelTransition line in the config, or leave [b]sound[/b] empty to keep the transport screen but turn the audio off.
 
 [b]Does it work alongside lots of other mods?[/b]
 It only adds a trader dialog option and does not replace any vanilla files, so it generally coexists well with large mod lists. Remember that anti-cheat must be off for DLL mods, and in multiplayer the mod has to be on both the server and every client.
