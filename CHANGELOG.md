@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.1 - 2026-06-01 15:08 JST
+- Fixed travel cost not being charged to multiplayer clients when the travel transition was turned off (`enabled="false"` or `durationSeconds="0"`). The cost is now taken on the traveling client regardless of the transport screen. Hosts and single-player were already charged correctly, and the has-enough-items check was unaffected. This applies to any cost item.
+- No save reset is required.
+
 ## 0.6.0 - 2026-05-30 19:27 JST
 - Added an optional confirmation prompt before traveling, so an accidental click no longer moves you (and spends travel-cost items) immediately. After picking a destination you get a "Travel to X?" screen with Yes/No; No returns to the list.
 - Configurable in `VisitedTraderTeleport.xml` with `<Confirmation mode="..." />`: `off` keeps instant travel, `always` always asks, and `whenCost` asks only when the trip costs items. The default is `whenCost`.

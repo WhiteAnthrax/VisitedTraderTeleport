@@ -229,7 +229,7 @@ internal static class VisitedTraderTeleportService
                 PendingTeleports.Add(player.entityId);
             }
 
-            if (!costAlreadyConsumed && player is EntityPlayerLocal && !TravelCostService.TryConsumeCost(player, destination, out int _))
+            if (!TryChargeTravelCost(player, destination, costAlreadyConsumed))
             {
                 PendingTeleports.Remove(player.entityId);
                 return false;
@@ -253,7 +253,7 @@ internal static class VisitedTraderTeleportService
                 PendingTeleports.Add(player.entityId);
             }
 
-            if (!costAlreadyConsumed && player is EntityPlayerLocal && !TravelCostService.TryConsumeCost(player, destination, out int _))
+            if (!TryChargeTravelCost(player, destination, costAlreadyConsumed))
             {
                 PendingTeleports.Remove(player.entityId);
                 return false;
@@ -283,6 +283,60 @@ internal static class VisitedTraderTeleportService
 
         gameManager.StartCoroutine(TransitionAndTeleport(player, destination, target, settings));
         return true;
+    }
+
+    // Charges the traveling player. The host/single-player consumes server-side; a remote
+    // client is told to consume on its own client, independent of the transition visual.
+    // Returns false only when a local player cannot pay (so the trip is aborted).
+    private static bool TryChargeTravelCost(EntityPlayer player, TraderDestination destination, bool costAlreadyConsumed)
+    {
+        if (costAlreadyConsumed)
+        {
+            return true;
+        }
+
+        if (player is EntityPlayerLocal)
+        {
+            return TravelCostService.TryConsumeCost(player, destination, out int _);
+        }
+
+        SendRemoteTravelCostConsume(player, destination);
+        return true;
+    }
+
+    private static void SendRemoteTravelCostConsume(EntityPlayer player, TraderDestination destination)
+    {
+        if (player == null || destination == null || player is EntityPlayerLocal)
+        {
+            return;
+        }
+
+        int paidCost = TravelCostService.CalculateCost(destination, player);
+        string costItemName = VisitedTraderTeleportConfig.TravelCost?.ItemName ?? string.Empty;
+        if (paidCost <= 0 || string.IsNullOrWhiteSpace(costItemName))
+        {
+            return;
+        }
+
+        ClientInfo clientInfo = ConnectionManager.Instance?.Clients?.ForEntityId(player.entityId);
+        if (clientInfo == null)
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] Could not charge travel cost for {player.PlayerDisplayName}; client not found.");
+            return;
+        }
+
+        clientInfo.SendPackage(
+            NetPackageManager.GetPackage<NetPackageVisitedTraderTravelTransition>()
+                .Setup(
+                    TraderDestinationFormatter.FormatName(destination),
+                    TraderDestinationFormatter.FormatTransportDestination(destination),
+                    paidCost,
+                    costItemName,
+                    TravelTransitionSettings.Disabled()));
+        Debug.Log(
+            $"[VisitedTraderTeleport] Sent travel cost charge to {player.PlayerDisplayName}: " +
+            $"{paidCost} {costItemName} (transition off).");
     }
 
     private static IEnumerator TransitionAndTeleport(EntityPlayer player, TraderDestination destination, Vector3 target, TravelTransitionSettings settings)
