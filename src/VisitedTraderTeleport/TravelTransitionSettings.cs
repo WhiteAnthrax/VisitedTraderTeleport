@@ -12,6 +12,17 @@ internal sealed class TravelTransitionSettings
         return new TravelTransitionSettings();
     }
 
+    public static TravelTransitionSettings Disabled()
+    {
+        return new TravelTransitionSettings
+        {
+            Enabled = false,
+            DurationSeconds = 0f,
+            Sound = string.Empty,
+            SoundRepeatSeconds = 0f
+        };
+    }
+
     public TravelTransitionSettings Clone()
     {
         return new TravelTransitionSettings
