@@ -187,12 +187,12 @@ internal static class VisitedTraderTeleportService
         {
             if (player is EntityPlayerLocal localPlayer)
             {
-                // Use a plain Teleport rather than TeleportToPosition so this does not fire a
-                // respawn-style PlayerSpawnedInWorld event. Companion frameworks (SCore /
-                // XNPCCore) hook that event and re-summon companions, duplicating them every
-                // trip. The destination chunks are already preloaded by the preparation step,
-                // so arrival stays safe.
+                // Teleport (not TeleportToPosition) avoids the respawn path that SCore /
+                // XNPCCore hook to re-summon companions, which duplicated them every trip.
+                // Teleport's safe-spawn search, however, shoves the player onto the roof of an
+                // indoor trader POI, so place them back at the exact recorded floor afterward.
                 localPlayer.Teleport(target, localPlayer.rotation.y);
+                localPlayer.SetPosition(target, true);
                 StartClientVisualRefresh(localPlayer, target);
             }
             else
