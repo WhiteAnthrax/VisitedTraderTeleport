@@ -278,6 +278,7 @@ internal static class VisitedTraderTeleportService
             float radiusSqr = CompanionRecallRadius * CompanionRecallRadius;
             int viaScore = 0;
             int viaFallback = 0;
+            int skipped = 0;
 
             foreach (Entity entity in new List<Entity>(world.Entities.list))
             {
@@ -292,25 +293,32 @@ internal static class VisitedTraderTeleportService
 
                 LogCompanionApiOnce(alive);
 
-                // Prefer SCore's own companion-to-leader teleport so its bookkeeping runs.
-                // The cooldown lives on the UI button, so calling the method directly is not
-                // throttled. Fall back to a plain reposition if the method is not callable.
-                if (TryScoreTeleportToLeader(alive))
+                // Prefer SCore's own companion-to-leader teleport so its AI/leader bookkeeping
+                // runs (a plain SetPosition leaves SDX companions stuck). The cooldown lives in
+                // the separate validateTeleport check, so calling this directly is not throttled.
+                if (TryScoreTeleport(alive, player, out bool hadScoreMethod))
                 {
                     viaScore++;
                 }
+                else if (!hadScoreMethod)
+                {
+                    // No SCore teleport method (non-SCore companion); a plain reposition is fine.
+                    alive.SetPosition(center + CompanionRecallOffset(viaFallback), true);
+                    viaFallback++;
+                }
                 else
                 {
-                    alive.SetPosition(center + CompanionRecallOffset(viaScore + viaFallback), true);
-                    viaFallback++;
+                    // The method exists but the call failed; leave the companion where it is
+                    // rather than freezing it with a raw SetPosition.
+                    skipped++;
                 }
             }
 
-            if (viaScore + viaFallback > 0)
+            if (viaScore + viaFallback + skipped > 0)
             {
                 Debug.Log(
-                    $"[VisitedTraderTeleport] Recalled {viaScore + viaFallback} companion(s) " +
-                    $"(SCore call={viaScore}, fallback={viaFallback}).");
+                    $"[VisitedTraderTeleport] Recalled companions: SCore call={viaScore}, " +
+                    $"fallback={viaFallback}, skipped={skipped}.");
             }
         }
         catch (Exception ex)
@@ -319,22 +327,49 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    private static bool TryScoreTeleportToLeader(EntityAlive companion)
+    // Calls SCore's EntityAliveSDX.TeleportToPlayer(EntityAlive leader, bool) (or a similar
+    // companion-to-leader teleport) by reflection. hadMethod reports whether such a method was
+    // found, so the caller can decide whether a raw reposition fallback is appropriate.
+    private static bool TryScoreTeleport(EntityAlive companion, EntityAlive leader, out bool hadMethod)
     {
+        hadMethod = false;
         try
         {
             Type type = companion.GetType();
-            foreach (string name in new[] { "TeleportToLeader", "TeleportToPlayer", "MoveToLeader" })
+            foreach (string name in new[] { "TeleportToPlayer", "TeleportToLeader" })
             {
                 MethodInfo method = type.GetMethod(
                     name,
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (method == null || method.GetParameters().Length != 0)
+                if (method == null)
                 {
                     continue;
                 }
 
-                method.Invoke(companion, null);
+                ParameterInfo[] parameters = method.GetParameters();
+                object[] args;
+                if (parameters.Length == 0)
+                {
+                    args = null;
+                }
+                else if (parameters.Length == 2 &&
+                         parameters[0].ParameterType.IsInstanceOfType(leader) &&
+                         parameters[1].ParameterType == typeof(bool))
+                {
+                    args = new object[] { leader, true };
+                }
+                else if (parameters.Length == 1 &&
+                         parameters[0].ParameterType.IsInstanceOfType(leader))
+                {
+                    args = new object[] { leader };
+                }
+                else
+                {
+                    continue;
+                }
+
+                hadMethod = true;
+                method.Invoke(companion, args);
                 return true;
             }
         }
