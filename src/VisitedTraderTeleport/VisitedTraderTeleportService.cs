@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
 
 namespace VisitedTraderTeleport;
@@ -276,49 +275,30 @@ internal static class VisitedTraderTeleportService
 
             Vector3 center = player.position;
             float radiusSqr = CompanionRecallRadius * CompanionRecallRadius;
-            int viaScore = 0;
-            int viaFallback = 0;
-            int skipped = 0;
 
+            var companions = new List<EntityAlive>();
             foreach (Entity entity in new List<Entity>(world.Entities.list))
             {
-                if (!(entity is EntityAlive alive) ||
-                    alive.entityId == player.entityId ||
-                    alive.IsDead() ||
-                    !IsPlayerCompanion(alive, player.entityId) ||
-                    (alive.position - center).sqrMagnitude > radiusSqr)
+                if (entity is EntityAlive alive &&
+                    alive.entityId != player.entityId &&
+                    !alive.IsDead() &&
+                    IsPlayerCompanion(alive, player.entityId) &&
+                    (alive.position - center).sqrMagnitude <= radiusSqr)
                 {
-                    continue;
-                }
-
-                LogCompanionApiOnce(alive);
-
-                // Prefer SCore's own companion-to-leader teleport so its AI/leader bookkeeping
-                // runs (a plain SetPosition leaves SDX companions stuck). The cooldown lives in
-                // the separate validateTeleport check, so calling this directly is not throttled.
-                if (TryScoreTeleport(alive, player, out bool hadScoreMethod))
-                {
-                    viaScore++;
-                }
-                else if (!hadScoreMethod)
-                {
-                    // No SCore teleport method (non-SCore companion); a plain reposition is fine.
-                    alive.SetPosition(center + CompanionRecallOffset(viaFallback), true);
-                    viaFallback++;
-                }
-                else
-                {
-                    // The method exists but the call failed; leave the companion where it is
-                    // rather than freezing it with a raw SetPosition.
-                    skipped++;
+                    companions.Add(alive);
                 }
             }
 
-            if (viaScore + viaFallback + skipped > 0)
+            for (int i = 0; i < companions.Count; i++)
             {
-                Debug.Log(
-                    $"[VisitedTraderTeleport] Recalled companions: SCore call={viaScore}, " +
-                    $"fallback={viaFallback}, skipped={skipped}.");
+                Vector3 spot = FindCompanionSpot(world, center, i, companions.Count);
+                ResetCompanionNavigation(companions[i]);
+                companions[i].SetPosition(spot, true);
+            }
+
+            if (companions.Count > 0)
+            {
+                Debug.Log($"[VisitedTraderTeleport] Gathered {companions.Count} companion(s) around the player.");
             }
         }
         catch (Exception ex)
@@ -327,108 +307,97 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    // Calls SCore's EntityAliveSDX.TeleportToPlayer(EntityAlive leader, bool) (or a similar
-    // companion-to-leader teleport) by reflection. hadMethod reports whether such a method was
-    // found, so the caller can decide whether a raw reposition fallback is appropriate.
-    private static bool TryScoreTeleport(EntityAlive companion, EntityAlive leader, out bool hadMethod)
+    // A spot in a ring around the player, on the player's floor level, avoiding solid blocks.
+    // Falls back to tighter rings and finally the player's own position.
+    private static Vector3 FindCompanionSpot(World world, Vector3 center, int index, int total)
     {
-        hadMethod = false;
-        try
+        float angle = total <= 0 ? 0f : (index / (float)total) * Mathf.PI * 2f;
+        float cos = Mathf.Cos(angle);
+        float sin = Mathf.Sin(angle);
+        foreach (float radius in new[] { 1.8f, 1.2f, 0.7f })
         {
-            Type type = companion.GetType();
-            foreach (string name in new[] { "TeleportToPlayer", "TeleportToLeader" })
+            var spot = new Vector3(center.x + cos * radius, center.y, center.z + sin * radius);
+            if (!IsBlockedAt(world, spot))
             {
-                MethodInfo method = type.GetMethod(
-                    name,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (method == null)
-                {
-                    continue;
-                }
-
-                ParameterInfo[] parameters = method.GetParameters();
-                object[] args;
-                if (parameters.Length == 0)
-                {
-                    args = null;
-                }
-                else if (parameters.Length == 2 &&
-                         parameters[0].ParameterType.IsInstanceOfType(leader) &&
-                         parameters[1].ParameterType == typeof(bool))
-                {
-                    // false = move the existing companion only; true appeared to spawn a copy.
-                    args = new object[] { leader, false };
-                }
-                else if (parameters.Length == 1 &&
-                         parameters[0].ParameterType.IsInstanceOfType(leader))
-                {
-                    args = new object[] { leader };
-                }
-                else
-                {
-                    continue;
-                }
-
-                hadMethod = true;
-                method.Invoke(companion, args);
-                return true;
+                return spot;
             }
         }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[VisitedTraderTeleport] SCore companion teleport failed: {ex.Message}");
-        }
 
-        return false;
+        return center;
     }
 
-    private static bool loggedCompanionApi;
-
-    // One-shot diagnostic: log the companion entity type and its teleport/leader-related methods
-    // (with parameter types) so the exact SCore method to call can be confirmed from the log.
-    private static void LogCompanionApiOnce(EntityAlive companion)
+    private static bool IsBlockedAt(World world, Vector3 pos)
     {
-        if (loggedCompanionApi || companion == null)
+        int x = Mathf.FloorToInt(pos.x);
+        int y = Mathf.FloorToInt(pos.y);
+        int z = Mathf.FloorToInt(pos.z);
+        return IsSolidBlock(world, x, y, z) || IsSolidBlock(world, x, y + 1, z);
+    }
+
+    private static bool IsSolidBlock(World world, int x, int y, int z)
+    {
+        try
+        {
+            Block block = world.GetBlock(x, y, z).Block;
+            return block != null && block.shape != null && block.shape.IsSolidSpace;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Mirrors SCore's own teleport bookkeeping so a repositioned companion does not freeze:
+    // clear motion and the active path, and drop SCore's cached path for the entity.
+    private static void ResetCompanionNavigation(EntityAlive companion)
+    {
+        try { companion.motion = Vector3.zero; }
+        catch { /* ignore */ }
+
+        try { companion.navigator?.clearPath(); }
+        catch { /* ignore */ }
+
+        try
+        {
+            EnsureRemovePathsResolved();
+            removePathsMethod?.Invoke(null, new object[] { companion.entityId });
+        }
+        catch { /* SCore not present; ignore */ }
+    }
+
+    private static MethodInfo removePathsMethod;
+    private static bool removePathsResolved;
+
+    private static void EnsureRemovePathsResolved()
+    {
+        if (removePathsResolved)
         {
             return;
         }
 
-        loggedCompanionApi = true;
+        removePathsResolved = true;
         try
         {
-            Type type = companion.GetType();
-            var builder = new StringBuilder();
-            foreach (MethodInfo method in type.GetMethods(
-                         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                string name = method.Name;
-                if (name.IndexOf("Teleport", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("Warp", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("Leader", StringComparison.OrdinalIgnoreCase) < 0)
+                Type type = assembly.GetType("SphereCache");
+                if (type == null)
                 {
                     continue;
                 }
 
-                builder.Append(name).Append('(');
-                ParameterInfo[] parameters = method.GetParameters();
-                for (int i = 0; i < parameters.Length; i++)
+                removePathsMethod = type.GetMethod(
+                    "RemovePaths",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (removePathsMethod != null)
                 {
-                    if (i > 0)
-                    {
-                        builder.Append(',');
-                    }
-
-                    builder.Append(parameters[i].ParameterType.Name);
+                    break;
                 }
-
-                builder.Append(") ");
             }
-
-            Debug.Log($"[VisitedTraderTeleport] Companion type {type.FullName}; methods: {builder}");
         }
         catch
         {
-            // Diagnostic only; ignore.
+            // Optional; ignore when SCore is not present.
         }
     }
 
@@ -456,14 +425,6 @@ internal static class VisitedTraderTeleportService
 
         return (buffs.HasCustomVar("Owner") && (int)buffs.GetCustomVar("Owner") == playerId) ||
                (buffs.HasCustomVar("Leader") && (int)buffs.GetCustomVar("Leader") == playerId);
-    }
-
-    private static Vector3 CompanionRecallOffset(int index)
-    {
-        // Spread companions in a small ring so they do not stack on the player.
-        float angle = index * 1.3f;
-        float radius = 1.5f + 0.35f * index;
-        return new Vector3(Mathf.Cos(angle) * radius, 0.1f, Mathf.Sin(angle) * radius);
     }
 
     private static bool StartTransitionAndTeleport(

@@ -1,6 +1,6 @@
 # Travel Between Visited Traders Changelog
 
-## 0.6.10 - 2026-06-06 14:45 JST
+## 0.6.11 - 2026-06-06 16:10 JST
 - Fixed traveling duplicating NPC companions in modpacks that use the SCore / XNPCCore companion system (such as The Wasteland). The teleport no longer uses the respawn-style move that those companion frameworks reacted to by re-summoning companions on every trip.
 - Arrival now places you at the trader spot you recorded instead of being shoved onto the top of the building, so traders inside POIs no longer drop you on the roof.
 - Following NPC companions are now pulled to you right after you arrive, so they are no longer left buried in the floor or scattered around. Only companions that belong to you and came along are moved; this does nothing on setups without companions.
