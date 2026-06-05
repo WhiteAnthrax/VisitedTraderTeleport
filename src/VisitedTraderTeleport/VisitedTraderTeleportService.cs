@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 using UnityEngine;
 
 namespace VisitedTraderTeleport;
@@ -274,7 +276,8 @@ internal static class VisitedTraderTeleportService
 
             Vector3 center = player.position;
             float radiusSqr = CompanionRecallRadius * CompanionRecallRadius;
-            int moved = 0;
+            int viaScore = 0;
+            int viaFallback = 0;
 
             foreach (Entity entity in new List<Entity>(world.Entities.list))
             {
@@ -287,18 +290,109 @@ internal static class VisitedTraderTeleportService
                     continue;
                 }
 
-                alive.SetPosition(center + CompanionRecallOffset(moved), true);
-                moved++;
+                LogCompanionApiOnce(alive);
+
+                // Prefer SCore's own companion-to-leader teleport so its bookkeeping runs.
+                // The cooldown lives on the UI button, so calling the method directly is not
+                // throttled. Fall back to a plain reposition if the method is not callable.
+                if (TryScoreTeleportToLeader(alive))
+                {
+                    viaScore++;
+                }
+                else
+                {
+                    alive.SetPosition(center + CompanionRecallOffset(viaScore + viaFallback), true);
+                    viaFallback++;
+                }
             }
 
-            if (moved > 0)
+            if (viaScore + viaFallback > 0)
             {
-                Debug.Log($"[VisitedTraderTeleport] Recalled {moved} companion(s) to the player after arrival.");
+                Debug.Log(
+                    $"[VisitedTraderTeleport] Recalled {viaScore + viaFallback} companion(s) " +
+                    $"(SCore call={viaScore}, fallback={viaFallback}).");
             }
         }
         catch (Exception ex)
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Companion recall failed: {ex.Message}");
+        }
+    }
+
+    private static bool TryScoreTeleportToLeader(EntityAlive companion)
+    {
+        try
+        {
+            Type type = companion.GetType();
+            foreach (string name in new[] { "TeleportToLeader", "TeleportToPlayer", "MoveToLeader" })
+            {
+                MethodInfo method = type.GetMethod(
+                    name,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (method == null || method.GetParameters().Length != 0)
+                {
+                    continue;
+                }
+
+                method.Invoke(companion, null);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] SCore companion teleport failed: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    private static bool loggedCompanionApi;
+
+    // One-shot diagnostic: log the companion entity type and its teleport/leader-related methods
+    // (with parameter types) so the exact SCore method to call can be confirmed from the log.
+    private static void LogCompanionApiOnce(EntityAlive companion)
+    {
+        if (loggedCompanionApi || companion == null)
+        {
+            return;
+        }
+
+        loggedCompanionApi = true;
+        try
+        {
+            Type type = companion.GetType();
+            var builder = new StringBuilder();
+            foreach (MethodInfo method in type.GetMethods(
+                         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            {
+                string name = method.Name;
+                if (name.IndexOf("Teleport", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("Warp", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("Leader", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                builder.Append(name).Append('(');
+                ParameterInfo[] parameters = method.GetParameters();
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append(',');
+                    }
+
+                    builder.Append(parameters[i].ParameterType.Name);
+                }
+
+                builder.Append(") ");
+            }
+
+            Debug.Log($"[VisitedTraderTeleport] Companion type {type.FullName}; methods: {builder}");
+        }
+        catch
+        {
+            // Diagnostic only; ignore.
         }
     }
 
