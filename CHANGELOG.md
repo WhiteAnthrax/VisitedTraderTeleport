@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.2 - 2026-06-05 16:08 JST
+- Fixed traveling duplicating NPC companions in modpacks that use the SCore / XNPCCore companion system (such as The Wasteland). The teleport no longer fires a player respawn event, which those companion frameworks were reacting to by re-summoning companions on every trip. Travel itself is unchanged.
+- No save reset is required.
+
 ## 0.6.1 - 2026-06-01 15:08 JST
 - Fixed travel cost not being charged to multiplayer clients when the travel transition was turned off (`enabled="false"` or `durationSeconds="0"`). The cost is now taken on the traveling client regardless of the transport screen. Hosts and single-player were already charged correctly, and the has-enough-items check was unaffected. This applies to any cost item.
 - No save reset is required.
