@@ -791,15 +791,9 @@ internal static class VisitedTraderTeleportService
         }
 
         Vector3 clamped = world.ClampToValidWorldPos(target);
-        if (world.IsChunkAreaLoaded(clamped))
-        {
-            float terrainY = world.GetHeightAt(clamped.x, clamped.z) + 1.0f;
-            if (!float.IsNaN(terrainY) && terrainY > clamped.y)
-            {
-                clamped.y = terrainY;
-            }
-        }
-
+        // Trust the recorded floor height. GetHeightAt returns the top solid block, which is
+        // the building roof for indoor traders, so raising to it would teleport onto the roof.
+        // The old TeleportToPosition hid this by re-placing the player; a plain Teleport does not.
         clamped.y += TeleportVerticalClearance;
         return clamped;
     }
