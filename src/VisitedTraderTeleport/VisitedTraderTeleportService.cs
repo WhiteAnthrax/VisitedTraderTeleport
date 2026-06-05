@@ -189,11 +189,16 @@ internal static class VisitedTraderTeleportService
             {
                 // Teleport (not TeleportToPosition) avoids the respawn path that SCore /
                 // XNPCCore hook to re-summon companions, which duplicated them every trip.
-                // Teleport's safe-spawn search, however, shoves the player onto the roof of an
-                // indoor trader POI, so place them back at the exact recorded floor afterward.
+                // The respawn-style placement then shoves the player onto the roof of an indoor
+                // trader POI (and it can fire a frame later), so hold the exact recorded floor
+                // for a short while afterward to override it.
                 localPlayer.Teleport(target, localPlayer.rotation.y);
                 localPlayer.SetPosition(target, true);
                 StartClientVisualRefresh(localPlayer, target);
+                Debug.Log(
+                    $"[VisitedTraderTeleport] Local teleport set to ({target.x:0.##}, {target.y:0.##}, {target.z:0.##}); " +
+                    $"pos now ({localPlayer.position.x:0.##}, {localPlayer.position.y:0.##}, {localPlayer.position.z:0.##}).");
+                GameManager.Instance?.StartCoroutine(EnforceArrivalPosition(localPlayer, target));
             }
             else
             {
@@ -211,6 +216,44 @@ internal static class VisitedTraderTeleportService
         catch (Exception ex)
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Teleport failed: {ex}");
+        }
+    }
+
+    // The respawn-style placement can push the local player onto the roof of an indoor POI a
+    // frame or more after the teleport. Hold the exact recorded floor for a short window so that
+    // late reposition is overridden. Logs the drift so the behavior is visible in the log.
+    private static IEnumerator EnforceArrivalPosition(EntityPlayerLocal player, Vector3 target)
+    {
+        const float holdSeconds = 1.5f;
+        const float driftSqr = 0.75f * 0.75f;
+        float until = Time.realtimeSinceStartup + holdSeconds;
+        int corrections = 0;
+
+        while (player != null && !player.IsDead() && Time.realtimeSinceStartup < until)
+        {
+            Vector3 pos = player.position;
+            if ((pos - target).sqrMagnitude > driftSqr)
+            {
+                corrections++;
+                if (corrections <= 3)
+                {
+                    Debug.Log(
+                        $"[VisitedTraderTeleport] Arrival drift to ({pos.x:0.##}, {pos.y:0.##}, {pos.z:0.##}); " +
+                        $"forcing to ({target.x:0.##}, {target.y:0.##}, {target.z:0.##}).");
+                }
+
+                player.SetPosition(target, true);
+            }
+
+            yield return null;
+        }
+
+        if (player != null)
+        {
+            Vector3 pos = player.position;
+            Debug.Log(
+                $"[VisitedTraderTeleport] Arrival settled at ({pos.x:0.##}, {pos.y:0.##}, {pos.z:0.##}) " +
+                $"after {corrections} correction(s).");
         }
     }
 
