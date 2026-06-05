@@ -398,6 +398,15 @@ internal static class VisitedTraderTeleportService
 
     private static bool IsPlayerCompanion(EntityAlive alive, int playerId)
     {
+        // Exclude other player-owned entities that are not following NPCs (e.g. the vanilla
+        // junk drone) so this stays a no-op outside of companion setups.
+        string typeName = alive.GetType().Name;
+        if (typeName.IndexOf("Drone", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            typeName.IndexOf("Vehicle", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return false;
+        }
+
         if (alive.belongsPlayerId == playerId)
         {
             return true;
