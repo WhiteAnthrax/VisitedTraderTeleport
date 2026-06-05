@@ -16,6 +16,7 @@ internal static class VisitedTraderTeleportService
     private const float ClientVisualRefreshArrivalDistanceSq = 64f * 64f;
     private const float TransitionArrivalLeadSeconds = 0.35f;
     private const float HiddenTransitionTeleportMaxDelaySeconds = 1.5f;
+    private const float CompanionRecallRadius = 100f;
 
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> ClientVisualRefreshObservers = new();
@@ -253,6 +254,77 @@ internal static class VisitedTraderTeleportService
                 $"[VisitedTraderTeleport] Stabilized arrival at ({pos.x:0.##}, {pos.y:0.##}, {pos.z:0.##}) " +
                 $"after {corrections} correction(s).");
         }
+
+        RecallFollowingCompanions(player);
+    }
+
+    // After the player is settled, pull their following NPC companions (e.g. SCore / XNPCCore
+    // hires that came along) to the player so they are not left buried in the floor or scattered.
+    // Companions are identified by ownership, so non-companion entities are left alone, and this
+    // is a no-op on setups without companions.
+    private static void RecallFollowingCompanions(EntityPlayerLocal player)
+    {
+        try
+        {
+            World world = GameManager.Instance?.World;
+            if (player == null || world?.Entities?.list == null)
+            {
+                return;
+            }
+
+            Vector3 center = player.position;
+            float radiusSqr = CompanionRecallRadius * CompanionRecallRadius;
+            int moved = 0;
+
+            foreach (Entity entity in new List<Entity>(world.Entities.list))
+            {
+                if (!(entity is EntityAlive alive) ||
+                    alive.entityId == player.entityId ||
+                    alive.IsDead() ||
+                    !IsPlayerCompanion(alive, player.entityId) ||
+                    (alive.position - center).sqrMagnitude > radiusSqr)
+                {
+                    continue;
+                }
+
+                alive.SetPosition(center + CompanionRecallOffset(moved), true);
+                moved++;
+            }
+
+            if (moved > 0)
+            {
+                Debug.Log($"[VisitedTraderTeleport] Recalled {moved} companion(s) to the player after arrival.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Companion recall failed: {ex.Message}");
+        }
+    }
+
+    private static bool IsPlayerCompanion(EntityAlive alive, int playerId)
+    {
+        if (alive.belongsPlayerId == playerId)
+        {
+            return true;
+        }
+
+        EntityBuffs buffs = alive.Buffs;
+        if (buffs == null)
+        {
+            return false;
+        }
+
+        return (buffs.HasCustomVar("Owner") && (int)buffs.GetCustomVar("Owner") == playerId) ||
+               (buffs.HasCustomVar("Leader") && (int)buffs.GetCustomVar("Leader") == playerId);
+    }
+
+    private static Vector3 CompanionRecallOffset(int index)
+    {
+        // Spread companions in a small ring so they do not stack on the player.
+        float angle = index * 1.3f;
+        float radius = 1.5f + 0.35f * index;
+        return new Vector3(Mathf.Cos(angle) * radius, 0.1f, Mathf.Sin(angle) * radius);
     }
 
     private static bool StartTransitionAndTeleport(
