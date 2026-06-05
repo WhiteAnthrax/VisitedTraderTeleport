@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace VisitedTraderTeleport;
@@ -16,6 +17,7 @@ internal static class VisitedTraderTeleportService
     private const float ClientVisualRefreshArrivalDistanceSq = 64f * 64f;
     private const float TransitionArrivalLeadSeconds = 0.35f;
     private const float HiddenTransitionTeleportMaxDelaySeconds = 1.5f;
+    private const float CompanionRecallRadius = 100f;
 
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> ClientVisualRefreshObservers = new();
@@ -187,8 +189,15 @@ internal static class VisitedTraderTeleportService
         {
             if (player is EntityPlayerLocal localPlayer)
             {
-                localPlayer.TeleportToPosition(target, false, null);
+                // Teleport (not TeleportToPosition) avoids the respawn path that SCore /
+                // XNPCCore hook to re-summon companions, which duplicated them every trip.
+                // The respawn-style placement then shoves the player onto the roof of an indoor
+                // trader POI (and it can fire a frame later), so hold the exact recorded floor
+                // for a short while afterward to override it.
+                localPlayer.Teleport(target, localPlayer.rotation.y);
+                localPlayer.SetPosition(target, true);
                 StartClientVisualRefresh(localPlayer, target);
+                GameManager.Instance?.StartCoroutine(EnforceArrivalPosition(localPlayer, target));
             }
             else
             {
@@ -207,6 +216,215 @@ internal static class VisitedTraderTeleportService
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Teleport failed: {ex}");
         }
+    }
+
+    // Right after the teleport the spawn settling briefly resets the local player's position
+    // (e.g. dropping the Y), which would otherwise leave the player off the trader floor. Hold
+    // the exact recorded floor until the position stays put, then stop early so the hold is not
+    // noticeable when the transition is off.
+    private static IEnumerator EnforceArrivalPosition(EntityPlayerLocal player, Vector3 target)
+    {
+        const float maxSeconds = 3f;
+        const float driftSqr = 0.75f * 0.75f;
+        const int stableFramesNeeded = 12;
+        float until = Time.realtimeSinceStartup + maxSeconds;
+        int corrections = 0;
+        int stableFrames = 0;
+
+        while (player != null && !player.IsDead() &&
+               Time.realtimeSinceStartup < until && stableFrames < stableFramesNeeded)
+        {
+            if ((player.position - target).sqrMagnitude > driftSqr)
+            {
+                corrections++;
+                stableFrames = 0;
+                player.SetPosition(target, true);
+            }
+            else
+            {
+                stableFrames++;
+            }
+
+            yield return null;
+        }
+
+        if (corrections > 0 && player != null)
+        {
+            Vector3 pos = player.position;
+            Debug.Log(
+                $"[VisitedTraderTeleport] Stabilized arrival at ({pos.x:0.##}, {pos.y:0.##}, {pos.z:0.##}) " +
+                $"after {corrections} correction(s).");
+        }
+
+        RecallFollowingCompanions(player);
+    }
+
+    // After the player is settled, pull their following NPC companions (e.g. SCore / XNPCCore
+    // hires that came along) to the player so they are not left buried in the floor or scattered.
+    // Companions are identified by ownership, so non-companion entities are left alone, and this
+    // is a no-op on setups without companions.
+    private static void RecallFollowingCompanions(EntityPlayerLocal player)
+    {
+        try
+        {
+            World world = GameManager.Instance?.World;
+            if (player == null || world?.Entities?.list == null)
+            {
+                return;
+            }
+
+            Vector3 center = player.position;
+            float radiusSqr = CompanionRecallRadius * CompanionRecallRadius;
+
+            var companions = new List<EntityAlive>();
+            foreach (Entity entity in new List<Entity>(world.Entities.list))
+            {
+                if (entity is EntityAlive alive &&
+                    alive.entityId != player.entityId &&
+                    !alive.IsDead() &&
+                    IsPlayerCompanion(alive, player.entityId) &&
+                    (alive.position - center).sqrMagnitude <= radiusSqr)
+                {
+                    companions.Add(alive);
+                }
+            }
+
+            for (int i = 0; i < companions.Count; i++)
+            {
+                Vector3 spot = FindCompanionSpot(world, center, i, companions.Count);
+                ResetCompanionNavigation(companions[i]);
+                companions[i].SetPosition(spot, true);
+            }
+
+            if (companions.Count > 0)
+            {
+                Debug.Log($"[VisitedTraderTeleport] Gathered {companions.Count} companion(s) around the player.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Companion recall failed: {ex.Message}");
+        }
+    }
+
+    // A spot in a ring around the player, on the player's floor level, avoiding solid blocks.
+    // Falls back to tighter rings and finally the player's own position.
+    private static Vector3 FindCompanionSpot(World world, Vector3 center, int index, int total)
+    {
+        float angle = total <= 0 ? 0f : (index / (float)total) * Mathf.PI * 2f;
+        float cos = Mathf.Cos(angle);
+        float sin = Mathf.Sin(angle);
+        foreach (float radius in new[] { 1.8f, 1.2f, 0.7f })
+        {
+            var spot = new Vector3(center.x + cos * radius, center.y, center.z + sin * radius);
+            if (!IsBlockedAt(world, spot))
+            {
+                return spot;
+            }
+        }
+
+        return center;
+    }
+
+    private static bool IsBlockedAt(World world, Vector3 pos)
+    {
+        int x = Mathf.FloorToInt(pos.x);
+        int y = Mathf.FloorToInt(pos.y);
+        int z = Mathf.FloorToInt(pos.z);
+        return IsSolidBlock(world, x, y, z) || IsSolidBlock(world, x, y + 1, z);
+    }
+
+    private static bool IsSolidBlock(World world, int x, int y, int z)
+    {
+        try
+        {
+            Block block = world.GetBlock(x, y, z).Block;
+            return block != null && block.shape != null && block.shape.IsSolidSpace;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Mirrors SCore's own teleport bookkeeping so a repositioned companion does not freeze:
+    // clear motion and the active path, and drop SCore's cached path for the entity.
+    private static void ResetCompanionNavigation(EntityAlive companion)
+    {
+        try { companion.motion = Vector3.zero; }
+        catch { /* ignore */ }
+
+        try { companion.navigator?.clearPath(); }
+        catch { /* ignore */ }
+
+        try
+        {
+            EnsureRemovePathsResolved();
+            removePathsMethod?.Invoke(null, new object[] { companion.entityId });
+        }
+        catch { /* SCore not present; ignore */ }
+    }
+
+    private static MethodInfo removePathsMethod;
+    private static bool removePathsResolved;
+
+    private static void EnsureRemovePathsResolved()
+    {
+        if (removePathsResolved)
+        {
+            return;
+        }
+
+        removePathsResolved = true;
+        try
+        {
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type type = assembly.GetType("SphereCache");
+                if (type == null)
+                {
+                    continue;
+                }
+
+                removePathsMethod = type.GetMethod(
+                    "RemovePaths",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (removePathsMethod != null)
+                {
+                    break;
+                }
+            }
+        }
+        catch
+        {
+            // Optional; ignore when SCore is not present.
+        }
+    }
+
+    private static bool IsPlayerCompanion(EntityAlive alive, int playerId)
+    {
+        // Exclude other player-owned entities that are not following NPCs (e.g. the vanilla
+        // junk drone) so this stays a no-op outside of companion setups.
+        string typeName = alive.GetType().Name;
+        if (typeName.IndexOf("Drone", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            typeName.IndexOf("Vehicle", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return false;
+        }
+
+        if (alive.belongsPlayerId == playerId)
+        {
+            return true;
+        }
+
+        EntityBuffs buffs = alive.Buffs;
+        if (buffs == null)
+        {
+            return false;
+        }
+
+        return (buffs.HasCustomVar("Owner") && (int)buffs.GetCustomVar("Owner") == playerId) ||
+               (buffs.HasCustomVar("Leader") && (int)buffs.GetCustomVar("Leader") == playerId);
     }
 
     private static bool StartTransitionAndTeleport(
@@ -786,15 +1004,9 @@ internal static class VisitedTraderTeleportService
         }
 
         Vector3 clamped = world.ClampToValidWorldPos(target);
-        if (world.IsChunkAreaLoaded(clamped))
-        {
-            float terrainY = world.GetHeightAt(clamped.x, clamped.z) + 1.0f;
-            if (!float.IsNaN(terrainY) && terrainY > clamped.y)
-            {
-                clamped.y = terrainY;
-            }
-        }
-
+        // Trust the recorded floor height. GetHeightAt returns the top solid block, which is
+        // the building roof for indoor traders, so raising to it would teleport onto the roof.
+        // The old TeleportToPosition hid this by re-placing the player; a plain Teleport does not.
         clamped.y += TeleportVerticalClearance;
         return clamped;
     }

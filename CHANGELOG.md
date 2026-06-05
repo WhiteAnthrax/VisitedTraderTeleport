@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.11 - 2026-06-06 16:10 JST
+- Fixed traveling duplicating NPC companions in modpacks that use the SCore / XNPCCore companion system (such as The Wasteland). The teleport no longer uses the respawn-style move that those companion frameworks reacted to by re-summoning companions on every trip.
+- Arrival now places you at the trader spot you recorded instead of being shoved onto the top of the building, so traders inside POIs no longer drop you on the roof.
+- Following NPC companions are now gathered neatly around you when you arrive, on solid ground, instead of being left buried in the floor or wedged in walls. Only companions that belong to you and came along are moved; this does nothing on setups without companions.
+- No save reset is required.
+
 ## 0.6.1 - 2026-06-01 15:08 JST
 - Fixed travel cost not being charged to multiplayer clients when the travel transition was turned off (`enabled="false"` or `durationSeconds="0"`). The cost is now taken on the traveling client regardless of the transport screen. Hosts and single-player were already charged correctly, and the has-enough-items check was unaffected. This applies to any cost item.
 - No save reset is required.
