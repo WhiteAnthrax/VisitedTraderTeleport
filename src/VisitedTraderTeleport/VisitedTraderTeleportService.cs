@@ -356,7 +356,8 @@ internal static class VisitedTraderTeleportService
                          parameters[0].ParameterType.IsInstanceOfType(leader) &&
                          parameters[1].ParameterType == typeof(bool))
                 {
-                    args = new object[] { leader, true };
+                    // false = move the existing companion only; true appeared to spawn a copy.
+                    args = new object[] { leader, false };
                 }
                 else if (parameters.Length == 1 &&
                          parameters[0].ParameterType.IsInstanceOfType(leader))
