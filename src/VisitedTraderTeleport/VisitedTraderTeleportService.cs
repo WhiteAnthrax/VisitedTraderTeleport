@@ -203,6 +203,9 @@ internal static class VisitedTraderTeleportService
             {
                 player.Teleport(target, player.rotation.y);
                 SendTeleportPackage(player, target);
+                // On a server the remote player's local path (and our position hold) never runs,
+                // so gather this player's companions to the destination here.
+                GatherCompanions(player, target);
             }
 
             if (showTooltip && player is EntityPlayerLocal localForTooltip)
@@ -256,14 +259,14 @@ internal static class VisitedTraderTeleportService
                 $"after {corrections} correction(s).");
         }
 
-        RecallFollowingCompanions(player);
+        GatherCompanions(player, player.position);
     }
 
     // After the player is settled, pull their following NPC companions (e.g. SCore / XNPCCore
     // hires that came along) to the player so they are not left buried in the floor or scattered.
     // Companions are identified by ownership, so non-companion entities are left alone, and this
     // is a no-op on setups without companions.
-    private static void RecallFollowingCompanions(EntityPlayerLocal player)
+    private static void GatherCompanions(EntityPlayer player, Vector3 center)
     {
         try
         {
@@ -273,20 +276,34 @@ internal static class VisitedTraderTeleportService
                 return;
             }
 
-            Vector3 center = player.position;
+            EnsureOrderApiResolved();
             float radiusSqr = CompanionRecallRadius * CompanionRecallRadius;
 
             var companions = new List<EntityAlive>();
             foreach (Entity entity in new List<Entity>(world.Entities.list))
             {
-                if (entity is EntityAlive alive &&
-                    alive.entityId != player.entityId &&
-                    !alive.IsDead() &&
-                    IsPlayerCompanion(alive, player.entityId) &&
-                    (alive.position - center).sqrMagnitude <= radiusSqr)
+                if (!(entity is EntityAlive alive) ||
+                    alive.entityId == player.entityId ||
+                    alive.IsDead() ||
+                    !IsPlayerCompanion(alive, player.entityId))
                 {
-                    companions.Add(alive);
+                    continue;
                 }
+
+                // Leave companions told to stay or guard where they are.
+                if (IsStayingOrGuarding(alive.entityId))
+                {
+                    continue;
+                }
+
+                // When the order can't be read, only gather nearby companions so a stationed
+                // one far away is not yanked along.
+                if (!orderApiAvailable && (alive.position - center).sqrMagnitude > radiusSqr)
+                {
+                    continue;
+                }
+
+                companions.Add(alive);
             }
 
             for (int i = 0; i < companions.Count; i++)
@@ -298,12 +315,12 @@ internal static class VisitedTraderTeleportService
 
             if (companions.Count > 0)
             {
-                Debug.Log($"[VisitedTraderTeleport] Gathered {companions.Count} companion(s) around the player.");
+                Debug.Log($"[VisitedTraderTeleport] Gathered {companions.Count} companion(s) around {player.PlayerDisplayName}.");
             }
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[VisitedTraderTeleport] Companion recall failed: {ex.Message}");
+            Debug.LogWarning($"[VisitedTraderTeleport] Companion gather failed: {ex.Message}");
         }
     }
 
@@ -363,6 +380,64 @@ internal static class VisitedTraderTeleportService
             removePathsMethod?.Invoke(null, new object[] { companion.entityId });
         }
         catch { /* SCore not present; ignore */ }
+    }
+
+    private static MethodInfo getCurrentOrderMethod;
+    private static bool orderApiResolved;
+    private static bool orderApiAvailable;
+
+    private static void EnsureOrderApiResolved()
+    {
+        if (orderApiResolved)
+        {
+            return;
+        }
+
+        orderApiResolved = true;
+        try
+        {
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type type = assembly.GetType("EntityUtilities");
+                if (type == null)
+                {
+                    continue;
+                }
+
+                getCurrentOrderMethod = type.GetMethod(
+                    "GetCurrentOrder",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (getCurrentOrderMethod != null)
+                {
+                    orderApiAvailable = true;
+                    break;
+                }
+            }
+        }
+        catch
+        {
+            // Optional; ignore when SCore is not present.
+        }
+    }
+
+    // True when the companion is set to Stay or Guard, which should not be pulled along.
+    private static bool IsStayingOrGuarding(int entityId)
+    {
+        if (!orderApiAvailable)
+        {
+            return false;
+        }
+
+        try
+        {
+            string order = getCurrentOrderMethod.Invoke(null, new object[] { entityId })?.ToString();
+            return string.Equals(order, "Stay", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(order, "Guard", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static MethodInfo removePathsMethod;
