@@ -1,6 +1,6 @@
 # Travel Between Visited Traders Changelog
 
-## 0.6.11 - 2026-06-06 16:10 JST
+## 0.6.12 - 2026-06-07 02:00 JST
 - Reduced NPC companions being duplicated when you travel in modpacks that use the SCore / XNPCCore companion system (such as The Wasteland), by changing how the teleport moves the player. In testing companions no longer multiplied per trip, though the underlying companion behavior is the framework's, not this mod's.
 - Following NPC companions are now pulled to you when you arrive and placed around you on solid ground, so they are less likely to be left buried in the floor or stuck in walls. Only companions that belong to you and came along are moved; this does nothing on setups without companions.
 - No save reset is required.
