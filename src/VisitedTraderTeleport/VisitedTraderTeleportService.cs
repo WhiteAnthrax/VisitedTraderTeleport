@@ -187,6 +187,12 @@ internal static class VisitedTraderTeleportService
     {
         try
         {
+            // A map-wide teleport respawns the player and unloads the chunk the companions are
+            // standing in. SCore marks following hires as saved-to-file, so that departing chunk
+            // would persist a copy that reloads as a duplicate when the player returns. Pull them
+            // onto the (already prepared) destination first so the old chunk saves nothing.
+            RelocateCompanionsBeforeTeleport(player, target);
+
             if (player is EntityPlayerLocal localPlayer)
             {
                 // Teleport (not TeleportToPosition) avoids the respawn path that SCore /
@@ -260,6 +266,88 @@ internal static class VisitedTraderTeleportService
         }
 
         GatherCompanions(player, player.position);
+    }
+
+    // SCore marks a following companion as saved-to-file (it has a "Leader" cvar) and respawnable
+    // (bWillRespawn=true while following). A map-wide teleport respawns the player and unloads the
+    // chunk the companion stands in; that chunk then persists a saved copy, which reloads as a
+    // duplicate when the player returns to the area. Pulling the companions out of their current
+    // chunk and onto the destination before the player jumps stops the departing chunk from saving
+    // a copy. Scoped to SCore's own hired_<id> tracking on this player, and only moves entities
+    // (never despawns), so other mods' owned entities are never touched. Stay/guard hires are left
+    // in place, matching GatherCompanions.
+    private static void RelocateCompanionsBeforeTeleport(EntityPlayer player, Vector3 target)
+    {
+        try
+        {
+            World world = GameManager.Instance?.World;
+            if (player?.Buffs?.CVars == null || world == null)
+            {
+                return;
+            }
+
+            var ids = new List<int>();
+            foreach (KeyValuePair<string, float> cvar in player.Buffs.CVars)
+            {
+                if (!cvar.Key.StartsWith("hired_", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                // The value normally holds the companion's entity id; a known SCore sync path
+                // writes the id into the key as "hired_$<id>" with a zero value, so fall back to
+                // parsing the key when the value is not usable.
+                int id = (int)cvar.Value;
+                if (id <= 0)
+                {
+                    int.TryParse(cvar.Key.Substring("hired_".Length).TrimStart('$'), out id);
+                }
+
+                if (id > 0)
+                {
+                    ids.Add(id);
+                }
+            }
+
+            if (ids.Count == 0)
+            {
+                return;
+            }
+
+            int moved = 0;
+            foreach (int id in ids)
+            {
+                if (!(world.GetEntity(id) is EntityAlive companion) || companion.IsDead())
+                {
+                    continue;
+                }
+
+                // Leave companions told to stay or guard where they are.
+                if (IsStayingOrGuarding(id))
+                {
+                    continue;
+                }
+
+                if (companion.addedToChunk &&
+                    world.GetChunkSync(companion.chunkPosAddedEntityTo.x, companion.chunkPosAddedEntityTo.z) is Chunk chunk)
+                {
+                    chunk.RemoveEntityFromChunk(companion);
+                }
+
+                ResetCompanionNavigation(companion);
+                companion.SetPosition(target, true);
+                moved++;
+            }
+
+            if (moved > 0)
+            {
+                Debug.Log($"[VisitedTraderTeleport] Pre-moved {moved} companion(s) out of the departing chunk before teleport.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Companion pre-move failed: {ex.Message}");
+        }
     }
 
     // After the player is settled, pull their following NPC companions (e.g. SCore / XNPCCore
