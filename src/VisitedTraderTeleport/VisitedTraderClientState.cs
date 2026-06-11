@@ -12,6 +12,8 @@ internal static class VisitedTraderClientState
 
     public static TravelCostSettings ServerTravelCost { get; private set; } = TravelCostSettings.Disabled();
 
+    public static ConfirmationMode ServerConfirmation { get; private set; } = ConfirmationMode.WhenCost;
+
     public static IReadOnlyList<TraderDestination> GetDestinations()
     {
         return Destinations.Values
@@ -26,10 +28,15 @@ internal static class VisitedTraderClientState
         return Destinations.TryGetValue(key, out destination);
     }
 
-    public static void ApplySnapshot(AccessMode accessMode, IEnumerable<TraderDestination> destinations, TravelCostSettings travelCost = null)
+    public static void ApplySnapshot(
+        AccessMode accessMode,
+        IEnumerable<TraderDestination> destinations,
+        TravelCostSettings travelCost = null,
+        ConfirmationMode confirmation = ConfirmationMode.WhenCost)
     {
         ServerAccessMode = accessMode;
         ServerTravelCost = travelCost?.Clone() ?? TravelCostSettings.Disabled();
+        ServerConfirmation = confirmation;
         Destinations.Clear();
 
         foreach (TraderDestination destination in destinations ?? Enumerable.Empty<TraderDestination>())

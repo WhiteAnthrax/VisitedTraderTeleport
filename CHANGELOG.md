@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.16 - 2026-06-12 03:08 JST
+- In multiplayer, the travel confirmation prompt now follows the server config, matching how access mode and travel cost already work. Clients connected to a server use the server's confirmation setting instead of their own local one. Single-player is unchanged.
+- No save reset is required.
+
 ## 0.6.15 - 2026-06-11 02:39 JST
 - Reduced NPC companions being duplicated when you travel in modpacks that use the SCore / XNPCCore companion system (such as The Wasteland). Following companions are now moved off the departing area just before travel, so the area you leave no longer keeps a copy that reappears when you return. Only your own following companions are moved, and companions told to stay or guard are left in place. The underlying companion behavior is the framework's, not this mod's, and companions duplicated before this update are not removed automatically.
 - No save reset is required.
