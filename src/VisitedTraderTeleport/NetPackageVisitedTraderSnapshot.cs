@@ -8,6 +8,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
 {
     private AccessMode accessMode = AccessMode.Personal;
     private TravelCostSettings travelCost = TravelCostSettings.Disabled();
+    private ConfirmationMode confirmation = ConfirmationMode.WhenCost;
     private readonly List<TraderDestination> destinations = new();
 
     public override NetPackageDirection PackageDirection => NetPackageDirection.ToClient;
@@ -16,6 +17,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
     {
         accessMode = mode;
         travelCost = VisitedTraderTeleportConfig.TravelCost.Clone();
+        confirmation = VisitedTraderTeleportConfig.Confirmation;
         destinations.Clear();
         if (values != null)
         {
@@ -36,6 +38,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
             PerMeter = reader.ReadSingle(),
             Minimum = reader.ReadInt32()
         };
+        confirmation = ParseConfirmation(reader.ReadString());
         destinations.Clear();
 
         int count = reader.ReadInt32();
@@ -63,6 +66,7 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
         writer.ReadWrite(travelCost.ItemDisplayName ?? string.Empty);
         writer.ReadWrite(travelCost.PerMeter);
         writer.ReadWrite(travelCost.Minimum);
+        writer.ReadWrite(confirmation.ToString().ToLowerInvariant());
         writer.ReadWrite(destinations.Count);
 
         foreach (TraderDestination destination in destinations)
@@ -82,7 +86,8 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
         int length = 20 +
                      accessMode.ToString().Length +
                      (travelCost.ItemName?.Length ?? 0) +
-                     (travelCost.ItemDisplayName?.Length ?? 0);
+                     (travelCost.ItemDisplayName?.Length ?? 0) +
+                     confirmation.ToString().Length;
         foreach (TraderDestination destination in destinations)
         {
             length += 40;
@@ -96,10 +101,10 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
 
     public override void ProcessPackage(World world, GameManager callbacks)
     {
-        VisitedTraderClientState.ApplySnapshot(accessMode, destinations, travelCost);
+        VisitedTraderClientState.ApplySnapshot(accessMode, destinations, travelCost, confirmation);
         Debug.Log(
             $"[VisitedTraderTeleport] Applied server snapshot: " +
-            $"{destinations.Count} destinations, mode={accessMode}.");
+            $"{destinations.Count} destinations, mode={accessMode}, confirmation={confirmation}.");
     }
 
     private static AccessMode ParseAccessMode(string value)
@@ -110,5 +115,15 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
         }
 
         return AccessMode.Personal;
+    }
+
+    private static ConfirmationMode ParseConfirmation(string value)
+    {
+        if (Enum.TryParse(value, true, out ConfirmationMode parsed))
+        {
+            return parsed;
+        }
+
+        return ConfirmationMode.WhenCost;
     }
 }
