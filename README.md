@@ -130,7 +130,7 @@ To avoid an accidental click sending you (and your travel-cost items) somewhere 
 - `whenCost`
   Show the prompt only when the trip actually consumes travel cost items. Free trips stay instant.
 
-The default is `whenCost`. Picking `No` returns to the destination list; `Yes` travels as before. This is a per-player, client-side preference: in multiplayer each player uses the setting from their own config, independent of the server's access mode and travel cost.
+The default is `whenCost`. Picking `No` returns to the destination list; `Yes` travels as before. In multiplayer, the server-side setting is authoritative, matching access mode and travel cost behavior.
 
 ## Multiplayer Behavior
 

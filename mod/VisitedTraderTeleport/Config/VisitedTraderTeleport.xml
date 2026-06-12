@@ -22,7 +22,7 @@
   <TravelTransition enabled="true" durationSeconds="5" sound="suv_startup" soundRepeatSeconds="2" />
 
   <!-- Ask "Travel to X?" with Yes/No before moving, to avoid accidental trips. -->
-  <!-- This is a per-player client-side preference; in multiplayer each player uses their own setting. -->
+  <!-- In multiplayer, the server-side file is authoritative. -->
   <!-- mode options: -->
   <!-- off: travel immediately when a destination is picked (legacy behavior) -->
   <!-- always: always confirm before traveling -->

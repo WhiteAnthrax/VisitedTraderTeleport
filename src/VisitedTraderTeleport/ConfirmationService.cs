@@ -4,7 +4,7 @@ internal static class ConfirmationService
 {
     public static bool RequiresConfirmation(TraderDestination destination, EntityPlayer player)
     {
-        switch (VisitedTraderTeleportConfig.Confirmation)
+        switch (GetEffectiveMode())
         {
             case ConfirmationMode.Always:
                 return true;
@@ -13,6 +13,13 @@ internal static class ConfirmationService
             default:
                 return false;
         }
+    }
+
+    private static ConfirmationMode GetEffectiveMode()
+    {
+        return VisitedTraderNetwork.IsClientOnly
+            ? VisitedTraderClientState.ServerConfirmation
+            : VisitedTraderTeleportConfig.Confirmation;
     }
 
     public static bool TryResolveDestination(string key, EntityPlayer player, out TraderDestination destination)
