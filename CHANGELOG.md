@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.1 - 2026-06-16 03:32 JST
+- Fixed the mod's text showing as raw keys (e.g. `vtt_response_open`) on 3.0. 3.0 renamed mod localization to `Localization.csv` and changed its columns; the mod now ships that format. Single-player and multiplayer text display correctly again.
+- No save reset is required.
+
 ## 0.7.0 - 2026-06-16 03:16 JST
 - Ported to 7 Days to Die 3.0 (experimental). Built against the 3.0 game assemblies; updated a sound playback call whose signature changed in 3.0. This 0.7.x line targets 3.0; the 0.6.x line remains for v2.6.
 - No save reset is required.
