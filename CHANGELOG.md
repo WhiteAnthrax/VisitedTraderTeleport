@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.2 - 2026-06-16 04:05 JST
+- Restored the space before the biome name in destination entries (e.g. `(891 E 1063 S) Forest`), which was lost when the localization file was converted to the 3.0 format.
+- No save reset is required.
+
 ## 0.7.1 - 2026-06-16 03:32 JST
 - Fixed the mod's text showing as raw keys (e.g. `vtt_response_open`) on 3.0. 3.0 renamed mod localization to `Localization.csv` and changed its columns; the mod now ships that format. Single-player and multiplayer text display correctly again.
 - No save reset is required.

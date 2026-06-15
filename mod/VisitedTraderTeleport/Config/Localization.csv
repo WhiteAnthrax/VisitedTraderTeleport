@@ -66,7 +66,7 @@ vtt_confirm_prompt,dialogs,Dialog,,,,Travel to {0}?,,Travel to {0}?,Travel to {0
 vtt_confirm_cost_line,dialogs,Dialog,,,,Cost: {1} x{0},,Cost: {1} x{0},Cost: {1} x{0},Cost: {1} x{0},Cost: {1} x{0},コスト: {1}×{0},Cost: {1} x{0},Cost: {1} x{0},Cost: {1} x{0},Cost: {1} x{0},Cost: {1} x{0},Cost: {1} x{0},Cost: {1} x{0}
 vtt_confirm_yes,dialogs,Dialog,,,,Yes (travel here),,Yes (travel here),Yes (travel here),Yes (travel here),Yes (travel here),はい（移動する）,Yes (travel here),Yes (travel here),Yes (travel here),Yes (travel here),Yes (travel here),Yes (travel here),Yes (travel here)
 vtt_confirm_no,dialogs,Dialog,,,,No (go back),,No (go back),No (go back),No (go back),No (go back),いいえ（戻る）,No (go back),No (go back),No (go back),No (go back),No (go back),No (go back),No (go back)
-vtt_destination_biome_suffix,dialogs,Dialog,,,,{0},,{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}
+vtt_destination_biome_suffix,dialogs,Dialog,,,, {0},, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}
 vtt_biome_forest,dialogs,Dialog,,,,Forest,,Forest,Forest,Forest,Forest,森,Forest,Forest,Forest,Forest,Forest,Forest,Forest
 vtt_biome_desert,dialogs,Dialog,,,,Desert,,Desert,Desert,Desert,Desert,砂漠,Desert,Desert,Desert,Desert,Desert,Desert,Desert
 vtt_biome_snow,dialogs,Dialog,,,,Snow,,Snow,Snow,Snow,Snow,雪原,Snow,Snow,Snow,Snow,Snow,Snow,Snow
