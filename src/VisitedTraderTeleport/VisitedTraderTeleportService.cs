@@ -971,7 +971,8 @@ internal static class VisitedTraderTeleportService
                 player.position,
                 soundName,
                 AudioRolloffMode.Linear,
-                player.entityId);
+                player.entityId,
+                1f);
             Audio.Manager.BroadcastPlayByLocalPlayer(player.position, soundName);
         }
         catch (Exception ex)

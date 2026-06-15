@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.0 - 2026-06-16 03:16 JST
+- Ported to 7 Days to Die 3.0 (experimental). Built against the 3.0 game assemblies; updated a sound playback call whose signature changed in 3.0. This 0.7.x line targets 3.0; the 0.6.x line remains for v2.6.
+- No save reset is required.
+
 ## 0.6.16 - 2026-06-12 03:08 JST
 - In multiplayer, the travel confirmation prompt now follows the server config, matching how access mode and travel cost already work. Clients connected to a server use the server's confirmation setting instead of their own local one. Single-player is unchanged.
 - No save reset is required.
