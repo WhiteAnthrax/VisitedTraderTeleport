@@ -1,0 +1,4 @@
+0.6.16
+Rebuilt for 7 Days to Die v2.6 (b14) so the mod matches the current game build.
+Further reduced NPC companions being duplicated when you travel with the SCore / XNPCCore companion system used by overhauls like The Wasteland. Following companions are moved off the area you leave just before travel, so that area no longer keeps a copy that can reappear when you return; only your own following companions are moved, ones set to stay or guard are left in place, and companions duplicated before updating are not removed automatically.
+No save reset required.

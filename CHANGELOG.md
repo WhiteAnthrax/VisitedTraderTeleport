@@ -1,5 +1,21 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.3 - 2026-06-30 02:42 JST
+- Released for 7 Days to Die 3.0 (now stable). Rebuilt against the 3.0 stable game assemblies. The 0.7.x line is now the main build and targets 3.0; the 0.6.x build stays available for players still on v2.x.
+- No save reset is required.
+
+## 0.7.2 - 2026-06-16 04:05 JST
+- Restored the space before the biome name in destination entries (e.g. `(891 E 1063 S) Forest`), which was lost when the localization file was converted to the 3.0 format.
+- No save reset is required.
+
+## 0.7.1 - 2026-06-16 03:32 JST
+- Fixed the mod's text showing as raw keys (e.g. `vtt_response_open`) on 3.0. 3.0 renamed mod localization to `Localization.csv` and changed its columns; the mod now ships that format. Single-player and multiplayer text display correctly again.
+- No save reset is required.
+
+## 0.7.0 - 2026-06-16 03:16 JST
+- Ported to 7 Days to Die 3.0 (experimental). Built against the 3.0 game assemblies; updated a sound playback call whose signature changed in 3.0. This 0.7.x line targets 3.0; the 0.6.x line remains for v2.6.
+- No save reset is required.
+
 ## 0.6.16 - 2026-06-12 03:08 JST
 - In multiplayer, the travel confirmation prompt now follows the server config, matching how access mode and travel cost already work. Clients connected to a server use the server's confirmation setting instead of their own local one. Single-player is unchanged.
 - No save reset is required.

@@ -1,0 +1,4 @@
+0.7.3
+Now the main build for 7 Days to Die V3.0 (stable). Rebuilt against the 3.0 stable game assemblies.
+Players still on V2.x: use the V2.x file under the Files tab.
+No save reset required.
