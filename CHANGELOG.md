@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.3 - 2026-06-30 02:42 JST
+- Released for 7 Days to Die 3.0 (now stable). Rebuilt against the 3.0 stable game assemblies. The 0.7.x line is now the main build and targets 3.0; the 0.6.x build stays available for players still on v2.x.
+- No save reset is required.
+
 ## 0.7.2 - 2026-06-16 04:05 JST
 - Restored the space before the biome name in destination entries (e.g. `(891 E 1063 S) Forest`), which was lost when the localization file was converted to the 3.0 format.
 - No save reset is required.
