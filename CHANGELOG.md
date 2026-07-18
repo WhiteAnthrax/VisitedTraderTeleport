@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.17 - 2026-07-18 10:22 JST
+- Fixed parked vehicles (and in rare cases other entities) being dragged along to the trader when you travel. This could happen when a leftover companion record from the SCore / XNPCCore hire system pointed at an entity id the game had since reused for something else, such as a vehicle in your garage. Travel now moves only entities that are really your companions; hired companions still come along as before.
+- No save reset is required.
+
 ## 0.6.16 - 2026-06-12 03:08 JST
 - In multiplayer, the travel confirmation prompt now follows the server config, matching how access mode and travel cost already work. Clients connected to a server use the server's confirmation setting instead of their own local one. Single-player is unchanged.
 - No save reset is required.
