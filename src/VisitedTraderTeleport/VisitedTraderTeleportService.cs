@@ -322,6 +322,14 @@ internal static class VisitedTraderTeleportService
                     continue;
                 }
 
+                // A stale hired_ cvar can point at an entity id that was recycled onto something
+                // else entirely (a parked vehicle, a zombie) after a save/load, which would drag
+                // that entity to the destination. Require real ownership, same as GatherCompanions.
+                if (!IsPlayerCompanion(companion, player.entityId))
+                {
+                    continue;
+                }
+
                 // Leave companions told to stay or guard where they are.
                 if (IsStayingOrGuarding(id))
                 {
