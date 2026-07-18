@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.4 - 2026-07-18 10:22 JST
+- Fixed parked vehicles (and in rare cases other entities) being dragged along to the trader when you travel. This could happen when a leftover companion record from the SCore / XNPCCore hire system pointed at an entity id the game had since reused for something else, such as a vehicle in your garage. Travel now moves only entities that are really your companions; hired companions still come along as before.
+- No save reset is required.
+
 ## 0.7.3 - 2026-06-30 02:42 JST
 - Released for 7 Days to Die 3.0 (now stable). Rebuilt against the 3.0 stable game assemblies. The 0.7.x line is now the main build and targets 3.0; the 0.6.x build stays available for players still on v2.x.
 - No save reset is required.
