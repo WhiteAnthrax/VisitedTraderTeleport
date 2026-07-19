@@ -206,6 +206,8 @@ The build copies `VisitedTraderTeleport.dll` into `mod\VisitedTraderTeleport`.
 It also creates a versioned package under `dist\`, for example `VisitedTraderTeleport-0.4.2.zip`.
 The package contains a top-level `VisitedTraderTeleport` folder ready to extract into the game's `Mods` directory.
 
+For the Linux-orchestrated workflow that invokes compilation on a Windows game host over SSH, see [Windows builds initiated from Linux](docs/WindowsSshBuild.md).
+
 Update `CHANGELOG.md` whenever behavior, packaging, or project-facing workflow changes. The build copies it into the packaged mod as `Changelog.txt`.
 
 ## Install
