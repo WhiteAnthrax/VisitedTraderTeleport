@@ -45,6 +45,9 @@ internal static class VisitedTraderTeleportService
             float cooldownRemaining = TravelCooldownSeconds - (Time.realtimeSinceStartup - lastTravel);
             if (cooldownRemaining > 0f)
             {
+                Debug.Log(
+                    $"[VisitedTraderTeleport] Transport for {player.PlayerDisplayName} refused; " +
+                    $"cooldown has {cooldownRemaining:0.#}s left.");
                 ShowTooltip(player, VTTLocalization.Format("vtt_travel_cooldown", Mathf.CeilToInt(cooldownRemaining)));
                 return;
             }
@@ -1195,7 +1198,12 @@ internal static class VisitedTraderTeleportService
 
     private static void ShowPreparingTooltip(EntityPlayer player)
     {
-        ShowTooltip(player, VTTLocalization.Get("vtt_preparing_travel"));
+        // Remote clients already show their own localized "Preparing travel..." tooltip when
+        // the dialog action fires, so only the local player needs this one.
+        if (player is EntityPlayerLocal)
+        {
+            ShowTooltip(player, VTTLocalization.Get("vtt_preparing_travel"));
+        }
     }
 
     private static void ShowDestinationNotReadyTooltip(EntityPlayer player)
@@ -1211,7 +1219,9 @@ internal static class VisitedTraderTeleportService
         }
         else
         {
-            GameManager.ShowTooltipMP(player, string.Empty, message);
+            // ShowTooltipMP's signature is (player, text, alertSound) - the message goes in the
+            // second parameter. It used to be passed as the third, which sent an empty tooltip.
+            GameManager.ShowTooltipMP(player, message);
         }
     }
 
