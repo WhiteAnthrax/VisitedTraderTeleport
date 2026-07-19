@@ -54,6 +54,10 @@ Each remote attempt pairs `ls-remote` with a bounded fetch. The fetched `FETCH_H
 
 Git credential and SSH prompting are disabled with `GIT_TERMINAL_PROMPT=0`, non-interactive credential-manager settings, and SSH `BatchMode=yes`. Unknown SSH host keys fail instead of prompting.
 
+## Executable paths
+
+`-GitPath` selects the Git executable and defaults to `VTT_GIT_PATH`, then `git` on `PATH`. `-DotNetPath` similarly defaults to `VTT_DOTNET_PATH`, then `dotnet` on `PATH`. Set the environment variables as machine-local defaults for unattended SSH builds, or pass the parameters explicitly when a run must use a particular installation. Both values are validated during normal runs and `-DryRun` preflight.
+
 ## Game references
 
 `-GamePath` or `VTT_GAME_PATH` supplies the 7 Days to Die installation root. After checking out or verifying the target commit, the script reads the target `VisitedTraderTeleport.csproj` and maps its HintPaths dynamically:

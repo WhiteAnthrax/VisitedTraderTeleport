@@ -37,8 +37,27 @@ Persistent logs and artifacts root. Defaults to VTT_BUILD_ROOT or LOCALAPPDATA.
 Parent for script-owned disposable workspaces. Defaults to VTT_BUILD_WORK_ROOT
 or <OutputRoot>\workspaces.
 
+.PARAMETER DotNetPath
+dotnet executable name or path. Defaults to VTT_DOTNET_PATH or dotnet.
+
+.PARAMETER GitPath
+Git executable name or path. Defaults to VTT_GIT_PATH or git.
+
 .PARAMETER TimeoutSeconds
 Overall wall-clock deadline in seconds. Default: 1800.
+
+.PARAMETER DryRun
+Performs the remote, executable, game-reference, and mode-specific preflight
+without copying references, building, running package checks, or collecting an
+artifact.
+
+.PARAMETER KeepWorkspace
+Retains the script-owned Isolated workspace after completion. Invalid in
+Prepared mode.
+
+.PARAMETER SkipPackageChecks
+Skips ModChecks after the Release build. Intended only as an explicit diagnostic
+escape hatch.
 
 .EXAMPLE
 powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
@@ -1200,12 +1219,47 @@ finally {
     }
 }
 
-if ($script:OutcomeExitCode -eq 0) {
-    Write-BuildLog -Message $script:OutcomeMessage
+try {
+    if ($script:OutcomeExitCode -eq 0) {
+        Write-BuildLog -Message $script:OutcomeMessage
+    }
+    else {
+        [Console]::Error.WriteLine(('BUILD_FAILED exit_code={0} phase={1} message={2}' -f `
+            $script:OutcomeExitCode, $script:OutcomePhase, $script:OutcomeMessage))
+    }
 }
-else {
-    [Console]::Error.WriteLine(('BUILD_FAILED exit_code={0} phase={1} message={2}' -f `
-        $script:OutcomeExitCode, $script:OutcomePhase, $script:OutcomeMessage))
+catch {
+    $script:Outcome = 'failure'
+    $script:OutcomeExitCode = 99
+    $script:OutcomePhase = 'terminal-output'
+    $script:OutcomeMessage = 'Final result handling failed: ' + $_.Exception.Message
+    try {
+        [Console]::Error.WriteLine(('BUILD_FAILED exit_code=99 phase=terminal-output message={0}' -f `
+            $script:OutcomeMessage))
+    }
+    catch { [void]$_ }
 }
-Write-TerminalResult
-exit $script:OutcomeExitCode
+finally {
+    try {
+        Write-TerminalResult
+    }
+    catch {
+        $script:Outcome = 'failure'
+        $script:OutcomeExitCode = 99
+        $script:OutcomePhase = 'terminal-output'
+        $script:OutcomeMessage = 'Terminal result emission failed.'
+
+        $fallbackMode = if ($Mode -eq 'Prepared') { 'Prepared' } else { 'Isolated' }
+        $fallbackCommit = if ($script:ResolvedCommit -match '\A[0-9a-fA-F]{40}\z') {
+            '"' + $script:ResolvedCommit.ToLowerInvariant() + '"'
+        }
+        else {
+            'null'
+        }
+        $fallbackTimedOut = if ($script:TimedOut) { 'true' } else { 'false' }
+        $fallbackResult = 'VTT_BUILD_RESULT {{"result":"failure","exitCode":99,"message":"Terminal result emission failed.","phase":"terminal-output","mode":"{0}","resolvedCommit":{1},"attempt":{2},"timedOut":{3}}}' -f `
+            $fallbackMode, $fallbackCommit, [int]$script:RemoteAttempt, $fallbackTimedOut
+        try { [Console]::Out.WriteLine($fallbackResult) } catch { [void]$_ }
+    }
+    exit $script:OutcomeExitCode
+}
