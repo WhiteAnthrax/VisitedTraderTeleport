@@ -11,7 +11,10 @@ internal static class VisitedTraderTeleportService
     private const float TeleportVerticalClearance = 0.25f;
     private const float PrepareTimeoutSeconds = 12f;
     private const float TransitionVisualReadyMaxExtraSeconds = 15f;
-    private const int PrepareChunkViewDim = 3;
+    private const int PrepareChunkViewDim = 2;
+    private const int ClientRefreshChunkViewDim = 3;
+    private const float TravelCooldownSeconds = 10f;
+    private const float MeshQueueBusyFraction = 0.8f;
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshHoldSeconds = 5f;
     private const float ClientVisualRefreshArrivalDistanceSq = 64f * 64f;
@@ -22,6 +25,7 @@ internal static class VisitedTraderTeleportService
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> ClientVisualRefreshObservers = new();
     private static readonly HashSet<int> PendingTeleports = new();
+    private static readonly Dictionary<int, float> LastTravelTimes = new();
 
     public static void Teleport(EntityPlayer player, TraderDestination destination)
     {
@@ -36,6 +40,28 @@ internal static class VisitedTraderTeleportService
             return;
         }
 
+        if (LastTravelTimes.TryGetValue(entityId, out float lastTravel))
+        {
+            float cooldownRemaining = TravelCooldownSeconds - (Time.realtimeSinceStartup - lastTravel);
+            if (cooldownRemaining > 0f)
+            {
+                Debug.Log(
+                    $"[VisitedTraderTeleport] Transport for {player.PlayerDisplayName} refused; " +
+                    $"cooldown has {cooldownRemaining:0.#}s left.");
+                ShowTooltip(player, VTTLocalization.Format("vtt_travel_cooldown", Mathf.CeilToInt(cooldownRemaining)));
+                return;
+            }
+        }
+
+        if (IsMeshQueueSaturated())
+        {
+            Debug.Log(
+                $"[VisitedTraderTeleport] Transport for {player.PlayerDisplayName} deferred; " +
+                "mesh regeneration queue is near its limit.");
+            ShowTooltip(player, VTTLocalization.Get("vtt_transport_busy"));
+            return;
+        }
+
         Vector3 target = ResolveTarget(destination);
         if (player is EntityPlayerLocal && !TravelCostService.HasRequiredCost(player, destination))
         {
@@ -43,7 +69,7 @@ internal static class VisitedTraderTeleportService
         }
 
         World world = GameManager.Instance?.World;
-        if (NeedsPreparation(world, target))
+        if (NeedsPreparation(world, target, player is EntityPlayerLocal))
         {
             if (TryStartPreparedTransport(player, destination, target))
             {
@@ -76,19 +102,44 @@ internal static class VisitedTraderTeleportService
         StartClientVisualRefresh(player, ResolveTarget(destination));
     }
 
-    private static bool IsDestinationReady(World world, Vector3 target)
+    // Colliders (and the visual meshes that produce them) only exist on this instance for the
+    // local player; a remote player's client checks its own arrival area, matching how the
+    // dedicated-server path already worked. So only require colliders for a local traveler.
+    private static bool IsDestinationReady(World world, Vector3 target, bool requireColliders)
     {
         if (world == null || !world.IsChunkAreaLoaded(target))
         {
             return false;
         }
 
-        return GameManager.IsDedicatedServer || world.IsChunkAreaCollidersLoaded(target);
+        return GameManager.IsDedicatedServer || !requireColliders || world.IsChunkAreaCollidersLoaded(target);
     }
 
-    private static bool NeedsPreparation(World world, Vector3 target)
+    private static bool NeedsPreparation(World world, Vector3 target, bool requireColliders)
     {
-        return world != null && !IsDestinationReady(world, target);
+        return world != null && !IsDestinationReady(world, target, requireColliders);
+    }
+
+    // Mirrors the game's own throttle in ChunkManager.thread_Regenerating: when the number of
+    // in-use VoxelMeshLayers reaches MaxQueuedMeshLayers, the mesh regeneration thread blocks.
+    // Starting another map-wide trip in that state piles more work onto an already choking
+    // queue, so refuse (without charging) while it is close to the limit.
+    private static bool IsMeshQueueSaturated()
+    {
+        if (GameManager.IsDedicatedServer)
+        {
+            return false;
+        }
+
+        try
+        {
+            int queued = VoxelMeshLayer.InstanceCount - MemoryPools.poolVML.GetPoolSize();
+            return queued >= ChunkManager.MaxQueuedMeshLayers * MeshQueueBusyFraction;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static bool TryStartPreparedTransport(EntityPlayer player, TraderDestination destination, Vector3 target)
@@ -121,15 +172,20 @@ internal static class VisitedTraderTeleportService
 
         try
         {
+            // Build visual meshes only when the traveler is this instance's local player. For a
+            // remote client the host only needs the chunk data loaded (the client renders its own
+            // arrival area), and queueing host-side mesh work for someone else's destination was
+            // feeding the mesh regeneration queue for nothing.
+            bool localTraveler = player is EntityPlayerLocal;
             if (gameManager != null && world != null && player != null)
             {
                 observer = gameManager.AddChunkObserver(
                     initialTarget,
-                    !GameManager.IsDedicatedServer,
+                    localTraveler,
                     PrepareChunkViewDim,
                     player.entityId);
                 PreparationObservers[player.entityId] = observer;
-                if (!GameManager.IsDedicatedServer)
+                if (localTraveler)
                 {
                     ForceClientChunkVisualUpdate(world);
                 }
@@ -138,7 +194,7 @@ internal static class VisitedTraderTeleportService
             float timeoutAt = Time.realtimeSinceStartup + PrepareTimeoutSeconds;
             while (player != null &&
                    world != null &&
-                   !IsDestinationReady(world, initialTarget) &&
+                   !IsDestinationReady(world, initialTarget, localTraveler) &&
                    Time.realtimeSinceStartup < timeoutAt)
             {
                 yield return null;
@@ -150,7 +206,7 @@ internal static class VisitedTraderTeleportService
             }
 
             Vector3 finalTarget = ResolveTarget(destination);
-            if (!IsDestinationReady(world, finalTarget))
+            if (!IsDestinationReady(world, finalTarget, localTraveler))
             {
                 Debug.LogWarning(
                     $"[VisitedTraderTeleport] Destination was not ready after preparation; transport aborted without charging " +
@@ -192,6 +248,8 @@ internal static class VisitedTraderTeleportService
             // would persist a copy that reloads as a duplicate when the player returns. Pull them
             // onto the (already prepared) destination first so the old chunk saves nothing.
             RelocateCompanionsBeforeTeleport(player, target);
+
+            LastTravelTimes[player.entityId] = Time.realtimeSinceStartup;
 
             if (player is EntityPlayerLocal localPlayer)
             {
@@ -1068,7 +1126,7 @@ internal static class VisitedTraderTeleportService
             observer = gameManager.AddChunkObserver(
                 target,
                 true,
-                PrepareChunkViewDim,
+                ClientRefreshChunkViewDim,
                 player.entityId);
             ClientVisualRefreshObservers[player.entityId] = observer;
             ForceClientChunkVisualUpdate(world);
@@ -1078,7 +1136,7 @@ internal static class VisitedTraderTeleportService
             bool forcedAfterArrival = false;
             while (player != null && world != null && Time.realtimeSinceStartup < timeoutAt)
             {
-                if (IsNearDestination(player, target) && IsDestinationReady(world, target))
+                if (IsNearDestination(player, target) && IsDestinationReady(world, target, true))
                 {
                     if (!forcedAfterArrival)
                     {
@@ -1140,7 +1198,12 @@ internal static class VisitedTraderTeleportService
 
     private static void ShowPreparingTooltip(EntityPlayer player)
     {
-        ShowTooltip(player, VTTLocalization.Get("vtt_preparing_travel"));
+        // Remote clients already show their own localized "Preparing travel..." tooltip when
+        // the dialog action fires, so only the local player needs this one.
+        if (player is EntityPlayerLocal)
+        {
+            ShowTooltip(player, VTTLocalization.Get("vtt_preparing_travel"));
+        }
     }
 
     private static void ShowDestinationNotReadyTooltip(EntityPlayer player)
@@ -1156,7 +1219,9 @@ internal static class VisitedTraderTeleportService
         }
         else
         {
-            GameManager.ShowTooltipMP(player, string.Empty, message);
+            // ShowTooltipMP's signature is (player, text, alertSound) - the message goes in the
+            // second parameter. It used to be passed as the third, which sent an empty tooltip.
+            GameManager.ShowTooltipMP(player, message);
         }
     }
 
