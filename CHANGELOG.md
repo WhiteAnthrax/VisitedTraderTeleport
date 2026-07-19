@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.5 - 2026-07-19 14:20 JST
+- Reduced the load travel puts on the game's chunk and mesh pipeline, addressing reports of the game freezing after heavy teleport use in multiplayer. On a player-hosted game the host no longer rebuilds destination visuals for another player's trip, and the pre-loaded area around the destination is slightly smaller.
+- Travel now waits when the game's mesh queue is close to its limit instead of piling more work onto it; you get a "transport is busy" message and can retry a moment later. Nothing is charged for a refused trip.
+- Added a short 10-second wait between trips per player. Trying to travel again sooner shows how many seconds are left.
+- No save reset is required.
+
 ## 0.7.4 - 2026-07-18 10:22 JST
 - Fixed parked vehicles (and in rare cases other entities) being dragged along to the trader when you travel. This could happen when a leftover companion record from the SCore / XNPCCore hire system pointed at an entity id the game had since reused for something else, such as a vehicle in your garage. Travel now moves only entities that are really your companions; hired companions still come along as before.
 - No save reset is required.
