@@ -6,26 +6,44 @@ using System.Xml.Linq;
 // Dev-only consistency checks for the VisitedTraderTeleport repository.
 // Never shipped: lives under devtools/, outside the packaged mod folder.
 //
+// Handles both release lines and fails when they are mixed up:
+//   3.0 line  (0.7.x+)  -> Config/Localization.csv, 20 columns (with KeepLoaded/Context)
+//   v2.6 line (0.6.x)   -> Config/Localization.txt, 19 columns (with latam, no KeepLoaded)
+//
 // Usage (from the repository root):
-//   dotnet run --project devtools/ModChecks              repo checks only
-//   dotnet run --project devtools/ModChecks -- --package repo checks + dist ZIP allowlist
+//   dotnet run --project devtools/ModChecks                 repo checks only
+//   dotnet run --project devtools/ModChecks -- --package    repo checks + dist ZIP allowlist
+//   dotnet run --project devtools/ModChecks -- --root <dir> check another working tree
+//     (e.g. a v2.6 maintenance-branch worktree, which has no devtools/ of its own)
 //
 // Exit code is the number of failed checks.
 
 int failures = 0;
 bool checkPackage = args.Contains("--package");
+string? rootArg = null;
+for (int i = 0; i < args.Length - 1; i++)
+{
+    if (args[i] == "--root")
+    {
+        rootArg = args[i + 1];
+    }
+}
 
-string repoRoot = FindRepoRoot();
+string repoRoot = ResolveRepoRoot(rootArg);
 string modDir = Path.Combine(repoRoot, "mod", "VisitedTraderTeleport");
 string modInfoPath = Path.Combine(modDir, "ModInfo.xml");
 string changelogPath = Path.Combine(repoRoot, "CHANGELOG.md");
 string csvPath = Path.Combine(modDir, "Config", "Localization.csv");
+string txtPath = Path.Combine(modDir, "Config", "Localization.txt");
 
 string version = CheckVersionConsistency();
-CheckLocalizationCsv();
+bool isV26Line = version.StartsWith("0.6.", StringComparison.Ordinal);
+Console.WriteLine($"INFO checking {(isV26Line ? "v2.6 line (0.6.x)" : "3.0 line")} at {repoRoot}");
+
+CheckLocalization(isV26Line);
 if (checkPackage)
 {
-    CheckPackageContents(version);
+    CheckPackageContents(version, isV26Line);
 }
 
 Console.WriteLine(failures == 0
@@ -33,8 +51,20 @@ Console.WriteLine(failures == 0
     : $"ModChecks: {failures} check(s) FAILED.");
 return failures;
 
-string FindRepoRoot()
+string ResolveRepoRoot(string? explicitRoot)
 {
+    if (explicitRoot != null)
+    {
+        string full = Path.GetFullPath(explicitRoot);
+        if (!File.Exists(Path.Combine(full, "VisitedTraderTeleport.sln")))
+        {
+            Console.WriteLine($"FAIL --root {explicitRoot} does not contain VisitedTraderTeleport.sln.");
+            Environment.Exit(1);
+        }
+
+        return full;
+    }
+
     DirectoryInfo? dir = new(Directory.GetCurrentDirectory());
     while (dir != null && !File.Exists(Path.Combine(dir.FullName, "VisitedTraderTeleport.sln")))
     {
@@ -80,24 +110,37 @@ string CheckVersionConsistency()
     return modVersion;
 }
 
-void CheckLocalizationCsv()
+void CheckLocalization(bool v26)
 {
-    if (!File.Exists(csvPath))
+    string expectedPath = v26 ? txtPath : csvPath;
+    string wrongPath = v26 ? csvPath : txtPath;
+    string expectedName = Path.GetFileName(expectedPath);
+    int expectedColumns = v26 ? 19 : 20;
+
+    // Mixing formats across lines is exactly the mistake this guards against: the v2.6 game
+    // ignores Localization.csv and 3.0 ignores Localization.txt, so text silently breaks.
+    if (File.Exists(wrongPath))
     {
-        Fail($"missing {Path.GetRelativePath(repoRoot, csvPath)}.");
+        Fail($"{Path.GetFileName(wrongPath)} present on the {(v26 ? "v2.6" : "3.0")} line; " +
+             $"this line must ship {expectedName} only.");
+    }
+
+    if (!File.Exists(expectedPath))
+    {
+        Fail($"missing {Path.GetRelativePath(repoRoot, expectedPath)} (required on the {(v26 ? "v2.6" : "3.0")} line).");
         return;
     }
 
-    byte[] raw = File.ReadAllBytes(csvPath);
+    byte[] raw = File.ReadAllBytes(expectedPath);
     if (raw.Length >= 3 && raw[0] == 0xEF && raw[1] == 0xBB && raw[2] == 0xBF)
     {
-        Fail("Localization.csv starts with a UTF-8 BOM; the shipped file is BOM-less.");
+        Fail($"{expectedName} starts with a UTF-8 BOM; the shipped file is BOM-less.");
     }
 
     string text = Encoding.UTF8.GetString(raw);
     if (Regex.IsMatch(text, @"(?<!\r)\n"))
     {
-        Fail("Localization.csv contains LF line endings without CR; packaged files must be CRLF " +
+        Fail($"{expectedName} contains LF line endings without CR; packaged files must be CRLF " +
              "(re-checkout with .gitattributes in place, or normalize the file).");
     }
 
@@ -107,28 +150,28 @@ void CheckLocalizationCsv()
         .ToArray();
     if (lines.Length < 2)
     {
-        Fail("Localization.csv has no data rows.");
+        Fail($"{expectedName} has no data rows.");
         return;
     }
 
-    List<string>? header = ParseCsvLine(lines[0], 1);
+    List<string>? header = ParseCsvLine(expectedName, lines[0], 1);
     if (header == null)
     {
         return;
     }
 
-    const int ExpectedColumns = 20;
     int columnCount = header.Count;
-    if (columnCount != ExpectedColumns)
+    if (columnCount != expectedColumns)
     {
-        Fail($"Localization.csv header has {columnCount} columns, expected {ExpectedColumns} (3.0 format).");
+        Fail($"{expectedName} header has {columnCount} columns, expected {expectedColumns} " +
+             $"for the {(v26 ? "v2.6" : "3.0")} format.");
         return;
     }
 
     int englishIdx = header.IndexOf("english");
     if (englishIdx < 0)
     {
-        Fail("Localization.csv header has no 'english' column.");
+        Fail($"{expectedName} header has no 'english' column.");
         return;
     }
 
@@ -136,7 +179,7 @@ void CheckLocalizationCsv()
     int rowFailures = 0;
     for (int i = 1; i < lines.Length; i++)
     {
-        List<string>? fields = ParseCsvLine(lines[i], i + 1);
+        List<string>? fields = ParseCsvLine(expectedName, lines[i], i + 1);
         if (fields == null)
         {
             rowFailures++;
@@ -145,14 +188,14 @@ void CheckLocalizationCsv()
 
         if (fields.Count != columnCount)
         {
-            Fail($"Localization.csv line {i + 1}: {fields.Count} fields, expected {columnCount}.");
+            Fail($"{expectedName} line {i + 1}: {fields.Count} fields, expected {columnCount}.");
             rowFailures++;
             continue;
         }
 
         if (!fields[0].StartsWith("vtt_", StringComparison.Ordinal))
         {
-            Fail($"Localization.csv line {i + 1}: key '{fields[0]}' does not start with vtt_.");
+            Fail($"{expectedName} line {i + 1}: key '{fields[0]}' does not start with vtt_.");
             rowFailures++;
         }
 
@@ -168,7 +211,7 @@ void CheckLocalizationCsv()
             var cellPlaceholders = placeholderRegex.Matches(fields[col]).Select(m => m.Value).ToHashSet();
             if (!cellPlaceholders.SetEquals(englishPlaceholders))
             {
-                Fail($"Localization.csv line {i + 1} ({fields[0]}), column '{header[col]}': placeholders " +
+                Fail($"{expectedName} line {i + 1} ({fields[0]}), column '{header[col]}': placeholders " +
                      $"[{string.Join(",", cellPlaceholders)}] do not match english [{string.Join(",", englishPlaceholders)}].");
                 rowFailures++;
             }
@@ -177,11 +220,11 @@ void CheckLocalizationCsv()
 
     if (rowFailures == 0)
     {
-        Pass($"Localization.csv: {lines.Length - 1} rows x {columnCount} columns, CRLF, placeholders consistent.");
+        Pass($"{expectedName}: {lines.Length - 1} rows x {columnCount} columns, placeholders consistent.");
     }
 }
 
-List<string>? ParseCsvLine(string line, int lineNumber)
+List<string>? ParseCsvLine(string fileName, string line, int lineNumber)
 {
     var fields = new List<string>();
     var current = new StringBuilder();
@@ -226,7 +269,7 @@ List<string>? ParseCsvLine(string line, int lineNumber)
 
     if (inQuotes)
     {
-        Fail($"Localization.csv line {lineNumber}: unbalanced quotes.");
+        Fail($"{fileName} line {lineNumber}: unbalanced quotes.");
         return null;
     }
 
@@ -234,7 +277,7 @@ List<string>? ParseCsvLine(string line, int lineNumber)
     return fields;
 }
 
-void CheckPackageContents(string version)
+void CheckPackageContents(string version, bool v26)
 {
     string zipPath = Path.Combine(repoRoot, "dist", $"VisitedTraderTeleport-{version}.zip");
     if (!File.Exists(zipPath))
@@ -244,7 +287,8 @@ void CheckPackageContents(string version)
     }
 
     // The only files a player may ever receive. Anything else in the ZIP - a debug helper,
-    // a test config, a stray script - is a release blocker.
+    // a test config, a stray script - is a release blocker. The localization file name is
+    // line-specific and shipping the wrong one is a failure by omission+addition.
     var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "VisitedTraderTeleport/ModInfo.xml",
@@ -252,7 +296,7 @@ void CheckPackageContents(string version)
         "VisitedTraderTeleport/Changelog.txt",
         "VisitedTraderTeleport/LICENSE",
         "VisitedTraderTeleport/Config/dialogs.xml",
-        "VisitedTraderTeleport/Config/Localization.csv",
+        v26 ? "VisitedTraderTeleport/Config/Localization.txt" : "VisitedTraderTeleport/Config/Localization.csv",
         "VisitedTraderTeleport/Config/VisitedTraderTeleport.xml",
     };
 
@@ -289,6 +333,7 @@ void CheckPackageContents(string version)
 
     if (unexpected.Count == 0 && missing.Count == 0)
     {
-        Pass($"package {Path.GetFileName(zipPath)}: exactly the {allowed.Count} expected files, Changelog.txt current.");
+        Pass($"package {Path.GetFileName(zipPath)}: exactly the {allowed.Count} expected files " +
+             $"({(v26 ? "v2.6" : "3.0")} layout), Changelog.txt current.");
     }
 }
