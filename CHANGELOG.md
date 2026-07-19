@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.18 - 2026-07-19 19:11 JST
+- Fixed placed/drivable vehicles (minibike, motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) still being dragged along to the trader on travel. The 0.6.17 fix only excluded vehicles by name and missed all of these; they are now excluded by their actual type, so travel only ever moves entities that are really your companions.
+- No save reset is required.
+
 ## 0.6.17 - 2026-07-18 10:22 JST
 - Fixed parked vehicles (and in rare cases other entities) being dragged along to the trader when you travel. This could happen when a leftover companion record from the SCore / XNPCCore hire system pointed at an entity id the game had since reused for something else, such as a vehicle in your garage. Travel now moves only entities that are really your companions; hired companions still come along as before.
 - No save reset is required.

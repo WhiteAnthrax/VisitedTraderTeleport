@@ -575,10 +575,12 @@ internal static class VisitedTraderTeleportService
     private static bool IsPlayerCompanion(EntityAlive alive, int playerId)
     {
         // Exclude other player-owned entities that are not following NPCs (e.g. the vanilla
-        // junk drone) so this stays a no-op outside of companion setups.
-        string typeName = alive.GetType().Name;
-        if (typeName.IndexOf("Drone", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            typeName.IndexOf("Vehicle", StringComparison.OrdinalIgnoreCase) >= 0)
+        // junk drone, or any placed/drivable vehicle) so this stays a no-op outside of companion
+        // setups. Checked by actual type, not by class name: every drivable vehicle (minibike,
+        // motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) derives from EntityVehicle via
+        // EntityDriveable, but none of those concrete class names contain the substring "Vehicle" -
+        // a prior name-substring check missed all of them.
+        if (alive is EntityDrone || alive is EntityVehicle)
         {
             return false;
         }

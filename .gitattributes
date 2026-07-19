@@ -1,5 +1,11 @@
 * text=auto eol=lf
 
+# Packaged mod files must materialize with Windows (CRLF) line endings on checkout,
+# per the project line-ending policy. Later rules win over the global eol=lf above.
+mod/VisitedTraderTeleport/**/*.xml text eol=crlf
+mod/VisitedTraderTeleport/**/*.csv text eol=crlf
+mod/VisitedTraderTeleport/**/*.txt text eol=crlf
+
 *.dll binary
 *.exe binary
 *.pdb binary
