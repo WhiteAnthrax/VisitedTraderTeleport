@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.19 - 2026-07-19 23:40 JST
+- Backported the 0.7.6 fixes from the 3.0 line: reduced the load travel puts on the game's chunk and mesh pipeline (addressing reports of the game freezing after heavy teleport use in multiplayer), a "transport is busy" wait when the game's mesh queue is close to its limit, a short 10-second wait between trips per player, and a fix for server-sent notices never appearing for players connected to a server.
+- No save reset is required.
+
 ## 0.6.18 - 2026-07-19 19:11 JST
 - Fixed placed/drivable vehicles (minibike, motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) still being dragged along to the trader on travel. The 0.6.17 fix only excluded vehicles by name and missed all of these; they are now excluded by their actual type, so travel only ever moves entities that are really your companions.
 - No save reset is required.
