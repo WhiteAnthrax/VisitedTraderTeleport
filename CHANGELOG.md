@@ -1,5 +1,12 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.7 - 2026-07-20 14:30 JST
+- Fixed the game still being able to freeze when several players traveled at nearly the same time (reported as the third player joining a trip wave). Trips are now handled one at a time on the server, from destination preparation through arrival; a trip requested while another is running waits briefly in line ("Transport is busy right now. You are in line...") and starts automatically, instead of piling its chunk/mesh load on top of the active trip. Waiting is bounded, and a trip that cannot start in time asks you to retry. Nothing is charged for a trip that does not start.
+- The "mesh queue is busy" safety check now also runs again right before the trip starts and right before the jump itself, since chunk loading is asynchronous and the queue can fill up after the first check passes. A trip refused by the re-check costs nothing; once you have been charged, the jump is briefly delayed instead of refused.
+- For players connected to a server, the destination area pre-load on your own screen now starts only after the server approves the trip. Previously it started the moment you clicked, so a refused trip (cooldown, busy transport) still ran up to 12 seconds of pointless mesh work on your machine.
+- Reduced the load of the arrival refresh: the area rebuilt around the destination is now the same size as the preparation area (was larger), and the refresh releases its hold on the area as soon as the arrival meshes are built instead of keeping it for the full window.
+- No save reset is required.
+
 ## 0.7.6 - 2026-07-19 18:06 JST
 - Reduced the load travel puts on the game's chunk and mesh pipeline, addressing reports of the game freezing after heavy teleport use in multiplayer. On a player-hosted game the host no longer rebuilds destination visuals for another player's trip, and the pre-loaded area around the destination is slightly smaller.
 - Travel now waits when the game's mesh queue is close to its limit instead of piling more work onto it; you get a "transport is busy" message and can retry a moment later. Nothing is charged for a refused trip.
