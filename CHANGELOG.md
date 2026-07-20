@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## Unreleased
+- Fixed placed and drivable vehicles (minibike, motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) being moved to the trader when you travel. Vehicle exclusion now checks the entity's actual type, so only real companions can be moved.
+- No save reset is required.
+
 ## 0.7.7 - 2026-07-20 14:30 JST
 - Fixed the game still being able to freeze when several players traveled at nearly the same time (reported as the third player joining a trip wave). Trips are now handled one at a time on the server, from destination preparation through arrival; a trip requested while another is running waits briefly in line ("Transport is busy right now. You are in line...") and starts automatically, instead of piling its chunk/mesh load on top of the active trip. Waiting is bounded, and a trip that cannot start in time asks you to retry. Nothing is charged for a trip that does not start.
 - The "mesh queue is busy" safety check now also runs again right before the trip starts and right before the jump itself, since chunk loading is asynchronous and the queue can fill up after the first check passes. A trip refused by the re-check costs nothing; once you have been charged, the jump is briefly delayed instead of refused.
