@@ -36,6 +36,10 @@ internal static class VisitedTraderTeleportService
     private static readonly Queue<QueuedTravel> TravelQueue = new();
     private static bool travelSlotBusy;
     private static float travelSlotAcquiredAt;
+    // Stamped fresh on every slot acquisition. The release coroutine and the watchdog compare
+    // it before freeing the slot, so a delayed release from a superseded trip cannot free a
+    // newer trip's slot.
+    private static int travelSlotGeneration;
     private static bool queuedTravelTimeoutMonitorRunning;
 
     private sealed class QueuedTravel
@@ -71,6 +75,10 @@ internal static class VisitedTraderTeleportService
             // the queue: nothing else drains it on this path, so a trip waiting behind the stuck
             // one would otherwise stay queued forever.
             CleanupAllStaleTripState();
+            // Advance the generation so the leaked trip's release coroutine, if it ever resumes
+            // after this hitch, sees it no longer owns the slot and cannot free the trip that
+            // ProcessTravelQueue is about to start.
+            travelSlotGeneration++;
             travelSlotBusy = false;
             ProcessTravelQueue();
         }
@@ -201,8 +209,15 @@ internal static class VisitedTraderTeleportService
         for (int i = 0; i < count; i++)
         {
             QueuedTravel queued = TravelQueue.Dequeue();
-            if (queued.Player != null &&
-                Time.realtimeSinceStartup - queued.QueuedAt > QueuedTravelTimeoutSeconds)
+
+            // An entry whose player has gone away can never start, so drop it outright instead
+            // of re-queueing it (which would keep an un-startable, un-notifiable entry forever).
+            if (queued.Player == null)
+            {
+                continue;
+            }
+
+            if (Time.realtimeSinceStartup - queued.QueuedAt > QueuedTravelTimeoutSeconds)
             {
                 Debug.Log(
                     $"[VisitedTraderTeleport] Queued transport for {queued.Player.PlayerDisplayName} expired after " +
@@ -219,6 +234,9 @@ internal static class VisitedTraderTeleportService
     {
         travelSlotBusy = true;
         travelSlotAcquiredAt = Time.realtimeSinceStartup;
+        // Stamp this acquisition. Whoever releases the slot (the coroutine below, this method's
+        // fallback, or a synchronous teleport) must prove it still holds this generation first.
+        int generation = ++travelSlotGeneration;
 
         GameManager gameManager = GameManager.Instance;
         if (gameManager == null)
@@ -229,7 +247,7 @@ internal static class VisitedTraderTeleportService
             }
             finally
             {
-                travelSlotBusy = false;
+                ReleaseTravelSlotIfOwner(generation);
             }
 
             return;
@@ -239,24 +257,37 @@ internal static class VisitedTraderTeleportService
         try
         {
             TeleportCore(player, destination);
-            gameManager.StartCoroutine(ReleaseTravelSlotWhenTripComplete(player.entityId));
+            gameManager.StartCoroutine(ReleaseTravelSlotWhenTripComplete(player.entityId, generation));
             monitoring = true;
         }
         finally
         {
             if (!monitoring)
             {
-                travelSlotBusy = false;
-                ProcessTravelQueue();
+                ReleaseTravelSlotIfOwner(generation);
             }
         }
+    }
+
+    // Frees the slot and pumps the queue only when `generation` still owns it. A trip that was
+    // superseded (the watchdog force-released it and a newer trip took the slot, or advanced the
+    // generation) must not free the current owner's slot nor start yet another trip beside it.
+    private static void ReleaseTravelSlotIfOwner(int generation)
+    {
+        if (generation != travelSlotGeneration)
+        {
+            return;
+        }
+
+        travelSlotBusy = false;
+        ProcessTravelQueue();
     }
 
     // The trip owns the travel slot from preparation until its observers are gone: the
     // preparation observer, the pending-teleport flag (covers the transition and the teleport
     // itself), and the local arrival-refresh observer. A refused trip sets none of these, so
     // the slot frees on the next frame. The deadline is a safety net against a stuck trip.
-    private static IEnumerator ReleaseTravelSlotWhenTripComplete(int entityId)
+    private static IEnumerator ReleaseTravelSlotWhenTripComplete(int entityId, int generation)
     {
         try
         {
@@ -282,8 +313,11 @@ internal static class VisitedTraderTeleportService
         }
         finally
         {
-            travelSlotBusy = false;
-            ProcessTravelQueue();
+            // Only release if this trip still owns the slot. If a long frame hitch delayed this
+            // coroutine past the deadline, the Teleport watchdog may have already cleaned this
+            // trip up, advanced the generation, and started the next trip - freeing the slot here
+            // would strand that newer trip beside a third one pumped from the queue.
+            ReleaseTravelSlotIfOwner(generation);
         }
     }
 
@@ -1022,13 +1056,6 @@ internal static class VisitedTraderTeleportService
             return false;
         }
 
-        // Trip approved. On single-player and a P2P host the approving server is this same
-        // client, so the approval package a remote traveler receives - the trigger that starts
-        // its destination pre-load - never travels to the host's own player. Start that pre-load
-        // directly for a local traveler here, so the host does not jump onto an unbuilt
-        // destination. It is a no-op when preparation is already loading the destination.
-        EnsureLocalTravelerDestinationPreload(player, target);
-
         TravelTransitionSettings settings = VisitedTraderTeleportConfig.TravelTransition;
         if (settings == null || !settings.Enabled || settings.DurationSeconds <= 0f)
         {
@@ -1048,11 +1075,15 @@ internal static class VisitedTraderTeleportService
                 return false;
             }
 
+            // Cost is secured, so this trip is committed: pre-load the destination for the host's
+            // own local player now (a no-op for a remote traveler and when preparation is already
+            // loading it). Doing it after the charge means a trip refused for cost never pre-loads.
+            EnsureLocalTravelerDestinationPreload(player, target);
+
             // Even with the transition off, the jump still has to clear the same bounded final
             // mesh-saturation wait the transition path uses. A cost-already-consumed trip skipped
             // the pre-charge refusal above, so without this it could jump straight onto a
-            // saturated queue. Run the wait in a coroutine when a GameManager is available; the
-            // genuinely no-GameManager case is handled by the branch below.
+            // saturated queue. Run the wait in a coroutine when a GameManager is available.
             GameManager immediateManager = GameManager.Instance;
             if (immediateManager != null)
             {
@@ -1060,6 +1091,9 @@ internal static class VisitedTraderTeleportService
                 return true;
             }
 
+            // No GameManager means no running World, so no chunk/mesh regeneration pipeline exists
+            // to saturate (and no host to run a coroutine on). There is nothing to wait for, so the
+            // missing saturation wait is correct here rather than a gap. Teleport directly.
             ExecuteTeleport(player, destination, target, true);
             PendingTeleports.Remove(player.entityId);
             return true;
@@ -1084,6 +1118,9 @@ internal static class VisitedTraderTeleportService
                 return false;
             }
 
+            // No GameManager means no running World, hence no chunk/mesh regeneration pipeline
+            // that could be saturated and no coroutine host, so there is nothing to wait for even
+            // when the cost is already consumed. The direct teleport is correct on this path.
             ExecuteTeleport(player, destination, target, true);
             PendingTeleports.Remove(player.entityId);
             return true;
@@ -1105,6 +1142,11 @@ internal static class VisitedTraderTeleportService
             PendingTeleports.Remove(entityId);
             return false;
         }
+
+        // Cost is secured, so this trip is committed: pre-load the destination for the host's own
+        // local player now (a no-op for a remote traveler and when preparation is already loading
+        // it). Doing it after the charge means a trip refused for cost never pre-loads.
+        EnsureLocalTravelerDestinationPreload(player, target);
 
         gameManager.StartCoroutine(TransitionAndTeleport(player, destination, target, settings));
         return true;
