@@ -1,18 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace VisitedTraderTeleport;
 
 internal static class VisitedTraderClientState
 {
-    private const float PendingTravelMaxAgeSeconds = 30f;
-
     private static readonly Dictionary<string, TraderDestination> Destinations = new(StringComparer.Ordinal);
-
-    private static string pendingTravelKey;
-    private static float pendingTravelRequestedAt;
 
     public static AccessMode ServerAccessMode { get; private set; } = AccessMode.Personal;
 
@@ -32,29 +26,6 @@ internal static class VisitedTraderClientState
     public static bool TryGet(string key, out TraderDestination destination)
     {
         return Destinations.TryGetValue(key, out destination);
-    }
-
-    // The destination this client has asked the server to travel to. The heavy destination
-    // pre-load waits for the server's approval package, which does not repeat the destination
-    // key, so the request records it here. Only the most recent request is kept.
-    public static void SetPendingTravel(string key)
-    {
-        pendingTravelKey = key;
-        pendingTravelRequestedAt = Time.realtimeSinceStartup;
-    }
-
-    public static bool TryTakePendingTravel(out TraderDestination destination)
-    {
-        destination = null;
-        string key = pendingTravelKey;
-        pendingTravelKey = null;
-        if (string.IsNullOrEmpty(key) ||
-            Time.realtimeSinceStartup - pendingTravelRequestedAt > PendingTravelMaxAgeSeconds)
-        {
-            return false;
-        }
-
-        return TryGet(key, out destination);
     }
 
     public static void ApplySnapshot(
