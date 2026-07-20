@@ -70,6 +70,14 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
             TravelCostService.TryConsumeLocalCost(player, costItemName, cost);
         }
 
+        // This package is the server's approval of the trip this client requested, so only
+        // now start pre-loading the destination visuals recorded at request time. A refused
+        // request never receives it, so a rejected trip no longer feeds the mesh queue.
+        if (player != null && VisitedTraderClientState.TryTakePendingTravel(out TraderDestination pendingDestination))
+        {
+            VisitedTraderTeleportService.PrepareClientDestinationVisuals(player, pendingDestination);
+        }
+
         VisitedTraderTeleportService.PlayClientTravelTransition(player, destinationName, transportDestination, cost, settings);
     }
 }

@@ -1,5 +1,11 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.20 - 2026-07-21 01:00 JST
+- Fixed the deeper causes of freezes after repeated or simultaneous trader travel: trips are serialized from destination preparation through arrival, with a bounded queue and timeout instead of piling chunk and mesh work onto the game at once.
+- Hardened stalled-trip recovery: queued trips expire promptly, orphaned observers and pending state are cleaned up before another trip starts, and generation tokens prevent delayed cleanup from releasing a newer trip's slot.
+- Re-check mesh-queue saturation around the charged teleport, and start destination visual pre-load only after server approval, reducing unnecessary mesh work and preventing paid travel from being abandoned after it starts.
+- No save reset is required.
+
 ## 0.6.19 - 2026-07-19 23:40 JST
 - Backported the 0.7.6 fixes from the 3.0 line: reduced the load travel puts on the game's chunk and mesh pipeline (addressing reports of the game freezing after heavy teleport use in multiplayer), a "transport is busy" wait when the game's mesh queue is close to its limit, a short 10-second wait between trips per player, and a fix for server-sent notices never appearing for players connected to a server.
 - No save reset is required.

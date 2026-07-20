@@ -15,7 +15,11 @@ internal sealed class DialogActionVisitedTraderTeleport : BaseDialogAction
                         return;
                     }
 
-                    VisitedTraderTeleportService.PrepareClientDestinationVisuals(localPlayer, clientDestination);
+                    // Only record the request here. The heavy destination observer used to
+                    // start immediately, so a request the server then refused (cooldown, busy
+                    // mesh queue) still ran up to 12 seconds of mesh work for nothing. The
+                    // observer now starts when the server's approval package arrives.
+                    VisitedTraderClientState.SetPendingTravel(Value);
                 }
 
                 GameManager.ShowTooltip(localPlayer, VTTLocalization.Get("vtt_preparing_travel"), false, false, 2f);
