@@ -7,6 +7,10 @@
     <RootNamespace>VisitedTraderTeleport</RootNamespace>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- MSB3277 for System.Net.Http, System.IO.Compression, and System.ValueTuple
+         comes from dependency identities embedded in the game-provided Assembly-CSharp
+         and 0Harmony binaries. Project-side resolution changes cannot alter them; builds
+         succeed, so these known informational warnings are intentionally accepted. -->
   </PropertyGroup>
 
   <ItemGroup>

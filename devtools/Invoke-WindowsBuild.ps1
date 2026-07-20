@@ -106,6 +106,10 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 $script:Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+try {
+    [Console]::OutputEncoding = $script:Utf8NoBom
+}
+catch { }
 $script:LogPath = $null
 $script:RunId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
 $script:StartUtc = [DateTime]::UtcNow
@@ -332,6 +336,8 @@ function Invoke-NativeCommand {
     $startInfo.CreateNoWindow = $true
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
+    $startInfo.StandardOutputEncoding = $script:Utf8NoBom
+    $startInfo.StandardErrorEncoding = $script:Utf8NoBom
     if (-not [string]::IsNullOrWhiteSpace($WorkingDirectory)) {
         $startInfo.WorkingDirectory = $WorkingDirectory
     }
