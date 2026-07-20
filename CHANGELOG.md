@@ -1,6 +1,6 @@
 # Travel Between Visited Traders Changelog
 
-## Unreleased
+## 0.7.8 - 2026-07-21 02:51 JST
 - Fixed placed and drivable vehicles (minibike, motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) being moved to the trader when you travel. Vehicle exclusion now checks the entity's actual type, so only real companions can be moved.
 - No save reset is required.
 
