@@ -35,6 +35,7 @@ internal static class VisitedTraderTeleportService
     private static readonly Dictionary<int, float> LastTravelTimes = new();
     private static readonly Queue<QueuedTravel> TravelQueue = new();
     private static bool travelSlotBusy;
+    private static float travelSlotAcquiredAt;
 
     private sealed class QueuedTravel
     {
@@ -50,23 +51,21 @@ internal static class VisitedTraderTeleportService
             return;
         }
 
-        int entityId = player.entityId;
-        if (PendingTeleports.Contains(entityId))
+        if (!PassesStartChecks(player))
         {
             return;
         }
 
-        if (LastTravelTimes.TryGetValue(entityId, out float lastTravel))
+        // If the slot monitor coroutine died without its cleanup (e.g. the world it was
+        // started in was unloaded), the slot would stay held forever. Force-release once the
+        // hold is clearly past any legitimate trip length.
+        if (travelSlotBusy &&
+            Time.realtimeSinceStartup - travelSlotAcquiredAt > GetTravelSlotMaxHoldSeconds() + 10f)
         {
-            float cooldownRemaining = TravelCooldownSeconds - (Time.realtimeSinceStartup - lastTravel);
-            if (cooldownRemaining > 0f)
-            {
-                Debug.Log(
-                    $"[VisitedTraderTeleport] Transport for {player.PlayerDisplayName} refused; " +
-                    $"cooldown has {cooldownRemaining:0.#}s left.");
-                ShowTooltip(player, VTTLocalization.Format("vtt_travel_cooldown", Mathf.CeilToInt(cooldownRemaining)));
-                return;
-            }
+            Debug.LogWarning(
+                "[VisitedTraderTeleport] Travel slot watchdog: the active trip never released the slot " +
+                "(for example after a world change); releasing it now.");
+            travelSlotBusy = false;
         }
 
         // The per-player cooldown cannot stop several players from starting a map-wide trip in
@@ -80,6 +79,41 @@ internal static class VisitedTraderTeleportService
         }
 
         BeginTravel(player, destination);
+    }
+
+    // Checks shared by a fresh request and a queued trip about to start: both can be
+    // invalidated while a request waits (another trip of the same player, a cooldown that
+    // started in the meantime), so they run again at dequeue time.
+    private static bool PassesStartChecks(EntityPlayer player)
+    {
+        int entityId = player.entityId;
+        if (PendingTeleports.Contains(entityId))
+        {
+            return false;
+        }
+
+        if (LastTravelTimes.TryGetValue(entityId, out float lastTravel))
+        {
+            float cooldownRemaining = TravelCooldownSeconds - (Time.realtimeSinceStartup - lastTravel);
+            if (cooldownRemaining > 0f)
+            {
+                Debug.Log(
+                    $"[VisitedTraderTeleport] Transport for {player.PlayerDisplayName} refused; " +
+                    $"cooldown has {cooldownRemaining:0.#}s left.");
+                ShowTooltip(player, VTTLocalization.Format("vtt_travel_cooldown", Mathf.CeilToInt(cooldownRemaining)));
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // A configured travel transition legitimately holds the pending flag for its full
+    // duration, so the stuck-trip deadline has to sit above it.
+    private static float GetTravelSlotMaxHoldSeconds()
+    {
+        float transitionSeconds = Math.Max(0f, VisitedTraderTeleportConfig.TravelTransition?.DurationSeconds ?? 0f);
+        return TravelSlotMaxHoldSeconds + transitionSeconds;
     }
 
     private static void EnqueueTravel(EntityPlayer player, TraderDestination destination)
@@ -117,6 +151,7 @@ internal static class VisitedTraderTeleportService
     private static void BeginTravel(EntityPlayer player, TraderDestination destination)
     {
         travelSlotBusy = true;
+        travelSlotAcquiredAt = Time.realtimeSinceStartup;
 
         GameManager gameManager = GameManager.Instance;
         if (gameManager == null)
@@ -158,7 +193,7 @@ internal static class VisitedTraderTeleportService
     {
         try
         {
-            float deadline = Time.realtimeSinceStartup + TravelSlotMaxHoldSeconds;
+            float deadline = Time.realtimeSinceStartup + GetTravelSlotMaxHoldSeconds();
             while (Time.realtimeSinceStartup < deadline &&
                    (PendingTeleports.Contains(entityId) ||
                     PreparationObservers.ContainsKey(entityId) ||
@@ -166,12 +201,61 @@ internal static class VisitedTraderTeleportService
             {
                 yield return null;
             }
+
+            // Hitting the deadline means the trip's own cleanup never ran (a coroutine died
+            // or an observer leaked). Releasing the slot with that state still in place would
+            // let the next trip run concurrently with the stale one's load, which is exactly
+            // what the slot exists to prevent - so tear the leftovers down first.
+            if (PendingTeleports.Contains(entityId) ||
+                PreparationObservers.ContainsKey(entityId) ||
+                ClientVisualRefreshObservers.ContainsKey(entityId))
+            {
+                CleanupStaleTripState(entityId);
+            }
         }
         finally
         {
             travelSlotBusy = false;
             ProcessTravelQueue();
         }
+    }
+
+    private static void CleanupStaleTripState(int entityId)
+    {
+        Debug.LogWarning(
+            $"[VisitedTraderTeleport] Trip for entity {entityId} did not finish within " +
+            $"{GetTravelSlotMaxHoldSeconds():0.#}s; cleaning up its leftover state before releasing the travel slot.");
+
+        GameManager gameManager = GameManager.Instance;
+        try
+        {
+            if (PreparationObservers.TryGetValue(entityId, out ChunkManager.ChunkObserver preparationObserver))
+            {
+                PreparationObservers.Remove(entityId);
+                if (gameManager != null && preparationObserver != null)
+                {
+                    gameManager.RemoveChunkObserver(preparationObserver);
+                }
+            }
+
+            if (ClientVisualRefreshObservers.TryGetValue(entityId, out ChunkManager.ChunkObserver refreshObserver))
+            {
+                // KeepClientDestinationVisualsLoaded only removes the observer while it is
+                // still the one registered here, so removing the entry first also stops a
+                // still-alive coroutine from double-removing it.
+                ClientVisualRefreshObservers.Remove(entityId);
+                if (gameManager != null && refreshObserver != null)
+                {
+                    gameManager.RemoveChunkObserver(refreshObserver);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[VisitedTraderTeleport] Stale trip observer cleanup failed: {ex.Message}");
+        }
+
+        PendingTeleports.Remove(entityId);
     }
 
     private static void ProcessTravelQueue()
@@ -196,8 +280,25 @@ internal static class VisitedTraderTeleportService
                 continue;
             }
 
+            // The player's state can change while the request waits, so the same checks a
+            // fresh request goes through run again here.
+            if (!PassesStartChecks(player))
+            {
+                continue;
+            }
+
             Debug.Log($"[VisitedTraderTeleport] Starting queued transport for {player.PlayerDisplayName}.");
-            BeginTravel(player, next.Destination);
+            try
+            {
+                BeginTravel(player, next.Destination);
+            }
+            catch (Exception ex)
+            {
+                // Keep pumping so one failed start does not strand the rest of the queue;
+                // BeginTravel's own cleanup has already released the slot.
+                Debug.LogWarning(
+                    $"[VisitedTraderTeleport] Queued transport for {player.PlayerDisplayName} failed to start: {ex.Message}");
+            }
         }
     }
 
@@ -819,7 +920,9 @@ internal static class VisitedTraderTeleportService
         // preparation can take several seconds while chunk loading fills the mesh queue
         // asynchronously. Re-check here, before the trip is charged, so a request that
         // passed the first gate cannot start onto a queue that saturated in the meantime.
-        if (IsMeshQueueSaturated())
+        // A trip whose cost is already consumed must not be refused (the player would be
+        // charged for nothing); it falls through to the bounded pre-teleport wait instead.
+        if (!costAlreadyConsumed && IsMeshQueueSaturated())
         {
             Debug.Log(
                 $"[VisitedTraderTeleport] Transport for {player.PlayerDisplayName} deferred at start; " +
@@ -944,6 +1047,7 @@ internal static class VisitedTraderTeleportService
         clientInfo.SendPackage(
             NetPackageManager.GetPackage<NetPackageVisitedTraderTravelTransition>()
                 .Setup(
+                    destination.Key,
                     TraderDestinationFormatter.FormatName(destination),
                     TraderDestinationFormatter.FormatTransportDestination(destination),
                     paidCost,
@@ -963,7 +1067,7 @@ internal static class VisitedTraderTeleportService
             string costItemName = VisitedTraderTeleportConfig.TravelCost?.ItemName ?? string.Empty;
             string destinationName = TraderDestinationFormatter.FormatName(destination);
             string transportDestination = TraderDestinationFormatter.FormatTransportDestination(destination);
-            PlayTravelTransition(player, destinationName, transportDestination, paidCost, costItemName, settings);
+            PlayTravelTransition(player, destination.Key, destinationName, transportDestination, paidCost, costItemName, settings);
 
             float teleportAt = Time.realtimeSinceStartup + GetTeleportDelay(settings);
             while (Time.realtimeSinceStartup < teleportAt)
@@ -1078,6 +1182,7 @@ internal static class VisitedTraderTeleportService
 
     private static void PlayTravelTransition(
         EntityPlayer player,
+        string destinationKey,
         string destinationName,
         string transportDestination,
         int paidCost,
@@ -1095,7 +1200,7 @@ internal static class VisitedTraderTeleportService
             ClientInfo clientInfo = ConnectionManager.Instance?.Clients?.ForEntityId(player.entityId);
             clientInfo?.SendPackage(
                 NetPackageManager.GetPackage<NetPackageVisitedTraderTravelTransition>()
-                    .Setup(destinationName, transportDestination, paidCost, costItemName, settings));
+                    .Setup(destinationKey, destinationName, transportDestination, paidCost, costItemName, settings));
             Debug.Log(
                 $"[VisitedTraderTeleport] Sending travel transition to {player.PlayerDisplayName}: " +
                 $"paidCost={paidCost} {costItemName}, destination={destinationName}.");

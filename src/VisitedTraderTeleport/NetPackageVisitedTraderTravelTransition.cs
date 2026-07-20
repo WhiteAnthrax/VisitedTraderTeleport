@@ -2,6 +2,7 @@ namespace VisitedTraderTeleport;
 
 public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
 {
+    private string destinationKey = string.Empty;
     private string destinationName = string.Empty;
     private string transportDestination = string.Empty;
     private int cost;
@@ -11,12 +12,14 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
     public override NetPackageDirection PackageDirection => NetPackageDirection.ToClient;
 
     internal NetPackageVisitedTraderTravelTransition Setup(
+        string key,
         string name,
         string transportName,
         int paidCost,
         string itemName,
         TravelTransitionSettings transitionSettings)
     {
+        destinationKey = key ?? string.Empty;
         destinationName = name ?? string.Empty;
         transportDestination = string.IsNullOrWhiteSpace(transportName) ? destinationName : transportName;
         cost = paidCost;
@@ -27,6 +30,7 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
 
     public override void read(PooledBinaryReader reader)
     {
+        destinationKey = reader.ReadString();
         destinationName = reader.ReadString();
         transportDestination = reader.ReadString();
         cost = reader.ReadInt32();
@@ -43,6 +47,7 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
     public override void write(PooledBinaryWriter writer)
     {
         base.write(writer);
+        writer.ReadWrite(destinationKey ?? string.Empty);
         writer.ReadWrite(destinationName ?? string.Empty);
         writer.ReadWrite(transportDestination ?? string.Empty);
         writer.ReadWrite(cost);
@@ -55,7 +60,8 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
 
     public override int GetLength()
     {
-        return 31 +
+        return 35 +
+               (destinationKey?.Length ?? 0) +
                (destinationName?.Length ?? 0) +
                (transportDestination?.Length ?? 0) +
                (costItemName?.Length ?? 0) +
@@ -70,12 +76,16 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
             TravelCostService.TryConsumeLocalCost(player, costItemName, cost);
         }
 
-        // This package is the server's approval of the trip this client requested, so only
-        // now start pre-loading the destination visuals recorded at request time. A refused
-        // request never receives it, so a rejected trip no longer feeds the mesh queue.
-        if (player != null && VisitedTraderClientState.TryTakePendingTravel(out TraderDestination pendingDestination))
+        // This package is the server's approval of a trip this client requested, so only now
+        // start pre-loading the destination visuals. The destination key it carries pins the
+        // pre-load to the approved trip's destination, even if the player has since clicked a
+        // different one. A refused request never receives this package, so a rejected trip no
+        // longer feeds the mesh queue.
+        if (player != null &&
+            !string.IsNullOrEmpty(destinationKey) &&
+            VisitedTraderClientState.TryGet(destinationKey, out TraderDestination approvedDestination))
         {
-            VisitedTraderTeleportService.PrepareClientDestinationVisuals(player, pendingDestination);
+            VisitedTraderTeleportService.PrepareClientDestinationVisuals(player, approvedDestination);
         }
 
         VisitedTraderTeleportService.PlayClientTravelTransition(player, destinationName, transportDestination, cost, settings);
