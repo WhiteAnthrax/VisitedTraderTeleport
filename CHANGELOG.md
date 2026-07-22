@@ -4,6 +4,7 @@
 - Fixed the deeper causes of freezes after repeated or simultaneous trader travel: trips are serialized from destination preparation through arrival, with a bounded queue and timeout instead of piling chunk and mesh work onto the game at once.
 - Hardened stalled-trip recovery: queued trips expire promptly, orphaned observers and pending state are cleaned up before another trip starts, and generation tokens prevent delayed cleanup from releasing a newer trip's slot.
 - Re-check mesh-queue saturation around the charged teleport, and start destination visual pre-load only after server approval, reducing unnecessary mesh work and preventing paid travel from being abandoned after it starts.
+- Fixed travel being refused almost every time a destination actually needed preparation: the mesh-queue busy check was measuring the load the trip's own destination preparation had just produced, since the preparation area wasn't released until after that check ran.
 - No save reset is required.
 
 ## 0.6.19 - 2026-07-19 23:40 JST

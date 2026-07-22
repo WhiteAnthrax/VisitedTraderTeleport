@@ -597,6 +597,33 @@ internal static class VisitedTraderTeleportService
             Debug.Log(
                 $"[VisitedTraderTeleport] Destination ready after preparation for {player.PlayerDisplayName}: " +
                 $"{destination.DialogText}.");
+
+            // Release this trip's own preparation observer before checking (and starting) the
+            // transition. StartTransitionAndTeleport's first act is a mesh-queue saturation
+            // check, and this observer's own PrepareChunkViewDim burst was still registered
+            // (and its meshes still counted as in-flight) at that point, so the check was
+            // measuring the load this same trip had just produced and refusing on its own tail
+            // almost every time a destination genuinely needed preparation. Clear it here so the
+            // finally block below is a no-op on this path, then give the queue a short bounded
+            // grace period to actually drain (mirroring the wait TeleportAfterSaturationWait
+            // uses elsewhere) instead of hard-refusing the instant the burst ends.
+            if (gameManager != null && observer != null)
+            {
+                gameManager.RemoveChunkObserver(observer);
+                observer = null;
+            }
+
+            if (entityId >= 0)
+            {
+                PreparationObservers.Remove(entityId);
+            }
+
+            float drainDeadline = Time.realtimeSinceStartup + PreTeleportSaturationMaxWaitSeconds;
+            while (IsMeshQueueSaturated() && Time.realtimeSinceStartup < drainDeadline)
+            {
+                yield return null;
+            }
+
             handedOffToTransition = StartTransitionAndTeleport(player, destination, finalTarget, false, true);
         }
         finally
