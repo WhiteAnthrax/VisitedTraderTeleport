@@ -597,6 +597,33 @@ internal static class VisitedTraderTeleportService
             Debug.Log(
                 $"[VisitedTraderTeleport] Destination ready after preparation for {player.PlayerDisplayName}: " +
                 $"{destination.DialogText}.");
+
+            // Release this trip's own preparation observer before checking (and starting) the
+            // transition. StartTransitionAndTeleport's first act is a mesh-queue saturation
+            // check, and this observer's own PrepareChunkViewDim burst was still registered
+            // (and its meshes still counted as in-flight) at that point, so the check was
+            // measuring the load this same trip had just produced and refusing on its own tail
+            // almost every time a destination genuinely needed preparation. Clear it here so the
+            // finally block below is a no-op on this path, then give the queue a short bounded
+            // grace period to actually drain (mirroring the wait TeleportAfterSaturationWait
+            // uses elsewhere) instead of hard-refusing the instant the burst ends.
+            if (gameManager != null && observer != null)
+            {
+                gameManager.RemoveChunkObserver(observer);
+                observer = null;
+            }
+
+            if (entityId >= 0)
+            {
+                PreparationObservers.Remove(entityId);
+            }
+
+            float drainDeadline = Time.realtimeSinceStartup + PreTeleportSaturationMaxWaitSeconds;
+            while (IsMeshQueueSaturated() && Time.realtimeSinceStartup < drainDeadline)
+            {
+                yield return null;
+            }
+
             handedOffToTransition = StartTransitionAndTeleport(player, destination, finalTarget, false, true);
         }
         finally
@@ -1647,13 +1674,33 @@ internal static class VisitedTraderTeleportService
         }
         finally
         {
-            if (gameManager != null &&
+            // Re-fetch GameManager/World here instead of trusting the captured references
+            // from coroutine start: a disconnect or world reload can tear both down while
+            // this coroutine is still running (its own wait loop already re-checks world
+            // each iteration, but that doesn't help a client-teardown that interrupts the
+            // coroutine between iterations). Calling RemoveChunkObserver on a GameManager
+            // whose World has already been cleaned up threw a NullReferenceException from
+            // inside the game's own method and got the player kicked mid-teleport.
+            GameManager currentGameManager = GameManager.Instance;
+            if (currentGameManager != null &&
+                currentGameManager.World != null &&
                 observer != null &&
                 entityId >= 0 &&
                 ClientVisualRefreshObservers.TryGetValue(entityId, out ChunkManager.ChunkObserver currentObserver) &&
                 ReferenceEquals(currentObserver, observer))
             {
-                gameManager.RemoveChunkObserver(observer);
+                try
+                {
+                    currentGameManager.RemoveChunkObserver(observer);
+                }
+                catch (Exception ex)
+                {
+                    // Best-effort cleanup: the observer is being torn down along with the
+                    // world/connection regardless, so a failure here must not propagate out
+                    // of this finally block and take the client down with it.
+                    Debug.LogWarning($"[VisitedTraderTeleport] Client visual refresh observer cleanup failed: {ex.Message}");
+                }
+
                 ClientVisualRefreshObservers.Remove(entityId);
             }
         }
