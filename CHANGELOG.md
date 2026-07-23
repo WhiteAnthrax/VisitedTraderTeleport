@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.21 - 2026-07-23 15:30 JST
+- Fixed being kicked from the server right after a travel transition in some cases: cleaning up the client-side destination visual refresh could call into the game's chunk-observer removal after the world had already started unloading (e.g. on disconnect/reload during the refresh window), throwing an exception that took the connection down with it. The check is now re-verified at cleanup time and a failure there no longer propagates.
+- No save reset is required.
+
 ## 0.6.20 - 2026-07-21 01:00 JST
 - Fixed the deeper causes of freezes after repeated or simultaneous trader travel: trips are serialized from destination preparation through arrival, with a bounded queue and timeout instead of piling chunk and mesh work onto the game at once.
 - Hardened stalled-trip recovery: queued trips expire promptly, orphaned observers and pending state are cleaned up before another trip starts, and generation tokens prevent delayed cleanup from releasing a newer trip's slot.

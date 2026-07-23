@@ -1674,13 +1674,33 @@ internal static class VisitedTraderTeleportService
         }
         finally
         {
-            if (gameManager != null &&
+            // Re-fetch GameManager/World here instead of trusting the captured references
+            // from coroutine start: a disconnect or world reload can tear both down while
+            // this coroutine is still running (its own wait loop already re-checks world
+            // each iteration, but that doesn't help a client-teardown that interrupts the
+            // coroutine between iterations). Calling RemoveChunkObserver on a GameManager
+            // whose World has already been cleaned up threw a NullReferenceException from
+            // inside the game's own method and got the player kicked mid-teleport.
+            GameManager currentGameManager = GameManager.Instance;
+            if (currentGameManager != null &&
+                currentGameManager.World != null &&
                 observer != null &&
                 entityId >= 0 &&
                 ClientVisualRefreshObservers.TryGetValue(entityId, out ChunkManager.ChunkObserver currentObserver) &&
                 ReferenceEquals(currentObserver, observer))
             {
-                gameManager.RemoveChunkObserver(observer);
+                try
+                {
+                    currentGameManager.RemoveChunkObserver(observer);
+                }
+                catch (Exception ex)
+                {
+                    // Best-effort cleanup: the observer is being torn down along with the
+                    // world/connection regardless, so a failure here must not propagate out
+                    // of this finally block and take the client down with it.
+                    Debug.LogWarning($"[VisitedTraderTeleport] Client visual refresh observer cleanup failed: {ex.Message}");
+                }
+
                 ClientVisualRefreshObservers.Remove(entityId);
             }
         }
