@@ -1,0 +1,4 @@
+0.7.9
+Fixed travel being refused almost every time a destination actually needed preparation (e.g. the first visit in a session). The busy check was mistaking the trip's own destination loading for a genuinely saturated queue.
+Fixed being kicked from the server right after starting a travel transition in some cases.
+No save reset required.
