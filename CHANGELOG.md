@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.9 - 2026-07-23 19:00 JST
+- Fixed travel being refused almost every time a destination actually needed preparation: the mesh-queue busy check was measuring the load the trip's own destination preparation had just produced, since the preparation area wasn't released until after that check ran.
+- Fixed being kicked from the server right after a travel transition in some cases: cleaning up the client-side destination visual refresh could call into the game's chunk-observer removal after the world had already started unloading (e.g. on disconnect/reload during the refresh window), throwing an exception that took the connection down with it. The check is now re-verified at cleanup time and a failure there no longer propagates.
+- No save reset is required.
+
 ## 0.7.8 - 2026-07-21 02:51 JST
 - Fixed placed and drivable vehicles (minibike, motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) being moved to the trader when you travel. Vehicle exclusion now checks the entity's actual type, so only real companions can be moved.
 - No save reset is required.
