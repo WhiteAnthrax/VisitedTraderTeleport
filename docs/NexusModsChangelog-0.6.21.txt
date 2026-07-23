@@ -1,4 +1,9 @@
 0.6.21
 Fixed being kicked from the server right after starting a travel transition in some cases.
-Also includes the 0.6.20 fix for travel being refused almost every time a destination actually needed preparation (e.g. the first visit in a session).
+No save reset required.
+
+0.6.20
+Fixed the deeper causes of freezes after repeated or simultaneous trader travel: trips are now serialized one at a time on the server, from destination preparation through arrival, with a bounded queue and timeout instead of piling chunk and mesh work onto the game at once.
+Reduced the chance of paid travel being abandoned partway through: the busy check now also runs again right before you're charged and right before the jump itself, and your destination visuals only start loading once the server has approved the trip.
+Fixed travel being refused almost every time a destination actually needed preparation (e.g. the first visit in a session). The busy check was mistaking the trip's own destination loading for a genuinely saturated queue.
 No save reset required.
