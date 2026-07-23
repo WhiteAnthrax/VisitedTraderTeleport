@@ -13,6 +13,19 @@
          succeed, so these known informational warnings are intentionally accepted. -->
   </PropertyGroup>
 
+  <!--
+    VisitedTraderTeleport.Core holds the engine-free subset of this mod's logic so it can be
+    unit-tested without the proprietary game assemblies below. Its sources are compiled directly
+    into this project (not referenced as a separate DLL) so the shipped mod stays a single
+    assembly, unchanged from before the split - CopyToModFolder/PackageMod and ModChecks'
+    package allowlist need no updates.
+  -->
+  <ItemGroup>
+    <Compile Include="..\VisitedTraderTeleport.Core\*.cs">
+      <Link>Core\%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\refs\managed\Assembly-CSharp.dll</HintPath>
