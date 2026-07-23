@@ -1,0 +1,4 @@
+0.6.21
+Fixed being kicked from the server right after starting a travel transition in some cases.
+Also includes the 0.6.20 fix for travel being refused almost every time a destination actually needed preparation (e.g. the first visit in a session).
+No save reset required.
