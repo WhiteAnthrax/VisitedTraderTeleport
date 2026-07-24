@@ -360,7 +360,7 @@ internal static class DestinationStatementFormatter
         var lines = new List<string>
         {
             VTTLocalization.Get("vtt_statement_destinations"),
-            TraderDialogStatusFormatter.FormatModeLine(destinationState.AccessMode)
+            TraderDialogStatusFormatter.FormatModeLine(destinationState.AccessMode, GameLocalizationProvider.Instance)
         };
 
         if (destinationState.TotalDestinationCount > 0 && destinationState.TotalPages > 1)
@@ -388,7 +388,7 @@ internal static class DestinationStatementFormatter
 
     public static string FormatCompactStatus(DialogDestinationState destinationState)
     {
-        string modeName = TraderDialogStatusFormatter.FormatModeName(destinationState.AccessMode);
+        string modeName = TraderDialogStatusFormatter.FormatModeName(destinationState.AccessMode, GameLocalizationProvider.Instance);
         if (destinationState.TotalDestinationCount > 0 && destinationState.TotalPages > 1)
         {
             return VTTLocalization.Format(

@@ -62,7 +62,7 @@ internal static class TraderDestinationFormatter
         // Prefer the biome captured when the trader was visited. Fall back to a live lookup
         // only for destinations recorded before biomes were stored (works when loaded).
         string biomeName = string.IsNullOrWhiteSpace(destination.Biome)
-            ? ResolveBiomeNameFromWorld(destination.Position)
+            ? ResolveBiomeNameFromWorld(destination.Position.ToVector3())
             : destination.Biome;
         if (string.IsNullOrWhiteSpace(biomeName))
         {
@@ -146,7 +146,7 @@ internal static class TraderDestinationFormatter
             return VTTLocalization.Get("vtt_distance_unknown");
         }
 
-        Vector3 delta = destination.Position - player.position;
+        Vector3 delta = destination.Position.ToVector3() - player.position;
         delta.y = 0f;
         float meters = delta.magnitude;
         if (meters >= MetersPerKilometer)
@@ -165,7 +165,7 @@ internal static class TraderDestinationFormatter
             return VTTLocalization.Get("vtt_direction_unknown");
         }
 
-        Vector3 delta = destination.Position - player.position;
+        Vector3 delta = destination.Position.ToVector3() - player.position;
         delta.y = 0f;
         if (delta.sqrMagnitude < 1f)
         {
@@ -184,8 +184,8 @@ internal static class TraderDestinationFormatter
 
     private static string FormatCoordinates(TraderDestination destination)
     {
-        int x = Mathf.RoundToInt(destination.Position.x);
-        int z = Mathf.RoundToInt(destination.Position.z);
+        int x = Mathf.RoundToInt(destination.Position.X);
+        int z = Mathf.RoundToInt(destination.Position.Z);
 
         return VTTLocalization.Format(
             "vtt_coordinates",
@@ -334,7 +334,7 @@ internal static class TraderDestinationFormatter
             return float.MaxValue;
         }
 
-        Vector3 delta = destination.Position - player.position;
+        Vector3 delta = destination.Position.ToVector3() - player.position;
         delta.y = 0f;
         return delta.sqrMagnitude;
     }

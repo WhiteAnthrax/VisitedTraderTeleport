@@ -115,8 +115,8 @@ internal static class VisitedTraderStore
         {
             Key = GetKey(trader),
             DisplayName = GetDisplayName(trader),
-            Position = position,
-            Forward = Vector3.zero,
+            Position = position.ToPosition3(),
+            Forward = Position3.Zero,
             AreaX = areaX,
             AreaZ = areaZ,
             Biome = ResolveBiomeName(position)
@@ -169,7 +169,7 @@ internal static class VisitedTraderStore
             return true;
         }
 
-        Vector3 delta = destination.Position - currentTrader.Position;
+        Vector3 delta = destination.Position.ToVector3() - currentTrader.Position.ToVector3();
         delta.y = 0f;
         float tolerance = HasLocalPositionInKey(destination.Key) && HasLocalPositionInKey(currentTrader.Key)
             ? SameDetailedTraderPositionTolerance
@@ -487,8 +487,8 @@ internal static class VisitedTraderStore
         {
             Key = GetKey(trader),
             DisplayName = GetDisplayName(trader),
-            Position = position,
-            Forward = Vector3.zero,
+            Position = position.ToPosition3(),
+            Forward = Position3.Zero,
             AreaX = areaX,
             AreaZ = areaZ,
             Biome = ResolveBiomeName(trader.position)
@@ -507,8 +507,8 @@ internal static class VisitedTraderStore
         {
             Key = report.Key,
             DisplayName = string.IsNullOrWhiteSpace(report.DisplayName) ? "Trader" : report.DisplayName,
-            Position = player.position,
-            Forward = Vector3.zero,
+            Position = player.position.ToPosition3(),
+            Forward = Position3.Zero,
             AreaX = report.AreaX,
             AreaZ = report.AreaZ,
             Biome = ResolveBiomeName(biomePosition)
@@ -522,8 +522,8 @@ internal static class VisitedTraderStore
             return null;
         }
 
-        Vector3 keyPosition = identityPosition ?? destination.Position;
-        TraderArea traderArea = FindTraderAreaForPosition(keyPosition) ?? FindTraderAreaForPosition(destination.Position);
+        Vector3 keyPosition = identityPosition ?? destination.Position.ToVector3();
+        TraderArea traderArea = FindTraderAreaForPosition(keyPosition) ?? FindTraderAreaForPosition(destination.Position.ToVector3());
         if (traderArea == null)
         {
             return destination;
@@ -680,12 +680,12 @@ internal static class VisitedTraderStore
 
         bool changed =
             existing.DisplayName != destination.DisplayName ||
-            existing.PositionX != destination.Position.x ||
-            existing.PositionY != destination.Position.y ||
-            existing.PositionZ != destination.Position.z ||
-            existing.ForwardX != destination.Forward.x ||
-            existing.ForwardY != destination.Forward.y ||
-            existing.ForwardZ != destination.Forward.z ||
+            existing.PositionX != destination.Position.X ||
+            existing.PositionY != destination.Position.Y ||
+            existing.PositionZ != destination.Position.Z ||
+            existing.ForwardX != destination.Forward.X ||
+            existing.ForwardY != destination.Forward.Y ||
+            existing.ForwardZ != destination.Forward.Z ||
             existing.AreaX != destination.AreaX ||
             existing.AreaZ != destination.AreaZ ||
             (existing.Biome ?? string.Empty) != (destination.Biome ?? string.Empty);
@@ -714,8 +714,8 @@ internal static class VisitedTraderStore
         {
             Key = record.Key,
             DisplayName = record.DisplayName,
-            Position = new Vector3(record.PositionX, record.PositionY, record.PositionZ),
-            Forward = new Vector3(record.ForwardX, record.ForwardY, record.ForwardZ),
+            Position = new Position3(record.PositionX, record.PositionY, record.PositionZ),
+            Forward = new Position3(record.ForwardX, record.ForwardY, record.ForwardZ),
             AreaX = record.AreaX,
             AreaZ = record.AreaZ,
             Biome = record.Biome
@@ -728,12 +728,12 @@ internal static class VisitedTraderStore
         {
             Key = destination.Key,
             DisplayName = destination.DisplayName,
-            PositionX = destination.Position.x,
-            PositionY = destination.Position.y,
-            PositionZ = destination.Position.z,
-            ForwardX = destination.Forward.x,
-            ForwardY = destination.Forward.y,
-            ForwardZ = destination.Forward.z,
+            PositionX = destination.Position.X,
+            PositionY = destination.Position.Y,
+            PositionZ = destination.Position.Z,
+            ForwardX = destination.Forward.X,
+            ForwardY = destination.Forward.Y,
+            ForwardZ = destination.Forward.Z,
             AreaX = destination.AreaX,
             AreaZ = destination.AreaZ,
             Biome = destination.Biome
@@ -1019,8 +1019,8 @@ internal static class VisitedTraderStore
         {
             Key = string.IsNullOrEmpty(record.Key) ? fallbackKey : record.Key,
             DisplayName = record.DisplayName,
-            Position = new Vector3(record.PositionX, record.PositionY, record.PositionZ),
-            Forward = new Vector3(record.ForwardX, record.ForwardY, record.ForwardZ),
+            Position = new Position3(record.PositionX, record.PositionY, record.PositionZ),
+            Forward = new Position3(record.ForwardX, record.ForwardY, record.ForwardZ),
             AreaX = record.AreaX,
             AreaZ = record.AreaZ,
             Biome = record.Biome

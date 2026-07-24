@@ -1,6 +1,5 @@
 using System;
 using System.Globalization;
-using UnityEngine;
 
 namespace VisitedTraderTeleport;
 
@@ -8,8 +7,8 @@ internal sealed class TraderDestination
 {
     public string Key;
     public string DisplayName;
-    public Vector3 Position;
-    public Vector3 Forward;
+    public Position3 Position;
+    public Position3 Forward;
     public int AreaX;
     public int AreaZ;
 
@@ -18,19 +17,22 @@ internal sealed class TraderDestination
     public string Biome;
 
     public string DialogText =>
-        $"{DisplayName} ({Mathf.RoundToInt(Position.x)}, {Mathf.RoundToInt(Position.z)})";
+        $"{DisplayName} ({RoundToInt(Position.X)}, {RoundToInt(Position.Z)})";
+
+    private static int RoundToInt(float value) =>
+        (int)MathF.Round(value, MidpointRounding.AwayFromZero);
 
     public string Serialize()
     {
         return string.Join("|",
             Escape(Key),
             Escape(DisplayName),
-            Position.x.ToString(CultureInfo.InvariantCulture),
-            Position.y.ToString(CultureInfo.InvariantCulture),
-            Position.z.ToString(CultureInfo.InvariantCulture),
-            Forward.x.ToString(CultureInfo.InvariantCulture),
-            Forward.y.ToString(CultureInfo.InvariantCulture),
-            Forward.z.ToString(CultureInfo.InvariantCulture),
+            Position.X.ToString(CultureInfo.InvariantCulture),
+            Position.Y.ToString(CultureInfo.InvariantCulture),
+            Position.Z.ToString(CultureInfo.InvariantCulture),
+            Forward.X.ToString(CultureInfo.InvariantCulture),
+            Forward.Y.ToString(CultureInfo.InvariantCulture),
+            Forward.Z.ToString(CultureInfo.InvariantCulture),
             AreaX.ToString(CultureInfo.InvariantCulture),
             AreaZ.ToString(CultureInfo.InvariantCulture));
     }
@@ -52,14 +54,14 @@ internal sealed class TraderDestination
             return false;
         }
 
-        Vector3 forward = Vector3.forward;
+        Position3 forward = Position3.Forward;
         int areaIndex = 5;
         if (parts.Length >= 10 &&
             float.TryParse(parts[5], NumberStyles.Float, CultureInfo.InvariantCulture, out float forwardX) &&
             float.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out float forwardY) &&
             float.TryParse(parts[7], NumberStyles.Float, CultureInfo.InvariantCulture, out float forwardZ))
         {
-            forward = new Vector3(forwardX, forwardY, forwardZ);
+            forward = new Position3(forwardX, forwardY, forwardZ);
             areaIndex = 8;
         }
 
@@ -74,7 +76,7 @@ internal sealed class TraderDestination
         {
             Key = Unescape(parts[0]),
             DisplayName = Unescape(parts[1]),
-            Position = new Vector3(x, y, z),
+            Position = new Position3(x, y, z),
             Forward = forward,
             AreaX = areaX,
             AreaZ = areaZ

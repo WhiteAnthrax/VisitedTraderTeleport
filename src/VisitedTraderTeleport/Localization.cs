@@ -13,3 +13,12 @@ internal static class VTTLocalization
         return string.Format(Get(key), args);
     }
 }
+
+internal sealed class GameLocalizationProvider : ILocalizationProvider
+{
+    public static readonly GameLocalizationProvider Instance = new();
+
+    public string Get(string key) => VTTLocalization.Get(key);
+
+    public string Format(string key, params object[] args) => VTTLocalization.Format(key, args);
+}

@@ -48,8 +48,8 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
             {
                 Key = reader.ReadString(),
                 DisplayName = reader.ReadString(),
-                Position = reader.ReadWrite(Vector3.zero),
-                Forward = reader.ReadWrite(Vector3.zero),
+                Position = reader.ReadWrite(Vector3.zero).ToPosition3(),
+                Forward = reader.ReadWrite(Vector3.zero).ToPosition3(),
                 AreaX = reader.ReadInt32(),
                 AreaZ = reader.ReadInt32(),
                 Biome = reader.ReadString()
@@ -73,8 +73,8 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
         {
             writer.ReadWrite(destination.Key ?? string.Empty);
             writer.ReadWrite(destination.DisplayName ?? string.Empty);
-            writer.ReadWrite(destination.Position);
-            writer.ReadWrite(destination.Forward);
+            writer.ReadWrite(destination.Position.ToVector3());
+            writer.ReadWrite(destination.Forward.ToVector3());
             writer.ReadWrite(destination.AreaX);
             writer.ReadWrite(destination.AreaZ);
             writer.ReadWrite(destination.Biome ?? string.Empty);
