@@ -14,6 +14,14 @@
   </PropertyGroup>
 
   <!--
+    Testing/ (the vtttest console command) only compiles into Debug builds, so it can never
+    ship in a Release package. Invoke-WindowsBuild.ps1 and ModChecks always build Release.
+  -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>$(DefineConstants);VTT_TEST_HARNESS</DefineConstants>
+  </PropertyGroup>
+
+  <!--
     VisitedTraderTeleport.Core holds the engine-free subset of this mod's logic so it can be
     unit-tested without the proprietary game assemblies below. Its sources are compiled directly
     into this project (not referenced as a separate DLL) so the shipped mod stays a single
