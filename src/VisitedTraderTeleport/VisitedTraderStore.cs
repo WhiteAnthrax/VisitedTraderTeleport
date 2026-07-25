@@ -12,12 +12,9 @@ internal static class VisitedTraderStore
     private const string LegacyFileName = "VisitedTraderTeleportVisited.txt";
     private const string DatabaseFileName = "VisitedTraderTeleportData.json";
     private const string DatabaseNormalizationBackupFileName = "VisitedTraderTeleportData.before-0.4.16.json";
-    private const float TestTraderAreaPadding = 8f;
-    private const float SameTraderPositionTolerance = 16f;
-    private const float SameDetailedTraderPositionTolerance = 6f;
-    private const int TraderPositionKeyBucketSize = 4;
 
     private static readonly Dictionary<string, TraderDestination> LegacyDestinations = new();
+    private static readonly ITraderAreaLookup traderAreaLookup = new GameTraderAreaLookup();
     private static VisitedTraderDatabase database = new();
     private static string loadedSaveDirectory;
 
@@ -36,7 +33,7 @@ internal static class VisitedTraderStore
             keys.Add(key);
         }
 
-        return DeduplicateDestinations(keys
+        return TraderMatching.DeduplicateDestinations(keys
             .Select(TryResolveDestination)
             .Where(destination => destination != null)
             .OrderBy(destination => destination.DisplayName, StringComparer.OrdinalIgnoreCase)
@@ -143,152 +140,7 @@ internal static class VisitedTraderStore
 
     public static bool IsSameTrader(TraderDestination destination, TraderDestination currentTrader)
     {
-        if (destination == null || currentTrader == null)
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrEmpty(destination.Key) &&
-            string.Equals(destination.Key, currentTrader.Key, StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        return IsSameTraderByNearbyPosition(destination, currentTrader);
-    }
-
-    private static bool IsSameTraderByNearbyPosition(TraderDestination destination, TraderDestination currentTrader)
-    {
-        if (!HasCompatibleTraderIdentity(destination, currentTrader))
-        {
-            return false;
-        }
-
-        if (IsSameNamedTraderInSameArea(destination, currentTrader))
-        {
-            return true;
-        }
-
-        Vector3 delta = destination.Position.ToVector3() - currentTrader.Position.ToVector3();
-        delta.y = 0f;
-        float tolerance = HasLocalPositionInKey(destination.Key) && HasLocalPositionInKey(currentTrader.Key)
-            ? SameDetailedTraderPositionTolerance
-            : SameTraderPositionTolerance;
-        return delta.sqrMagnitude <= tolerance * tolerance;
-    }
-
-    private static bool HasCompatibleTraderIdentity(TraderDestination left, TraderDestination right)
-    {
-        string leftPrefix = NormalizeTraderIdentityToken(GetKeyPrefix(left.Key));
-        string rightPrefix = NormalizeTraderIdentityToken(GetKeyPrefix(right.Key));
-        if (!string.IsNullOrEmpty(leftPrefix) &&
-            string.Equals(leftPrefix, rightPrefix, StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        string leftName = NormalizeTraderIdentityToken(left.DisplayName);
-        string rightName = NormalizeTraderIdentityToken(right.DisplayName);
-        if (!string.IsNullOrEmpty(leftName) &&
-            string.Equals(leftName, rightName, StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        return
-            (!string.IsNullOrEmpty(leftPrefix) &&
-             string.Equals(leftPrefix, rightName, StringComparison.Ordinal)) ||
-            (!string.IsNullOrEmpty(rightPrefix) &&
-             string.Equals(rightPrefix, leftName, StringComparison.Ordinal));
-    }
-
-    private static bool IsSameNamedTraderInSameArea(TraderDestination left, TraderDestination right)
-    {
-        if (left.AreaX != right.AreaX || left.AreaZ != right.AreaZ)
-        {
-            return false;
-        }
-
-        string leftName = NormalizeTraderIdentityToken(left.DisplayName);
-        string rightName = NormalizeTraderIdentityToken(right.DisplayName);
-        return !string.IsNullOrEmpty(leftName) &&
-               string.Equals(leftName, rightName, StringComparison.Ordinal);
-    }
-
-    private static string NormalizeTraderIdentityToken(string value)
-    {
-        string token = NormalizeDisplayNameToken(value);
-        if (token.StartsWith("npc", StringComparison.Ordinal) && token.Length > 3)
-        {
-            token = token.Substring(3);
-        }
-
-        if (token.StartsWith("traitor", StringComparison.Ordinal) && token.Length > 7)
-        {
-            token = "trader" + token.Substring(7);
-        }
-
-        return token;
-    }
-
-    private static string NormalizeDisplayNameToken(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        var builder = new System.Text.StringBuilder(value.Length);
-        foreach (char c in value)
-        {
-            if (char.IsLetterOrDigit(c))
-            {
-                builder.Append(char.ToLowerInvariant(c));
-            }
-        }
-
-        return builder.ToString();
-    }
-
-    private static List<TraderDestination> DeduplicateDestinations(IEnumerable<TraderDestination> destinations)
-    {
-        var results = new List<TraderDestination>();
-        foreach (TraderDestination destination in destinations)
-        {
-            int existingIndex = results.FindIndex(existing => IsSameTrader(existing, destination));
-            if (existingIndex < 0)
-            {
-                results.Add(destination);
-                continue;
-            }
-
-            if (IsMoreSpecificKey(destination.Key, results[existingIndex].Key))
-            {
-                results[existingIndex] = destination;
-            }
-        }
-
-        return results;
-    }
-
-    private static bool IsMoreSpecificKey(string candidate, string existing)
-    {
-        return GetKeyPartCount(candidate) > GetKeyPartCount(existing);
-    }
-
-    private static bool HasLocalPositionInKey(string key)
-    {
-        return GetKeyPartCount(key) >= 5;
-    }
-
-    private static int GetKeyPartCount(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            return 0;
-        }
-
-        return key.Count(c => c == ':') + 1;
+        return TraderMatching.IsSameTrader(destination, currentTrader);
     }
 
     public static void Record(EntityTrader trader, EntityPlayer player)
@@ -517,128 +369,8 @@ internal static class VisitedTraderStore
 
     private static TraderDestination CanonicalizeDestination(TraderDestination destination, Vector3? identityPosition = null)
     {
-        if (destination == null)
-        {
-            return null;
-        }
-
-        Vector3 keyPosition = identityPosition ?? destination.Position.ToVector3();
-        TraderArea traderArea = FindTraderAreaForPosition(keyPosition) ?? FindTraderAreaForPosition(destination.Position.ToVector3());
-        if (traderArea == null)
-        {
-            return destination;
-        }
-
-        string keyPrefix = GetKeyPrefix(destination.Key);
-        if (string.IsNullOrEmpty(keyPrefix))
-        {
-            keyPrefix = "trader";
-        }
-
-        string canonicalKey = BuildCanonicalKey(keyPrefix, traderArea, keyPosition);
-        if (string.Equals(destination.Key, canonicalKey, StringComparison.Ordinal) &&
-            destination.AreaX == traderArea.Position.x &&
-            destination.AreaZ == traderArea.Position.z)
-        {
-            return destination;
-        }
-
-        return new TraderDestination
-        {
-            Key = canonicalKey,
-            DisplayName = destination.DisplayName,
-            Position = destination.Position,
-            Forward = destination.Forward,
-            AreaX = traderArea.Position.x,
-            AreaZ = traderArea.Position.z,
-            Biome = destination.Biome
-        };
-    }
-
-    private static string GetKeyPrefix(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            return string.Empty;
-        }
-
-        int separator = key.IndexOf(':');
-        return (separator > 0 ? key.Substring(0, separator) : key).Trim().ToLowerInvariant();
-    }
-
-    private static string BuildCanonicalKey(string keyPrefix, TraderArea traderArea, Vector3 position)
-    {
-        int localX = QuantizeTraderLocalPosition(position.x - traderArea.Position.x);
-        int localZ = QuantizeTraderLocalPosition(position.z - traderArea.Position.z);
-        return $"{keyPrefix}:{traderArea.Position.x}:{traderArea.Position.z}:{localX}:{localZ}";
-    }
-
-    private static int QuantizeTraderLocalPosition(float value)
-    {
-        return Mathf.RoundToInt(value / TraderPositionKeyBucketSize) * TraderPositionKeyBucketSize;
-    }
-
-    private static TraderArea FindTraderAreaForPosition(Vector3 position)
-    {
-        World world = GameManager.Instance?.World;
-        IEnumerable<TraderArea> traderAreas = world?.TraderAreas;
-        if (traderAreas == null)
-        {
-            return null;
-        }
-
-        TraderArea bestArea = null;
-        float bestDistanceSq = float.MaxValue;
-        foreach (TraderArea traderArea in traderAreas)
-        {
-            if (traderArea == null)
-            {
-                continue;
-            }
-
-            Bounds bounds = GetTraderAreaBounds(traderArea);
-            if (!bounds.Contains(position))
-            {
-                continue;
-            }
-
-            Vector3 delta = bounds.center - position;
-            delta.y = 0f;
-            float distanceSq = delta.sqrMagnitude;
-            if (distanceSq < bestDistanceSq)
-            {
-                bestArea = traderArea;
-                bestDistanceSq = distanceSq;
-            }
-        }
-
-        return bestArea;
-    }
-
-    private static Bounds GetTraderAreaBounds(TraderArea traderArea)
-    {
-        Vector3 position = traderArea.Position;
-        Vector3 size = traderArea.PrefabSize;
-        if (size.x < 1f)
-        {
-            size.x = 1f;
-        }
-
-        if (size.y < 1f)
-        {
-            size.y = 1f;
-        }
-
-        if (size.z < 1f)
-        {
-            size.z = 1f;
-        }
-
-        Vector3 center = position + size * 0.5f;
-        size.x += TestTraderAreaPadding * 2f;
-        size.y += 64f;
-        size.z += TestTraderAreaPadding * 2f;
-        return new Bounds(center, size);
+        return TraderDestinationCanonicalizer.Canonicalize(
+            destination, traderAreaLookup, identityPosition?.ToPosition3());
     }
 
     private static TraderVisitReport CreateVisitReport(EntityTrader trader)
@@ -668,7 +400,7 @@ internal static class VisitedTraderStore
     {
         if (!database.Traders.TryGetValue(destination.Key, out TraderDestinationRecord existing))
         {
-            database.Traders[destination.Key] = ToRecord(destination);
+            database.Traders[destination.Key] = TraderRecordConverter.ToRecord(destination);
             return true;
         }
 
@@ -692,7 +424,7 @@ internal static class VisitedTraderStore
 
         if (changed)
         {
-            database.Traders[destination.Key] = ToRecord(destination);
+            database.Traders[destination.Key] = TraderRecordConverter.ToRecord(destination);
         }
 
         return changed;
@@ -710,34 +442,7 @@ internal static class VisitedTraderStore
             return null;
         }
 
-        return new TraderDestination
-        {
-            Key = record.Key,
-            DisplayName = record.DisplayName,
-            Position = new Position3(record.PositionX, record.PositionY, record.PositionZ),
-            Forward = new Position3(record.ForwardX, record.ForwardY, record.ForwardZ),
-            AreaX = record.AreaX,
-            AreaZ = record.AreaZ,
-            Biome = record.Biome
-        };
-    }
-
-    private static TraderDestinationRecord ToRecord(TraderDestination destination)
-    {
-        return new TraderDestinationRecord
-        {
-            Key = destination.Key,
-            DisplayName = destination.DisplayName,
-            PositionX = destination.Position.X,
-            PositionY = destination.Position.Y,
-            PositionZ = destination.Position.Z,
-            ForwardX = destination.Forward.X,
-            ForwardY = destination.Forward.Y,
-            ForwardZ = destination.Forward.Z,
-            AreaX = destination.AreaX,
-            AreaZ = destination.AreaZ,
-            Biome = destination.Biome
-        };
+        return TraderRecordConverter.FromRecord(record, key);
     }
 
     private static string GetDisplayName(EntityTrader trader)
@@ -844,7 +549,7 @@ internal static class VisitedTraderStore
 
         foreach (KeyValuePair<string, TraderDestinationRecord> pair in database.Traders)
         {
-            TraderDestination destination = FromRecord(pair.Value, pair.Key);
+            TraderDestination destination = TraderRecordConverter.FromRecord(pair.Value, pair.Key);
             if (destination == null || string.IsNullOrEmpty(destination.Key))
             {
                 continue;
@@ -863,7 +568,7 @@ internal static class VisitedTraderStore
                 if (!string.Equals(canonical.Key, targetKey, StringComparison.Ordinal))
                 {
                     keyAliases[canonical.Key] = targetKey;
-                    canonical = WithKey(canonical, targetKey);
+                    canonical = TraderRecordConverter.WithKey(canonical, targetKey);
                     mergedTraderRecords++;
                 }
             }
@@ -879,10 +584,10 @@ internal static class VisitedTraderStore
                 normalizedTraderKeys++;
             }
 
-            TraderDestinationRecord canonicalRecord = ToRecord(canonical);
+            TraderDestinationRecord canonicalRecord = TraderRecordConverter.ToRecord(canonical);
             bool hasExisting = normalizedTraders.TryGetValue(targetKey, out TraderDestinationRecord existing);
-            bool recordChangedFromOriginal = !RecordsEqual(pair.Value, canonicalRecord);
-            if (!hasExisting || keyChanged || !RecordsEqual(existing, canonicalRecord))
+            bool recordChangedFromOriginal = !TraderRecordConverter.RecordsEqual(pair.Value, canonicalRecord);
+            if (!hasExisting || keyChanged || !TraderRecordConverter.RecordsEqual(existing, canonicalRecord))
             {
                 normalizedTraders[targetKey] = canonicalRecord;
             }
@@ -946,8 +651,8 @@ internal static class VisitedTraderStore
     {
         foreach (KeyValuePair<string, TraderDestinationRecord> pair in normalizedTraders)
         {
-            TraderDestination existing = FromRecord(pair.Value, pair.Key);
-            if (IsSameTrader(existing, destination))
+            TraderDestination existing = TraderRecordConverter.FromRecord(pair.Value, pair.Key);
+            if (TraderMatching.IsSameTrader(existing, destination))
             {
                 key = pair.Key;
                 return true;
@@ -968,24 +673,10 @@ internal static class VisitedTraderStore
         if (TryFindSameNormalizedTraderKey(database.Traders, destination, out string existingKey) &&
             !string.Equals(existingKey, destination.Key, StringComparison.Ordinal))
         {
-            return WithKey(destination, existingKey);
+            return TraderRecordConverter.WithKey(destination, existingKey);
         }
 
         return destination;
-    }
-
-    private static TraderDestination WithKey(TraderDestination destination, string key)
-    {
-        return new TraderDestination
-        {
-            Key = key,
-            DisplayName = destination.DisplayName,
-            Position = destination.Position,
-            Forward = destination.Forward,
-            AreaX = destination.AreaX,
-            AreaZ = destination.AreaZ,
-            Biome = destination.Biome
-        };
     }
 
     private static void BackupDatabaseBeforeNormalization()
@@ -1006,45 +697,6 @@ internal static class VisitedTraderStore
         {
             Debug.LogWarning($"[VisitedTraderTeleport] Could not create visited trader data backup: {ex.Message}");
         }
-    }
-
-    private static TraderDestination FromRecord(TraderDestinationRecord record, string fallbackKey)
-    {
-        if (record == null)
-        {
-            return null;
-        }
-
-        return new TraderDestination
-        {
-            Key = string.IsNullOrEmpty(record.Key) ? fallbackKey : record.Key,
-            DisplayName = record.DisplayName,
-            Position = new Position3(record.PositionX, record.PositionY, record.PositionZ),
-            Forward = new Position3(record.ForwardX, record.ForwardY, record.ForwardZ),
-            AreaX = record.AreaX,
-            AreaZ = record.AreaZ,
-            Biome = record.Biome
-        };
-    }
-
-    private static bool RecordsEqual(TraderDestinationRecord left, TraderDestinationRecord right)
-    {
-        if (left == null || right == null)
-        {
-            return left == right;
-        }
-
-        return left.Key == right.Key &&
-               left.DisplayName == right.DisplayName &&
-               left.PositionX == right.PositionX &&
-               left.PositionY == right.PositionY &&
-               left.PositionZ == right.PositionZ &&
-               left.ForwardX == right.ForwardX &&
-               left.ForwardY == right.ForwardY &&
-               left.ForwardZ == right.ForwardZ &&
-               left.AreaX == right.AreaX &&
-               left.AreaZ == right.AreaZ &&
-               (left.Biome ?? string.Empty) == (right.Biome ?? string.Empty);
     }
 
     private static void SaveDatabase()
