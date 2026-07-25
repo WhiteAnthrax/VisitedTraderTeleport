@@ -55,6 +55,10 @@ artifact.
 Retains the script-owned Isolated workspace after completion. Invalid in
 Prepared mode.
 
+.PARAMETER SkipTests
+Skips the unit test run after the Release build. Intended only as an explicit
+diagnostic escape hatch.
+
 .PARAMETER SkipPackageChecks
 Skips ModChecks after the Release build. Intended only as an explicit diagnostic
 escape hatch.
@@ -75,7 +79,8 @@ powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
 Exit codes: 0 success; 2 invalid input/path/executable; 3 remote ref, network,
 or unstable-ref failure; 4 disposable workspace failure; 5 game-reference
 failure; 6 Prepared checkout/lock failure; 7 build failure; 8 package-check
-failure; 9 artifact failure; 10 timeout; 99 unexpected failure.
+failure; 9 artifact failure; 10 timeout; 11 unit test failure; 99 unexpected
+failure.
 
 The final stdout line is: VTT_BUILD_RESULT <single-line JSON>.
 #>
@@ -99,6 +104,7 @@ param(
     [int]$TimeoutSeconds = 1800,
     [switch]$DryRun,
     [switch]$KeepWorkspace,
+    [switch]$SkipTests,
     [switch]$SkipPackageChecks
 )
 
@@ -130,9 +136,11 @@ $script:OutcomeMessage = 'Unexpected failure.'
 $script:OutcomePhase = 'startup'
 
 $script:ProjectRelativePath = 'src\VisitedTraderTeleport\VisitedTraderTeleport.csproj'
+$script:TestProjectRelativePath = 'tests\VisitedTraderTeleport.Tests\VisitedTraderTeleport.Tests.csproj'
 $script:RemoteAttemptBudgetSeconds = 120
 $script:WorkspaceBudgetSeconds = 300
 $script:BuildBudgetSeconds = 900
+$script:TestsBudgetSeconds = 300
 $script:ChecksBudgetSeconds = 600
 $script:MaxNetworkAttempts = 3
 
@@ -1178,6 +1186,37 @@ try {
             }
         }
         Assert-CommandSucceeded -Result $buildResult -ExitCode 7 -Phase 'build' -Message 'Release build failed'
+
+        if ($SkipTests) {
+            Write-BuildLog -Level 'WARN' -Message 'Unit tests skipped by explicit request.'
+        }
+        else {
+            $testsResult = Invoke-NativeCommand -FilePath $DotNetPath -ArgumentList @(
+                'test', $script:TestProjectRelativePath, '-c', 'Release'
+            ) -Description 'unit tests' -Phase 'test' `
+                -DeadlineUtc (Get-PhaseDeadline -BudgetSeconds $script:TestsBudgetSeconds) -WorkingDirectory $buildRepository
+
+            if ($Mode -eq 'Prepared') {
+                if ($testsResult.TimedOut -and $testsResult.TimeoutScope -eq 'overall') {
+                    Write-BuildLog -Level 'WARN' -Message 'Overall deadline prevented the post-test Prepared state check.'
+                }
+                elseif ($testsResult.TimedOut) {
+                    try {
+                        Assert-PreparedState -Repository $preparedRepository -ExpectedCommit $script:ResolvedCommit `
+                            -Label 'immediately after timed-out tests'
+                    }
+                    catch {
+                        Write-BuildLog -Level 'WARN' -Message (
+                            'Prepared state validation also failed after the test timeout; timeout remains the terminal result.'
+                        )
+                    }
+                }
+                else {
+                    Assert-PreparedState -Repository $preparedRepository -ExpectedCommit $script:ResolvedCommit -Label 'immediately after tests'
+                }
+            }
+            Assert-CommandSucceeded -Result $testsResult -ExitCode 11 -Phase 'test' -Message 'Unit tests failed'
+        }
 
         if ($SkipPackageChecks) {
             Write-BuildLog -Level 'WARN' -Message 'Package checks skipped by explicit request.'
