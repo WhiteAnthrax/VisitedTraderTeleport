@@ -1,6 +1,6 @@
 # Windows builds initiated from Linux
 
-`devtools/Invoke-WindowsBuild.ps1` is the Windows-side entry point for dev and CI-style package builds initiated non-interactively over SSH. It uses the repository's existing Release build and package checker. It does not choose a version, edit the changelog, create a release, or verify behavior in the running game.
+`devtools/Invoke-WindowsBuild.ps1` is the Windows-side entry point for dev and CI-style package builds initiated non-interactively over SSH. It uses the repository's existing Release build, unit test suite, and package checker. It does not choose a version, edit the changelog, create a release, or verify behavior in the running game.
 
 The normal flow is:
 
@@ -90,6 +90,7 @@ It does not mutate the Prepared checkout, copy references, run the build, run `M
 | Each `ls-remote` + fetch attempt | 120 seconds |
 | Disposable workspace preparation | 300 seconds |
 | Release build | 900 seconds |
+| `dotnet test` | 300 seconds |
 | `ModChecks --package` | 600 seconds |
 
 Every phase is capped by the remaining overall deadline. On timeout the script terminates the full child process tree (`taskkill /T /F` on Windows), captures available stdout/stderr, removes owned workspaces when applicable, and returns exit code 10 with `timedOut: true`.
@@ -119,14 +120,15 @@ powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
   -DryRun
 ```
 
-The normal build path runs and requires both existing commands to succeed:
+The normal build path runs and requires all three existing commands to succeed, in order - a failing test run gates `ModChecks --package` from running at all:
 
 ```powershell
 dotnet build src\VisitedTraderTeleport\VisitedTraderTeleport.csproj -c Release
+dotnet test tests\VisitedTraderTeleport.Tests\VisitedTraderTeleport.Tests.csproj -c Release
 dotnet run --project devtools\ModChecks -- --package
 ```
 
-`-SkipPackageChecks` remains an explicit diagnostic escape hatch and is logged as a warning. Builds intended for handoff should not use it.
+`-SkipTests` and `-SkipPackageChecks` each remain an explicit diagnostic escape hatch and are logged as a warning. Builds intended for handoff should not use either.
 
 ## Logs, artifacts, and result JSON
 
@@ -168,6 +170,7 @@ scp 'omen-build:C:/builds/VisitedTraderTeleport/artifacts/<UTC-run-id>/VisitedTr
 | 8 | `ModChecks --package` failed. |
 | 9 | Exact artifact identification, copy, or hashing failed. |
 | 10 | An overall or phase timeout expired. |
+| 11 | `dotnet test` failed. |
 | 99 | An unexpected script failure occurred. |
 
 Compilation success means only that the project compiled and its package passed repository checks against the supplied game DLLs. In-game verification is a separate activity and must be reported separately.
