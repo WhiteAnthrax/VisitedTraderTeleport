@@ -1761,9 +1761,9 @@ internal static class VisitedTraderTeleportService
 
     private static Vector3 ResolveTarget(TraderDestination destination)
     {
-        Vector3 forward = destination.Forward;
+        Vector3 forward = destination.Forward.ToVector3();
         forward.y = 0f;
-        Vector3 target = destination.Position;
+        Vector3 target = destination.Position.ToVector3();
         if (forward.sqrMagnitude >= 0.001f)
         {
             target += forward.normalized * 2f;

@@ -16,7 +16,7 @@ internal static class TravelCostService
             return 0;
         }
 
-        Vector3 delta = destination.Position - player.position;
+        Vector3 delta = destination.Position.ToVector3() - player.position;
         delta.y = 0f;
         double rawDistanceCost = delta.magnitude * settings.PerMeter;
         int distanceCost = double.IsNaN(rawDistanceCost) ||
