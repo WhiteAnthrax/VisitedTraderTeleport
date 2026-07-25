@@ -10,7 +10,7 @@ public class TravelCooldownTests
     {
         float remaining = TravelCooldown.GetRemainingSeconds(currentTime: 100f, lastTravelTime: 100f);
 
-        Assert.Equal(10f, remaining);
+        Assert.Equal(999f, remaining); // TEMP: intentionally wrong, verifying PR6's dotnet test gate
     }
 
     [Fact]
