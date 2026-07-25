@@ -16,17 +16,12 @@ internal static class VisitedTraderTeleportService
     // columns of mesh work at once, which alone could push the mesh queue past the busy
     // threshold this service refuses trips at.
     private const int ClientRefreshChunkViewDim = 2;
-    private const float TravelCooldownSeconds = 10f;
-    private const float MeshQueueBusyFraction = 0.8f;
     private const float ClientVisualRefreshMaxSeconds = 12f;
     private const float ClientVisualRefreshReleaseHoldSeconds = 1.5f;
-    private const float TravelSlotMaxHoldSeconds = 60f;
     private const float QueuedTravelTimeoutSeconds = 45f;
     private const int MaxQueuedTravels = 3;
     private const float PreTeleportSaturationMaxWaitSeconds = 6f;
     private const float ClientVisualRefreshArrivalDistanceSq = 64f * 64f;
-    private const float TransitionArrivalLeadSeconds = 0.35f;
-    private const float HiddenTransitionTeleportMaxDelaySeconds = 1.5f;
     private const float CompanionRecallRadius = 100f;
 
     private static readonly Dictionary<int, ChunkManager.ChunkObserver> PreparationObservers = new();
@@ -109,7 +104,7 @@ internal static class VisitedTraderTeleportService
 
         if (LastTravelTimes.TryGetValue(entityId, out float lastTravel))
         {
-            float cooldownRemaining = TravelCooldownSeconds - (Time.realtimeSinceStartup - lastTravel);
+            float cooldownRemaining = TravelCooldown.GetRemainingSeconds(Time.realtimeSinceStartup, lastTravel);
             if (cooldownRemaining > 0f)
             {
                 Debug.Log(
@@ -127,8 +122,7 @@ internal static class VisitedTraderTeleportService
     // duration, so the stuck-trip deadline has to sit above it.
     private static float GetTravelSlotMaxHoldSeconds()
     {
-        float transitionSeconds = Math.Max(0f, VisitedTraderTeleportConfig.TravelTransition?.DurationSeconds ?? 0f);
-        return TravelSlotMaxHoldSeconds + transitionSeconds;
+        return TravelCooldown.GetTravelSlotMaxHoldSeconds(VisitedTraderTeleportConfig.TravelTransition);
     }
 
     private static void EnqueueTravel(EntityPlayer player, TraderDestination destination)
@@ -485,12 +479,17 @@ internal static class VisitedTraderTeleportService
     // dedicated-server path already worked. So only require colliders for a local traveler.
     private static bool IsDestinationReady(World world, Vector3 target, bool requireColliders)
     {
-        if (world == null || !world.IsChunkAreaLoaded(target))
+        if (world == null)
         {
             return false;
         }
 
-        return GameManager.IsDedicatedServer || !requireColliders || world.IsChunkAreaCollidersLoaded(target);
+        // Preserve the original short-circuit: IsChunkAreaCollidersLoaded is only queried
+        // when it can actually change the result (not a dedicated server, colliders required).
+        bool isDedicatedServer = GameManager.IsDedicatedServer;
+        bool isCollidersLoaded = !isDedicatedServer && requireColliders && world.IsChunkAreaCollidersLoaded(target);
+        return TravelReadinessChecks.IsDestinationReady(
+            world.IsChunkAreaLoaded(target), isDedicatedServer, requireColliders, isCollidersLoaded);
     }
 
     private static bool NeedsPreparation(World world, Vector3 target, bool requireColliders)
@@ -498,10 +497,6 @@ internal static class VisitedTraderTeleportService
         return world != null && !IsDestinationReady(world, target, requireColliders);
     }
 
-    // Mirrors the game's own throttle in ChunkManager.thread_Regenerating: when the number of
-    // in-use VoxelMeshLayers reaches MaxQueuedMeshLayers, the mesh regeneration thread blocks.
-    // Starting another map-wide trip in that state piles more work onto an already choking
-    // queue, so refuse (without charging) while it is close to the limit.
     private static bool IsMeshQueueSaturated()
     {
         if (GameManager.IsDedicatedServer)
@@ -512,7 +507,7 @@ internal static class VisitedTraderTeleportService
         try
         {
             int queued = VoxelMeshLayer.InstanceCount - MemoryPools.poolVML.GetPoolSize();
-            return queued >= ChunkManager.MaxQueuedMeshLayers * MeshQueueBusyFraction;
+            return TravelReadinessChecks.IsMeshQueueSaturated(queued, ChunkManager.MaxQueuedMeshLayers);
         }
         catch
         {
@@ -887,12 +882,9 @@ internal static class VisitedTraderTeleportService
     // Falls back to tighter rings and finally the player's own position.
     private static Vector3 FindCompanionSpot(World world, Vector3 center, int index, int total)
     {
-        float angle = total <= 0 ? 0f : (index / (float)total) * Mathf.PI * 2f;
-        float cos = Mathf.Cos(angle);
-        float sin = Mathf.Sin(angle);
-        foreach (float radius in new[] { 1.8f, 1.2f, 0.7f })
+        foreach (Position3 offset in CompanionSpotFinder.GetCandidateOffsets(index, total))
         {
-            var spot = new Vector3(center.x + cos * radius, center.y, center.z + sin * radius);
+            var spot = new Vector3(center.x + offset.X, center.y, center.z + offset.Z);
             if (!IsBlockedAt(world, spot))
             {
                 return spot;
@@ -1496,15 +1488,7 @@ internal static class VisitedTraderTeleportService
 
     private static IEnumerable<string> GetSoundCandidates(string soundName)
     {
-        yield return soundName;
-        if (soundName.StartsWith("[", StringComparison.Ordinal) && soundName.EndsWith("]", StringComparison.Ordinal))
-        {
-            yield return soundName.Substring(1, soundName.Length - 2);
-        }
-        else
-        {
-            yield return "[" + soundName + "]";
-        }
+        return TravelSoundCandidates.GetCandidates(soundName);
     }
 
     private static bool IsKnownSound(string soundName)
@@ -1585,20 +1569,12 @@ internal static class VisitedTraderTeleportService
 
     private static float GetTeleportDelay(TravelTransitionSettings settings)
     {
-        float duration = Math.Max(0f, settings?.DurationSeconds ?? 0f);
-        if (duration <= 0f)
-        {
-            return 0f;
-        }
-
-        return Math.Min(HiddenTransitionTeleportMaxDelaySeconds, duration * 0.35f);
+        return TravelTransitionTiming.GetTeleportDelay(settings);
     }
 
     private static float GetTransitionHoldAfterTeleport(TravelTransitionSettings settings)
     {
-        float duration = Math.Max(0f, settings?.DurationSeconds ?? 0f);
-        float hold = duration - GetTeleportDelay(settings);
-        return Math.Max(TransitionArrivalLeadSeconds, hold);
+        return TravelTransitionTiming.GetTransitionHoldAfterTeleport(settings);
     }
 
     private static void StartClientVisualRefresh(EntityPlayerLocal player, Vector3 target)
