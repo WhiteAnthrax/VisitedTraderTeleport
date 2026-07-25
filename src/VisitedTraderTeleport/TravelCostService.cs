@@ -1,30 +1,18 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VisitedTraderTeleport;
 
 internal static class TravelCostService
 {
-    private const int MaxCalculatedCost = 1000000;
-
     public static int CalculateCost(TraderDestination destination, EntityPlayer player, TravelCostSettings settings = null)
     {
         settings ??= GetEffectiveSettings();
-        if (destination == null || player == null || settings == null || !settings.Enabled || settings.PerMeter <= 0f)
+        if (destination == null || player == null)
         {
             return 0;
         }
 
-        Vector3 delta = destination.Position.ToVector3() - player.position;
-        delta.y = 0f;
-        double rawDistanceCost = delta.magnitude * settings.PerMeter;
-        int distanceCost = double.IsNaN(rawDistanceCost) ||
-                           double.IsInfinity(rawDistanceCost) ||
-                           rawDistanceCost >= MaxCalculatedCost
-            ? MaxCalculatedCost
-            : Mathf.CeilToInt((float)rawDistanceCost);
-        return Math.Min(MaxCalculatedCost, Math.Max(settings.Minimum, distanceCost));
+        return TravelCostCalculator.CalculateCost(CalculateDistanceMeters(destination, player), settings);
     }
 
     public static bool TryConsumeCost(EntityPlayer player, TraderDestination destination, out int cost)
@@ -43,45 +31,45 @@ internal static class TravelCostService
             return false;
         }
 
-        int available = CountItems(player, itemValue, out int inventoryCount, out int bagCount);
-        if (available < cost)
+        var inventory = new GamePlayerInventory(player);
+        if (!TravelCostCalculator.HasSufficientItems(inventory, settings.ItemName, cost, out int available))
         {
             Debug.Log(
                 $"[VisitedTraderTeleport] Travel cost blocked for {GetPlayerName(player)}: " +
-                $"need {cost} {settings.ItemName}, available {available} " +
-                $"(inventory={inventoryCount}, bag={bagCount}).");
+                $"need {cost} {settings.ItemName}, available {available}.");
             ShowInsufficientCost(player, cost, available, settings);
             return false;
         }
 
-        int removed = RemoveItems(player, itemValue, cost);
-        int remaining = CountItems(player, itemValue, out int remainingInventory, out int remainingBag);
-        int expectedRemaining = available - cost;
-        if (remaining > expectedRemaining)
+        (int inventoryCount, int bagCount) = inventory.GetBreakdown(settings.ItemName);
+        InventoryConsumptionResult result = TravelCostCalculator.ConsumeItems(inventory, settings.ItemName, cost, available);
+        (int remainingInventory, int remainingBag) = inventory.GetBreakdown(settings.ItemName);
+
+        if (result.UnderConsumed)
         {
             Debug.LogWarning(
                 $"[VisitedTraderTeleport] Travel cost removal failed for {GetPlayerName(player)}: " +
-                $"need to remove {cost} {settings.ItemName}, removed={removed}, " +
+                $"need to remove {cost} {settings.ItemName}, removed={result.Removed}, " +
                 $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
-                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}). Travel blocked.");
+                $"after={result.RemainingAfter} (inventory={remainingInventory}, bag={remainingBag}). Travel blocked.");
             ShowCostUnavailable(player);
             return false;
         }
 
-        if (remaining < expectedRemaining)
+        if (result.OverConsumed)
         {
             Debug.LogWarning(
                 $"[VisitedTraderTeleport] Travel cost removal removed more than expected for {GetPlayerName(player)}: " +
-                $"cost={cost} {settings.ItemName}, removed={removed}, " +
+                $"cost={cost} {settings.ItemName}, removed={result.Removed}, " +
                 $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
-                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}).");
+                $"after={result.RemainingAfter} (inventory={remainingInventory}, bag={remainingBag}).");
         }
 
         ShowLocalCostRemoval(player, itemValue, cost);
         Debug.Log(
             $"[VisitedTraderTeleport] Consumed travel cost for {GetPlayerName(player)}: " +
-            $"{cost} {settings.ItemName}; removed={removed}, before={available} " +
-            $"(inventory={inventoryCount}, bag={bagCount}), after={remaining} " +
+            $"{cost} {settings.ItemName}; removed={result.Removed}, before={available} " +
+            $"(inventory={inventoryCount}, bag={bagCount}), after={result.RemainingAfter} " +
             $"(inventory={remainingInventory}, bag={remainingBag}).");
         return true;
     }
@@ -100,36 +88,38 @@ internal static class TravelCostService
             return;
         }
 
-        int available = CountItems(player, itemValue, out int inventoryCount, out int bagCount);
-        int removed = RemoveItems(player, itemValue, cost);
-        int remaining = CountItems(player, itemValue, out int remainingInventory, out int remainingBag);
-        int expectedRemaining = Math.Max(0, available - cost);
-        if (remaining > expectedRemaining)
+        var inventory = new GamePlayerInventory(player);
+        int available = TravelCostCalculator.GetAvailableCount(inventory, itemName);
+        (int inventoryCount, int bagCount) = inventory.GetBreakdown(itemName);
+        InventoryConsumptionResult result = TravelCostCalculator.ConsumeItems(inventory, itemName, cost, available);
+        (int remainingInventory, int remainingBag) = inventory.GetBreakdown(itemName);
+
+        if (result.UnderConsumed)
         {
             Debug.LogWarning(
                 $"[VisitedTraderTeleport] Local travel cost removal under-consumed for {GetPlayerName(player)}: " +
-                $"cost={cost} {itemName}, removed={removed}, " +
+                $"cost={cost} {itemName}, removed={result.Removed}, " +
                 $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
-                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}).");
+                $"after={result.RemainingAfter} (inventory={remainingInventory}, bag={remainingBag}).");
         }
-        else if (remaining < expectedRemaining)
+        else if (result.OverConsumed)
         {
             Debug.LogWarning(
                 $"[VisitedTraderTeleport] Local travel cost removal over-consumed for {GetPlayerName(player)}: " +
-                $"cost={cost} {itemName}, removed={removed}, " +
+                $"cost={cost} {itemName}, removed={result.Removed}, " +
                 $"before={available} (inventory={inventoryCount}, bag={bagCount}), " +
-                $"after={remaining} (inventory={remainingInventory}, bag={remainingBag}).");
+                $"after={result.RemainingAfter} (inventory={remainingInventory}, bag={remainingBag}).");
         }
 
-        if (removed > 0)
+        if (result.Removed > 0)
         {
-            ShowLocalCostRemoval(player, itemValue, removed);
+            ShowLocalCostRemoval(player, itemValue, result.Removed);
         }
 
         Debug.Log(
             $"[VisitedTraderTeleport] Consumed local travel cost for {GetPlayerName(player)}: " +
-            $"{cost} {itemName}; removed={removed}, before={available} " +
-            $"(inventory={inventoryCount}, bag={bagCount}), after={remaining} " +
+            $"{cost} {itemName}; removed={result.Removed}, before={available} " +
+            $"(inventory={inventoryCount}, bag={bagCount}), after={result.RemainingAfter} " +
             $"(inventory={remainingInventory}, bag={remainingBag}).");
     }
 
@@ -149,9 +139,10 @@ internal static class TravelCostService
             return false;
         }
 
-        int available = CountItems(player, itemValue, out int inventoryCount, out int bagCount);
-        if (available < cost)
+        var inventory = new GamePlayerInventory(player);
+        if (!TravelCostCalculator.HasSufficientItems(inventory, settings.ItemName, cost, out int available))
         {
+            (int inventoryCount, int bagCount) = inventory.GetBreakdown(settings.ItemName);
             Debug.Log(
                 $"[VisitedTraderTeleport] Travel cost check failed for {GetPlayerName(player)}: " +
                 $"need {cost} {settings.ItemName}, available {available} " +
@@ -184,7 +175,7 @@ internal static class TravelCostService
             return string.Empty;
         }
 
-        GetDisplayRate(settings.PerMeter, out int amount, out int meters);
+        TravelCostCalculator.GetDisplayRate(settings.PerMeter, out int amount, out int meters);
         string itemName = FormatItemDisplayName(settings);
         return settings.Minimum > 0
             ? VTTLocalization.Format("vtt_cost_info_minimum", amount, itemName, meters, settings.Minimum)
@@ -193,27 +184,7 @@ internal static class TravelCostService
 
     public static string FormatItemDisplayName(TravelCostSettings settings)
     {
-        if (settings == null)
-        {
-            return string.Empty;
-        }
-
-        if (string.IsNullOrWhiteSpace(settings.ItemName))
-        {
-            return string.IsNullOrWhiteSpace(settings.ItemDisplayName)
-                ? string.Empty
-                : settings.ItemDisplayName;
-        }
-
-        string localized = VTTLocalization.Get(settings.ItemName);
-        if (!string.IsNullOrWhiteSpace(localized) && !string.Equals(localized, settings.ItemName, StringComparison.Ordinal))
-        {
-            return localized;
-        }
-
-        return string.IsNullOrWhiteSpace(settings.ItemDisplayName)
-            ? settings.ItemName
-            : settings.ItemDisplayName;
+        return TravelCostCalculator.FormatItemDisplayName(settings, GameLocalizationProvider.Instance);
     }
 
     private static TravelCostSettings GetEffectiveSettings()
@@ -221,6 +192,13 @@ internal static class TravelCostService
         return VisitedTraderNetwork.IsClientOnly
             ? VisitedTraderClientState.ServerTravelCost
             : VisitedTraderTeleportConfig.TravelCost;
+    }
+
+    private static float CalculateDistanceMeters(TraderDestination destination, EntityPlayer player)
+    {
+        Vector3 delta = destination.Position.ToVector3() - player.position;
+        delta.y = 0f;
+        return delta.magnitude;
     }
 
     private static bool TryGetItemValue(string itemName, out ItemValue itemValue)
@@ -234,58 +212,6 @@ internal static class TravelCostService
 
         itemValue = ItemClass.GetItem(itemName, false);
         return itemValue != null;
-    }
-
-    private static int CountItems(EntityPlayer player, ItemValue itemValue, out int inventoryCount, out int bagCount)
-    {
-        inventoryCount = 0;
-        bagCount = 0;
-        if (player == null || itemValue == null)
-        {
-            return 0;
-        }
-
-        if (player.inventory != null)
-        {
-            inventoryCount = player.inventory.GetItemCount(itemValue);
-        }
-
-        if (player.bag != null)
-        {
-            bagCount = player.bag.GetItemCount(itemValue);
-        }
-
-        return inventoryCount + bagCount;
-    }
-
-    private static int RemoveItems(EntityPlayer player, ItemValue itemValue, int count)
-    {
-        if (player == null || itemValue == null || count <= 0)
-        {
-            return 0;
-        }
-
-        int remaining = count;
-        int removed = 0;
-        IList<ItemStack> removedItems = new List<ItemStack>();
-        if (player.inventory != null)
-        {
-            int inventoryCount = player.inventory.GetItemCount(itemValue);
-            int fromInventory = Math.Min(inventoryCount, remaining);
-            if (fromInventory > 0)
-            {
-                int removedFromInventory = player.inventory.DecItem(itemValue, fromInventory, true, removedItems);
-                removed += removedFromInventory;
-                remaining -= removedFromInventory;
-            }
-        }
-
-        if (remaining > 0 && player.bag != null)
-        {
-            removed += player.bag.DecItem(itemValue, remaining, true, removedItems);
-        }
-
-        return removed;
     }
 
     private static void ShowLocalCostRemoval(EntityPlayer player, ItemValue itemValue, int count)
@@ -305,19 +231,6 @@ internal static class TravelCostService
     {
         string itemName = FormatItemDisplayName(settings);
         ShowTooltip(player, VTTLocalization.Format("vtt_not_enough_travel_cost", cost, itemName, available));
-    }
-
-    private static void GetDisplayRate(float perMeter, out int amount, out int meters)
-    {
-        if (perMeter >= 1f)
-        {
-            amount = Mathf.CeilToInt(perMeter);
-            meters = 1;
-            return;
-        }
-
-        amount = 1;
-        meters = Math.Max(1, Mathf.RoundToInt(1f / perMeter));
     }
 
     private static void ShowTooltip(EntityPlayer player, string message)
