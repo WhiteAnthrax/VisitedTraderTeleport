@@ -77,12 +77,6 @@ internal static class TravelCostCalculator
     {
         int removed = inventory.RemoveItem(itemName, cost);
         int remaining = inventory.CountItem(itemName);
-        return new InventoryConsumptionResult
-        {
-            AvailableBefore = availableBefore,
-            Cost = cost,
-            Removed = removed,
-            RemainingAfter = remaining
-        };
+        return new InventoryConsumptionResult(availableBefore, cost, removed, remaining);
     }
 }
