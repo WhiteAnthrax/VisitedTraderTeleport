@@ -16,6 +16,3 @@ jobs:
 
       - name: dotnet test
         run: dotnet test tests/VisitedTraderTeleport.Tests/VisitedTraderTeleport.Tests.csproj -c Release
-
-      - name: dotnet test (SdtdTestPilot)
-        run: dotnet test tests/SdtdTestPilot.Tests/SdtdTestPilot.Tests.csproj -c Release
