@@ -50,7 +50,28 @@ internal static class VttTestHarness
 
         // Same call DialogGetFirstStatementPatch.Postfix makes when a real dialog opens.
         VisitedTraderStore.Record(trader, player);
-        EmitResult("record", true, VisitedTraderStore.GetKey(trader));
+        EmitResult("record", true, ResolveRecordedKey(trader, player));
+    }
+
+    // VisitedTraderStore.Record can canonicalize the key it actually stores differently from
+    // VisitedTraderStore.GetKey's raw form (e.g. widening it with trader-area size), so look up
+    // the destination list afterwards and match by proximity to report a key a driver can
+    // actually pass to 'vtttest teleport'. Falls back to the raw key if the canonicalized
+    // destination isn't visible yet (e.g. a remote client whose snapshot hasn't caught up).
+    private static string ResolveRecordedKey(EntityTrader trader, EntityPlayer player)
+    {
+        foreach (TraderDestination destination in VisitedTraderStore.GetDestinations(player))
+        {
+            float dx = destination.Position.X - trader.position.x;
+            float dy = destination.Position.Y - trader.position.y;
+            float dz = destination.Position.Z - trader.position.z;
+            if (dx * dx + dy * dy + dz * dz < 25f)
+            {
+                return destination.Key;
+            }
+        }
+
+        return VisitedTraderStore.GetKey(trader);
     }
 
     private static void RunTeleport(EntityPlayer player, string destinationKey)
