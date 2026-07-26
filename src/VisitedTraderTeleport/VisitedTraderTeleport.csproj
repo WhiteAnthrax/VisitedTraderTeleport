@@ -9,6 +9,14 @@
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
+  <!--
+    Testing/ (the vtttest console command) only compiles into Debug builds, so it can never
+    ship in a Release package.
+  -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>$(DefineConstants);VTT_TEST_HARNESS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\refs\_v2.6_backup\managed\Assembly-CSharp.dll</HintPath>
