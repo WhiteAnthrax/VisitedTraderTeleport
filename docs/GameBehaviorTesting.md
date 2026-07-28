@@ -43,6 +43,11 @@ Run these from the in-game F1 console, a Telnet session, or RCON:
 | `vtttest record <traderEntityId>` | Records a visit for the resolved player, exactly as if they'd opened that trader's dialog. Find an entity id with the vanilla `le` (list entities) command. |
 | `vtttest teleport <destinationKey>` | Runs the real "Travel" action for that destination key, including the real network request when run against a remote client. |
 | `vtttest list` | Prints the resolved player's currently visible destinations (key + display name). |
+| `vtttest dialog open <traderEntityId>` | Opens the game's real trader dialog window against that trader (client only). |
+| `vtttest dialog seed <count>` | Replaces the client's destination list with synthetic entries, for paging tests. |
+| `vtttest dialog dump` | Prints the current statement's responses as JSON (see below). |
+| `vtttest dialog select <responseId>` | Activates a response exactly as clicking it does. |
+| `vtttest dialog close` | Closes the dialog window. |
 
 Each command also emits a single-line result marker to the console/log:
 
@@ -51,6 +56,42 @@ VTT_TEST_RESULT {"action":"teleport","ok":true,"detail":"npcTraderBob:786:-2336"
 ```
 
 An external driver can grep for this line instead of parsing free-form output.
+
+## The `dialog` subcommands
+
+`record`/`teleport`/`list` deliberately bypass the UI, so nothing in `DialogPatches.cs`
+runs when they are used - the paging, the response text, the status header and the XUi
+binding all stay unverified. The `dialog` subcommands close that gap by driving the game's
+own dialog window group: `open` sets `xui.Dialog.Respondent` and calls
+`XUiC_DialogWindowGroup.Open`, and `select` does exactly what
+`XUiC_DialogResponseList.OnPressResponse` does for a click (`Dialog.SelectResponse`
+followed by `RefreshDialog`). The Harmony patches and the localization lookups therefore
+run exactly as they do for a player.
+
+These only work on a game client - a dedicated server has no `LocalPlayerUI`.
+
+`dump` emits its own marker line:
+
+```
+VTT_DIALOG_DUMP {"statement":"vtt_destinations","statement_text":"...","language":"english",
+                 "entries":[{"id":"vtt_status_destinations","text":"..."}, ...],
+                 "rendered":["vtt_status_destinations", ...]}
+```
+
+`entries` is what `GetResponses` produced; `rendered` is what the dialog skin actually has
+response slots for. They are reported separately on purpose: the response list has a fixed
+number of `XUiC_DialogResponseEntry` children and silently drops everything past the last
+one, so a list that is logically correct can still reach the screen truncated. Comparing
+the two lengths is the only way to see that from outside the game.
+
+`seed` writes to the client's snapshot cache (`VisitedTraderClientState.ApplySnapshot`),
+keeping the access mode, travel cost and confirmation mode the server actually sent. Two
+things to know:
+
+- **Seed after `open`, not before.** `DialogGetFirstStatementPatch` requests a fresh
+  snapshot when the dialog opens, and that reply overwrites whatever was seeded.
+- **Never `select` a seeded destination.** They point at coordinates no trader occupies,
+  so travelling to one is a jump into unprepared terrain.
 
 ## Verifying against a Docker dedicated server
 
