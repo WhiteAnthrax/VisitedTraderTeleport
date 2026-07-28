@@ -28,8 +28,12 @@ internal static class VttTestHarness
             case "list":
                 RunList(player);
                 break;
+            case "dialog":
+                VttDialogHarness.Execute(player, _params);
+                break;
             default:
-                Output("[vtttest] usage: vtttest <record <traderEntityId>|teleport <destinationKey>|list>");
+                Output("[vtttest] usage: vtttest <record <traderEntityId>|teleport <destinationKey>|list|" +
+                       "dialog <open <traderEntityId>|dump|select <responseId>|close>>");
                 break;
         }
     }
@@ -106,12 +110,12 @@ internal static class VttTestHarness
 
     // A single-line JSON marker so an external driver (reading the Telnet stream or the log
     // file) can grep for the result of a vtttest command without parsing free-form text.
-    private static void EmitResult(string action, bool ok, string detail)
+    internal static void EmitResult(string action, bool ok, string detail)
     {
         Output($"VTT_TEST_RESULT {{\"action\":\"{action}\",\"ok\":{(ok ? "true" : "false")},\"detail\":\"{detail}\"}}");
     }
 
-    private static void Output(string message)
+    internal static void Output(string message)
     {
         Debug.Log(message);
         SdtdConsole.Instance.Output(message);
