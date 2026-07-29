@@ -1,0 +1,5 @@
+0.6.22
+The mod is now translated into every language the game ships with. Previously only English and Japanese were filled in and the other eleven languages showed English.
+Trader names, biome names and compass letters follow the game's own localization, so destinations read the same way they do in the vanilla trader dialog.
+Fixed the access mode and the dialog header still showing English in Japanese.
+No save reset required.
