@@ -19,7 +19,7 @@ vtt_travel_cost_unavailable,dialogs,Tooltip,,,,Travel cost item is not available
 vtt_teleported_to,dialogs,Tooltip,,,,Teleported to {0},,Nach {0} teleportiert,Teletransportado a {0},Téléporté vers {0},Teletrasportato a {0},{0}へ移動しました,{0}(으)로 이동했습니다,Teleportowano do {0},Teletransportado para {0},Перемещение к {0} выполнено,{0} konumuna ışınlandın,已传送至 {0},已傳送至 {0}
 vtt_mode_line,dialogs,Dialog,,,,Current mode: {0} - {1},,Aktueller Modus: {0} - {1},Modo actual: {0} - {1},Mode actuel : {0} - {1},Modalità attuale: {0} - {1},現在のモード: {0} - {1},현재 모드: {0} - {1},Bieżący tryb: {0} - {1},Modo atual: {0} - {1},Текущий режим: {0} - {1},Geçerli mod: {0} - {1},当前模式：{0} - {1},目前模式：{0} - {1}
 vtt_mode_personal_name,dialogs,Dialog,,,,Personal,,Persönlich,Personal,Personnel,Personale,個人,개인,Osobisty,Pessoal,Личный,Kişisel,个人,個人
-vtt_mode_party_name,dialogs,Dialog,,,,Party,,Gruppe,Grupo,Groupe,Gruppo,パーティ,파티,Drużyna,Grupo,Группа,Takım,队伍,隊伍
+vtt_mode_party_name,dialogs,Dialog,,,,Party,,Gruppe,Grupo,Groupe,Gruppo,パーティー,파티,Drużyna,Equipe,Группа,Grup,队伍,隊伍
 vtt_mode_shared_name,dialogs,Dialog,,,,Shared,,Geteilt,Compartido,Partagé,Condiviso,共有,공유,Wspólny,Compartilhado,Общий,Ortak,共享,共享
 vtt_mode_personal_description,dialogs,Dialog,,,,only traders you have visited,,nur von dir besuchte Händler,solo los vendedores que has visitado,uniquement les marchands que vous avez visités,solo i negozianti che hai visitato,自分が訪問したトレーダーのみ,내가 방문한 상인만,tylko odwiedzeni przez ciebie handlarze,apenas comerciantes que você visitou,только посещённые вами торговцы,yalnızca ziyaret ettiğin tüccarlar,仅限你访问过的商人,僅限你造訪過的商人
 vtt_mode_party_description,dialogs,Dialog,,,,shared with current party members,,geteilt mit der aktuellen Gruppe,compartido con los miembros del grupo actual,partagé avec les membres du groupe actuel,condiviso con i membri del gruppo attuale,現在のパーティメンバーと共有,현재 파티원과 공유,wspólne z obecną drużyną,compartilhado com os membros do grupo atual,общий с текущей группой,mevcut takım üyeleriyle paylaşılır,与当前队伍成员共享,與目前隊伍成員共享
@@ -37,23 +37,23 @@ vtt_page_next,dialogs,Dialog,,,,Next page >,,Nächste Seite >,Página siguiente 
 vtt_destination_response,dialogs,Dialog,,,,{0} - {1} {2} ({3}),,{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1}{2}（{3}）,{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1} {2} ({3}),{0} - {1}{2}（{3}）,{0} - {1}{2}（{3}）
 vtt_transport_destination,dialogs,Tooltip,,,,Trader {0} ({1}),,Händler {0} ({1}),"{0}, el vendedor ({1})",{0} le marchand ({1}),Negoziante {0} ({1}),トレーダー {0}の地（{1}）,상인 {0} ({1}),Handlarz {0} ({1}),Comerciante {0} ({1}),Торговец {0} ({1}),Tüccar {0} ({1}),商人{0}（{1}）,商人{0}（{1}）
 vtt_coordinates,dialogs,Dialog,,,,{0} {1} {2} {3},,{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0}{1}、{2}{3},"{0}{1}, {2}{3}",{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0} {1} {2} {3},{0}{1}，{2}{3},{0}{1}，{2}{3}
-vtt_coord_east,dialogs,Dialog,,,,E,,O,E,E,E,東,동,E,L,В,D,东,東
-vtt_coord_west,dialogs,Dialog,,,,W,,W,O,O,O,西,서,W,O,З,B,西,西
-vtt_coord_north,dialogs,Dialog,,,,N,,N,N,N,N,北,북,N,N,С,K,北,北
-vtt_coord_south,dialogs,Dialog,,,,S,,S,S,S,S,南,남,S,S,Ю,G,南,南
+vtt_coord_east,dialogs,Dialog,,,,E,,O,E,E,E,東,동,Wsch.,E,В,D,E,東
+vtt_coord_west,dialogs,Dialog,,,,W,,W,O,O,O,西,서,Zach.,W,З,B,W,西
+vtt_coord_north,dialogs,Dialog,,,,N,,N,N,N,N,北,북,Płn.,N,С,K,N,北
+vtt_coord_south,dialogs,Dialog,,,,S,,S,S,S,S,南,남,Płd.,S,Ю,G,S,南
 vtt_distance_m,dialogs,Dialog,,,,{0} m,,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m,{0} m
 vtt_distance_km,dialogs,Dialog,,,,{0} km,,{0} km,{0} km,{0} km,{0} km,{0}km,{0}km,{0} km,{0} km,{0} км,{0} km,{0}km,{0}km
 vtt_distance_unknown,dialogs,Dialog,,,,distance unknown,,Entfernung unbekannt,distancia desconocida,distance inconnue,distanza sconosciuta,距離不明,거리 불명,nieznana odległość,distância desconhecida,расстояние неизвестно,mesafe bilinmiyor,距离未知,距離未知
 vtt_direction_unknown,dialogs,Dialog,,,,?,,?,?,?,?,不明,?,?,?,?,?,?,?
 vtt_direction_here,dialogs,Dialog,,,,here,,hier,aquí,ici,qui,現在地,현재 위치,tutaj,aqui,здесь,burada,当前位置,目前位置
-vtt_direction_n,dialogs,Dialog,,,,N,,N,N,N,N,北,북,N,N,С,K,北,北
-vtt_direction_ne,dialogs,Dialog,,,,NE,,NO,NE,NE,NE,北東,북동,NE,NE,СВ,KD,东北,東北
-vtt_direction_e,dialogs,Dialog,,,,E,,O,E,E,E,東,동,E,L,В,D,东,東
-vtt_direction_se,dialogs,Dialog,,,,SE,,SO,SE,SE,SE,南東,남동,SE,SE,ЮВ,GD,东南,東南
-vtt_direction_s,dialogs,Dialog,,,,S,,S,S,S,S,南,남,S,S,Ю,G,南,南
-vtt_direction_sw,dialogs,Dialog,,,,SW,,SW,SO,SO,SO,南西,남서,SW,SO,ЮЗ,GB,西南,西南
-vtt_direction_w,dialogs,Dialog,,,,W,,W,O,O,O,西,서,W,O,З,B,西,西
-vtt_direction_nw,dialogs,Dialog,,,,NW,,NW,NO,NO,NO,北西,북서,NW,NO,СЗ,KB,西北,西北
+vtt_direction_n,dialogs,Dialog,,,,N,,N,N,N,N,北,북,Płn.,N,С,K,N,北
+vtt_direction_ne,dialogs,Dialog,,,,NE,,NO,NE,NE,NE,北東,북동,Płn. wsch.,NE,СВ,KD,NE,東北
+vtt_direction_e,dialogs,Dialog,,,,E,,O,E,E,E,東,동,Wsch.,E,В,D,E,東
+vtt_direction_se,dialogs,Dialog,,,,SE,,SO,SE,SE,SE,南東,남동,Płd. wsch.,SE,ЮВ,GD,SE,東南
+vtt_direction_s,dialogs,Dialog,,,,S,,S,S,S,S,南,남,Płd.,S,Ю,G,S,南
+vtt_direction_sw,dialogs,Dialog,,,,SW,,SW,SO,SO,SO,南西,남서,Płd. zach.,SW,ЮЗ,GB,SW,西南
+vtt_direction_w,dialogs,Dialog,,,,W,,W,O,O,O,西,서,Zach.,W,З,B,W,西
+vtt_direction_nw,dialogs,Dialog,,,,NW,,NW,NO,NO,NO,北西,북서,Płn. zach.,NW,СЗ,KB,NW,西北
 vtt_trader_name_generic,dialogs,Dialog,,,,Trader,,Händler,Vendedor,Marchand,Negoziante,トレーダー,상인,Handlarz,Comerciante,Торговец,Tüccar,商人,商人
 vtt_trader_name_unknown,dialogs,Dialog,,,,Trader {0},,Händler {0},"{0}, el vendedor",{0} le marchand,Negoziante {0},トレーダー {0},상인 {0},Handlarz {0},Comerciante {0},Торговец {0},Tüccar {0},商人{0},商人{0}
 vtt_trader_name_rekt,dialogs,Dialog,,,,Rekt,,Rekt,Rekt,Rekt,Rekt,レクト,렉트,Rekt,Rekt,Рект,Rekt,雷克特,瑞克特
