@@ -1,5 +1,12 @@
 # Travel Between Visited Traders Changelog
 
+## 0.7.10 - 2026-07-29 08:51 JST
+- The mod's text is now translated into every language the game ships with. Until now only English and Japanese were filled in, and the other eleven languages fell back to English.
+- Trader names, biome names and the word "Trader" itself are taken from the game's own localization, so a destination reads the same way it does in the vanilla trader dialog (including word order: "Händler Bob" in German, "Bob, el vendedor" in Spanish, "Bob le marchand" in French).
+- Compass and coordinate letters are localized too (N/O/S/W in German, С/В/Ю/З in Russian, and so on), as are the access-mode names shown in the dialog header.
+- Fixed the access mode showing as "Personal"/"Party"/"Shared" and the dialog header as "Mode: ... | Page ..." in Japanese, which were the last entries still left in English there.
+- No save reset is required.
+
 ## 0.7.9 - 2026-07-23 19:00 JST
 - Fixed travel being refused almost every time a destination actually needed preparation: the mesh-queue busy check was measuring the load the trip's own destination preparation had just produced, since the preparation area wasn't released until after that check ran.
 - Fixed being kicked from the server right after a travel transition in some cases: cleaning up the client-side destination visual refresh could call into the game's chunk-observer removal after the world had already started unloading (e.g. on disconnect/reload during the refresh window), throwing an exception that took the connection down with it. The check is now re-verified at cleanup time and a failure there no longer propagates.
