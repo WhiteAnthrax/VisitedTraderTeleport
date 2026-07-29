@@ -8,7 +8,13 @@ using System.Xml.Linq;
 //
 // Handles both release lines and fails when they are mixed up:
 //   3.0 line  (0.7.x+)  -> Config/Localization.csv, 20 columns (with KeepLoaded/Context)
-//   v2.6 line (0.6.x)   -> Config/Localization.txt, 19 columns (with latam, no KeepLoaded)
+//   v2.6 line (0.6.x)   -> Config/Localization.txt, 19 columns (with Context, no KeepLoaded)
+//
+// Both files match their own game version's Data/Config header exactly, and that is not
+// cosmetic: Localization.LoadCsv resolves mod columns by *name* against the already-loaded
+// base table and appends any name it does not recognize as a whole new language. The v2.6
+// file used to carry a `latam` column left over from an older 7DTD, which the game was
+// dutifully loading as a language nobody can select.
 //
 // Usage (from the repository root):
 //   dotnet run --project devtools/ModChecks                 repo checks only
