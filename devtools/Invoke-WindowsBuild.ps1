@@ -907,7 +907,20 @@ function Get-ReferencePlan {
         $hintPath = $node.InnerText.Replace('/', '\')
         $sourceDirectory = $null
         $destinationDirectory = $null
-        if ($hintPath -match '(^|\\)refs\\managed\\([^\\]+)$') {
+        # The v2.6 maintenance line keeps its references under refs\_v2.6_backup\ so a single
+        # working tree could hold both lines' references side by side. Matched before the
+        # plain refs\managed\ pattern because the tail of the path is identical.
+        if ($hintPath -match '(^|\\)refs\\_v2\.6_backup\\managed\\([^\\]+)$') {
+            $fileName = $Matches[2]
+            $sourceDirectory = Join-Path $GamePath '7DaysToDie_Data\Managed'
+            $destinationDirectory = Join-Path $BuildRepository 'refs\_v2.6_backup\managed'
+        }
+        elseif ($hintPath -match '(^|\\)refs\\_v2\.6_backup\\harmony\\([^\\]+)$') {
+            $fileName = $Matches[2]
+            $sourceDirectory = Join-Path $GamePath 'Mods\0_TFP_Harmony'
+            $destinationDirectory = Join-Path $BuildRepository 'refs\_v2.6_backup\harmony'
+        }
+        elseif ($hintPath -match '(^|\\)refs\\managed\\([^\\]+)$') {
             $fileName = $Matches[2]
             $sourceDirectory = Join-Path $GamePath '7DaysToDie_Data\Managed'
             $destinationDirectory = Join-Path $BuildRepository 'refs\managed'
@@ -1222,10 +1235,28 @@ try {
             Write-BuildLog -Level 'WARN' -Message 'Package checks skipped by explicit request.'
         }
         else {
-            $checksResult = Invoke-NativeCommand -FilePath $DotNetPath -ArgumentList @(
-                'run', '--project', 'devtools\ModChecks', '--', '--package'
-            ) -Description 'package verification' -Phase 'verify' `
-                -DeadlineUtc (Get-PhaseDeadline -BudgetSeconds $script:ChecksBudgetSeconds) -WorkingDirectory $buildRepository
+            # The v2.6 maintenance line carries no devtools/ of its own, so run this
+            # checkout's ModChecks against the built workspace instead of the workspace's.
+            # That is what its --root switch is for, and it keeps the v2.6 line verified by
+            # the same command rather than by an unchecked -SkipPackageChecks build.
+            $workspaceChecks = Join-Path $buildRepository 'devtools\ModChecks'
+            if (Test-Path -LiteralPath $workspaceChecks) {
+                $checksProject = 'devtools\ModChecks'
+                $checksArguments = @('run', '--project', $checksProject, '--', '--package')
+                $checksWorkingDirectory = $buildRepository
+            }
+            else {
+                Write-BuildLog -Level 'INFO' -Message (
+                    'Workspace has no devtools/; verifying it with this checkout''s ModChecks via --root.'
+                )
+                $checksProject = Join-Path $PSScriptRoot 'ModChecks'
+                $checksArguments = @('run', '--project', $checksProject, '--', '--package', '--root', $buildRepository)
+                $checksWorkingDirectory = Split-Path -Parent $PSScriptRoot
+            }
+
+            $checksResult = Invoke-NativeCommand -FilePath $DotNetPath -ArgumentList $checksArguments `
+                -Description 'package verification' -Phase 'verify' `
+                -DeadlineUtc (Get-PhaseDeadline -BudgetSeconds $script:ChecksBudgetSeconds) -WorkingDirectory $checksWorkingDirectory
             Assert-CommandSucceeded -Result $checksResult -ExitCode 8 -Phase 'verify' -Message 'Package verification failed'
         }
         if ($Mode -eq 'Prepared') {
