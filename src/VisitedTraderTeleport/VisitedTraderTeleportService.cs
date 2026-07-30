@@ -1035,22 +1035,38 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    private static bool IsPlayerCompanion(EntityAlive alive, int playerId)
+    // A companion is an entity SCore has marked as hired - not merely one the player owns.
+    //
+    // This used to answer yes to anything with belongsPlayerId == playerId, and that missed a
+    // real player-owned EntityAlive subtype twice: drivable vehicles, then placed turrets.
+    // EntityTurret derives straight from EntityAlive and sets belongsPlayerId to its owner
+    // during init, so it satisfied the same ownership check a hired companion does. A turret
+    // uprooted from a base and dropped at a trader is a good deal worse than a companion left
+    // behind, and GatherCompanions runs after every teleport.
+    //
+    // belongsPlayerId means "this player owns it", which is equally true of turrets, vehicles
+    // and drones; it never said anything about following anyone. Decompiling SCore shows
+    // EntityUtilities.IsHired is exactly GetLeaderOrOwner(id) != null, and GetLeaderOrOwner
+    // reads the "Leader" and "Owner" Buffs custom vars - the two this method already checked
+    // as a fallback. So those alone are the test now: the same question SCore asks, without a
+    // dependency on SCore being loaded, and a turret has neither var.
+    //
+    // (EntityUtilities.GetCurrentOrder is not usable for this: it returns Orders.Wander by
+    // default for any EntityAlive with no CurrentOrder var, so everything "has" an order.)
+    //
+    // The type exclusion stays as a second line of defence, in case some framework sets an
+    // Owner var on a vehicle. Checked by actual type, not by class name: every drivable
+    // vehicle (minibike, motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) derives from
+    // EntityVehicle via EntityDriveable, but none of those concrete class names contain the
+    // substring "Vehicle" - a prior name-substring check missed all of them.
+    //
+    // The 3.0 line has this decision extracted into VisitedTraderTeleport.Core with unit
+    // tests (CompanionIdentification); this line has no Core project, so it stays inline.
+    internal static bool IsPlayerCompanion(EntityAlive alive, int playerId)
     {
-        // Exclude other player-owned entities that are not following NPCs (e.g. the vanilla
-        // junk drone, or any placed/drivable vehicle) so this stays a no-op outside of companion
-        // setups. Checked by actual type, not by class name: every drivable vehicle (minibike,
-        // motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) derives from EntityVehicle via
-        // EntityDriveable, but none of those concrete class names contain the substring "Vehicle" -
-        // a prior name-substring check missed all of them.
-        if (alive is EntityDrone || alive is EntityVehicle)
+        if (alive is EntityDrone || alive is EntityVehicle || alive is EntityTurret)
         {
             return false;
-        }
-
-        if (alive.belongsPlayerId == playerId)
-        {
-            return true;
         }
 
         EntityBuffs buffs = alive.Buffs;

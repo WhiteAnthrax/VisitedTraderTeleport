@@ -28,11 +28,14 @@ internal static class VttTestHarness
             case "list":
                 RunList(player);
                 break;
+            case "companions":
+                RunCompanions(player);
+                break;
             case "dialog":
                 VttDialogHarness.Execute(player, _params);
                 break;
             default:
-                Output("[vtttest] usage: vtttest <record <traderEntityId>|teleport <destinationKey>|list|" +
+                Output("[vtttest] usage: vtttest <record <traderEntityId>|teleport <destinationKey>|list|companions|" +
                        "dialog <open <traderEntityId>|seed <count>|dump|select <responseId>|close>>");
                 break;
         }
@@ -103,6 +106,83 @@ internal static class VttTestHarness
         }
 
         EmitResult("list", true, $"{destinations.Count} destinations");
+    }
+
+    // Reports what IsPlayerCompanion decides about every live entity, next to the raw markers
+    // it decided from. Read-only.
+    //
+    // This exists because the companion test has now been wrong twice in the same way, and
+    // both times the wrongness was invisible from outside: an owned turret or vehicle was
+    // silently classed as a companion and only showed up as "my turret moved". Printing the
+    // markers alongside the verdict makes the next disagreement a five-second check.
+    //
+    // "would_match_ownership" is what the old rule said - belongsPlayerId == playerId. Where
+    // it is true and companion is false, this entity is one the old code would have dragged
+    // along.
+    private static void RunCompanions(EntityPlayer player)
+    {
+        if (player == null)
+        {
+            Output("[vtttest] companions requires a resolvable player.");
+            return;
+        }
+
+        World world = GameManager.Instance?.World;
+        if (world?.Entities?.list == null)
+        {
+            EmitResult("companions", false, "no world entity list");
+            return;
+        }
+
+        int reported = 0;
+        int companions = 0;
+        int wouldHaveMatchedOwnership = 0;
+        foreach (Entity entity in new List<Entity>(world.Entities.list))
+        {
+            if (!(entity is EntityAlive alive) || alive.entityId == player.entityId)
+            {
+                continue;
+            }
+
+            EntityBuffs buffs = alive.Buffs;
+            string leader = buffs != null && buffs.HasCustomVar("Leader")
+                ? ((int)buffs.GetCustomVar("Leader")).ToString()
+                : "-";
+            string owner = buffs != null && buffs.HasCustomVar("Owner")
+                ? ((int)buffs.GetCustomVar("Owner")).ToString()
+                : "-";
+
+            bool isCompanion = VisitedTraderTeleportService.IsPlayerCompanion(alive, player.entityId);
+            bool ownershipMatch = alive.belongsPlayerId == player.entityId;
+
+            if (isCompanion)
+            {
+                companions++;
+            }
+
+            if (ownershipMatch)
+            {
+                wouldHaveMatchedOwnership++;
+            }
+
+            Output(
+                "VTT_COMPANION_PROBE {" +
+                $"\"entity_id\":{alive.entityId}," +
+                $"\"type\":\"{alive.GetType().Name}\"," +
+                $"\"name\":\"{alive.EntityName}\"," +
+                $"\"belongs_player_id\":{alive.belongsPlayerId}," +
+                $"\"leader\":\"{leader}\"," +
+                $"\"owner\":\"{owner}\"," +
+                $"\"companion\":{(isCompanion ? "true" : "false")}," +
+                $"\"would_match_ownership\":{(ownershipMatch ? "true" : "false")}" +
+                "}");
+            reported++;
+        }
+
+        EmitResult(
+            "companions",
+            true,
+            $"{reported} entities, {companions} companion(s), {wouldHaveMatchedOwnership} owned-by-player");
     }
 
     // A single-line JSON marker so an external driver (reading the Telnet stream or the log
