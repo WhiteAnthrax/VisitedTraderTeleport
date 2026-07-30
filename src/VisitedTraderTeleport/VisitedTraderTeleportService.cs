@@ -1035,7 +1035,10 @@ internal static class VisitedTraderTeleportService
     // helicopter, blimp) derives from EntityVehicle via EntityDriveable, but none of those
     // concrete class names contain the substring "Vehicle". EntityTurret derives straight
     // from EntityAlive, which is how it slipped past this list in the first place.
-    private static bool IsPlayerCompanion(EntityAlive alive, int playerId)
+    // internal rather than private so the Debug-only test harness can report what this
+    // actually decides about live entities (vtttest companions), instead of a test having to
+    // re-implement the marker reading and then agree with itself.
+    internal static bool IsPlayerCompanion(EntityAlive alive, int playerId)
     {
         bool isExcludedType = alive is EntityDrone || alive is EntityVehicle || alive is EntityTurret;
 
