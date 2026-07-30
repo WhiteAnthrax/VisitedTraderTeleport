@@ -1027,31 +1027,32 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    private static bool IsPlayerCompanion(EntityAlive alive, int playerId)
+    // Reads the entity's markers and hands the decision to CompanionIdentification, which
+    // documents why it is the Leader/Owner Buffs vars and not belongsPlayerId.
+    //
+    // The type exclusion stays as a second line of defence. Checked by actual type, not by
+    // class name: every drivable vehicle (minibike, motorcycle, bicycle, 4x4, gyrocopter,
+    // helicopter, blimp) derives from EntityVehicle via EntityDriveable, but none of those
+    // concrete class names contain the substring "Vehicle". EntityTurret derives straight
+    // from EntityAlive, which is how it slipped past this list in the first place.
+    // internal rather than private so the Debug-only test harness can report what this
+    // actually decides about live entities (vtttest companions), instead of a test having to
+    // re-implement the marker reading and then agree with itself.
+    internal static bool IsPlayerCompanion(EntityAlive alive, int playerId)
     {
-        // Exclude other player-owned entities that are not following NPCs (e.g. the vanilla
-        // junk drone, or any placed/drivable vehicle) so this stays a no-op outside of companion
-        // setups. Checked by actual type, not by class name: every drivable vehicle (minibike,
-        // motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) derives from EntityVehicle via
-        // EntityDriveable, but none of those concrete class names contain the substring "Vehicle".
-        if (alive is EntityDrone || alive is EntityVehicle)
-        {
-            return false;
-        }
-
-        if (alive.belongsPlayerId == playerId)
-        {
-            return true;
-        }
+        bool isExcludedType = alive is EntityDrone || alive is EntityVehicle || alive is EntityTurret;
 
         EntityBuffs buffs = alive.Buffs;
-        if (buffs == null)
-        {
-            return false;
-        }
+        bool hasLeader = buffs != null && buffs.HasCustomVar("Leader");
+        bool hasOwner = buffs != null && buffs.HasCustomVar("Owner");
 
-        return (buffs.HasCustomVar("Owner") && (int)buffs.GetCustomVar("Owner") == playerId) ||
-               (buffs.HasCustomVar("Leader") && (int)buffs.GetCustomVar("Leader") == playerId);
+        return CompanionIdentification.IsCompanion(
+            isExcludedType,
+            hasLeader,
+            hasLeader ? (int)buffs.GetCustomVar("Leader") : 0,
+            hasOwner,
+            hasOwner ? (int)buffs.GetCustomVar("Owner") : 0,
+            playerId);
     }
 
     private static bool StartTransitionAndTeleport(
