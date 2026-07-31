@@ -1,0 +1,4 @@
+0.7.11
+Fixed placed turrets being pulled to the trader when you travel. Only NPCs you have actually hired are moved now; anything else you own - turrets, vehicles, drones - stays where it is.
+With the SCore / XNPCCore companion system installed this could affect turrets anywhere on the map, on every trip.
+No save reset required.
