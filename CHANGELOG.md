@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.6.23 - 2026-08-01 00:32 JST
+- Fixed placed turrets being pulled to the trader when you travel. Only NPCs you have actually hired are moved now; anything else you own - turrets, vehicles, drones - stays where it is. With the SCore / XNPCCore companion system installed (as in The Wasteland) this affected turrets anywhere on the map, on every trip.
+- No save reset is required.
+
 ## 0.6.22 - 2026-07-29 23:44 JST
 - The mod's text is now translated into every language the game ships with. Until now only English and Japanese were filled in, and the other eleven languages fell back to English.
 - Trader names, biome names and the word "Trader" itself are taken from the game's own localization, so a destination reads the same way it does in the vanilla trader dialog (including word order: "Händler Bob" in German, "Bob, el vendedor" in Spanish, "Bob le marchand" in French).
