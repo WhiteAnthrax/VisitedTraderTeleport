@@ -2,3 +2,7 @@
 Fixed travel being refused almost every time a destination actually needed preparation (e.g. the first visit in a session). The busy check was mistaking the trip's own destination loading for a genuinely saturated queue.
 Fixed being kicked from the server right after starting a travel transition in some cases.
 No save reset required.
+
+0.7.8
+Fixed placed and drivable vehicles (minibike, motorcycle, bicycle, 4x4, gyrocopter, helicopter, blimp) being moved to the trader when you travel. Vehicle exclusion now checks the entity's actual type, so only real companions can be moved.
+No save reset required.
