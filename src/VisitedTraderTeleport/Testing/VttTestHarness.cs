@@ -29,14 +29,18 @@ internal static class VttTestHarness
                 RunList(player);
                 break;
             case "companions":
-                RunCompanions(player);
+                RunCompanions(player, _params.ElementAtOrDefault(1));
+                break;
+            case "mark":
+                RunMark(player, _params.ElementAtOrDefault(1), _params.ElementAtOrDefault(2),
+                        _params.ElementAtOrDefault(3));
                 break;
             case "dialog":
                 VttDialogHarness.Execute(player, _params);
                 break;
             default:
-                Output("[vtttest] usage: vtttest <record <traderEntityId>|teleport <destinationKey>|list|companions|" +
-                       "dialog <open <traderEntityId>|seed <count>|dump|select <responseId>|close>>");
+                Output("[vtttest] usage: vtttest <record <traderEntityId>|teleport <destinationKey>|list|" +
+                       "companions|dialog <open <traderEntityId>|dump|select <responseId>|close>>");
                 break;
         }
     }
@@ -61,7 +65,7 @@ internal static class VttTestHarness
     }
 
     // VisitedTraderStore.Record can canonicalize the key it actually stores differently from
-    // VisitedTraderStore.GetKey's raw form (widened with trader-area size on v2.6), so look up
+    // VisitedTraderStore.GetKey's raw form (e.g. widening it with trader-area size), so look up
     // the destination list afterwards and match by proximity to report a key a driver can
     // actually pass to 'vtttest teleport'. Falls back to the raw key if the canonicalized
     // destination isn't visible yet (e.g. a remote client whose snapshot hasn't caught up).
@@ -69,6 +73,7 @@ internal static class VttTestHarness
     {
         foreach (TraderDestination destination in VisitedTraderStore.GetDestinations(player))
         {
+            // TraderDestination carries a Unity Vector3 on this line, not Position3.
             if (Vector3.Distance(destination.Position, trader.position) < 5f)
             {
                 return destination.Key;
@@ -108,6 +113,77 @@ internal static class VttTestHarness
         EmitResult("list", true, $"{destinations.Count} destinations");
     }
 
+    // Puts one of the two markers the companion test reads onto an entity, so a scenario can
+    // set up the situations that cannot otherwise be reached from a script.
+    //
+    //   hired - sets the "Owner" Buffs custom var to the player, which is exactly what SCore
+    //           records when you hire an NPC (EntityUtilities.GetLeaderOrOwner reads it).
+    //           Hiring for real needs NPC dialog, so there is no other headless route to a
+    //           companion the mod will agree to gather.
+    //   owned - sets belongsPlayerId to the player, which is what a turret gets when a player
+    //           places one. Console-spawned turrets come out unowned, so without this the
+    //           original bug's trigger condition cannot be reproduced at all.
+    //
+    // Test-only, and only reachable in a Debug build behind EnableTestHarness.txt. Nothing in
+    // the shipped mod writes either marker.
+    private static void RunMark(
+        EntityPlayer player, string markerArg, string entityIdArg, string playerIdArg)
+    {
+        string marker = markerArg?.ToLowerInvariant();
+        if (!int.TryParse(entityIdArg, out int entityId) ||
+            (marker != "hired" && marker != "owned"))
+        {
+            Output("[vtttest] usage: vtttest mark <hired|owned> <entityId> [playerEntityId]");
+            return;
+        }
+
+        // The player id is explicit when given, because this command has to be usable from the
+        // *server* console - and that is where it matters most. Both markers are read by
+        // server-side code (GatherCompanions), so writing them on the client marks a copy the
+        // server never sees. There is no player context on a dedicated server console, so the
+        // id cannot be resolved there and has to be passed in.
+        int playerId;
+        if (!string.IsNullOrEmpty(playerIdArg))
+        {
+            if (!int.TryParse(playerIdArg, out playerId))
+            {
+                Output("[vtttest] usage: vtttest mark <hired|owned> <entityId> [playerEntityId]");
+                return;
+            }
+        }
+        else if (player != null)
+        {
+            playerId = player.entityId;
+        }
+        else
+        {
+            EmitResult("mark", false, "no player context; pass the player entity id explicitly");
+            return;
+        }
+
+        if (!(GameManager.Instance?.World?.GetEntity(entityId) is EntityAlive alive))
+        {
+            EmitResult("mark", false, "no living entity with that id");
+            return;
+        }
+
+        if (marker == "owned")
+        {
+            alive.belongsPlayerId = playerId;
+            EmitResult("mark", true, $"{entityId} belongsPlayerId={playerId}");
+            return;
+        }
+
+        if (alive.Buffs == null)
+        {
+            EmitResult("mark", false, "entity has no Buffs to write the Owner var to");
+            return;
+        }
+
+        alive.Buffs.SetCustomVar("Owner", playerId);
+        EmitResult("mark", true, $"{entityId} Owner={playerId}");
+    }
+
     // Reports what IsPlayerCompanion decides about every live entity, next to the raw markers
     // it decided from. Read-only.
     //
@@ -119,11 +195,28 @@ internal static class VttTestHarness
     // "would_match_ownership" is what the old rule said - belongsPlayerId == playerId. Where
     // it is true and companion is false, this entity is one the old code would have dragged
     // along.
-    private static void RunCompanions(EntityPlayer player)
+    private static void RunCompanions(EntityPlayer player, string playerIdArg)
     {
-        if (player == null)
+        // Same reason `mark` takes one: this is worth asking on the *server*, where the
+        // decision is actually made, and a dedicated server console has no player context.
+        // Running it on both sides and comparing is how a marker written to the wrong copy
+        // shows up immediately.
+        int playerId;
+        if (!string.IsNullOrEmpty(playerIdArg))
         {
-            Output("[vtttest] companions requires a resolvable player.");
+            if (!int.TryParse(playerIdArg, out playerId))
+            {
+                Output("[vtttest] usage: vtttest companions [playerEntityId]");
+                return;
+            }
+        }
+        else if (player != null)
+        {
+            playerId = player.entityId;
+        }
+        else
+        {
+            EmitResult("companions", false, "no player context; pass the player entity id explicitly");
             return;
         }
 
@@ -139,7 +232,7 @@ internal static class VttTestHarness
         int wouldHaveMatchedOwnership = 0;
         foreach (Entity entity in new List<Entity>(world.Entities.list))
         {
-            if (!(entity is EntityAlive alive) || alive.entityId == player.entityId)
+            if (!(entity is EntityAlive alive) || alive.entityId == playerId)
             {
                 continue;
             }
@@ -152,8 +245,8 @@ internal static class VttTestHarness
                 ? ((int)buffs.GetCustomVar("Owner")).ToString()
                 : "-";
 
-            bool isCompanion = VisitedTraderTeleportService.IsPlayerCompanion(alive, player.entityId);
-            bool ownershipMatch = alive.belongsPlayerId == player.entityId;
+            bool isCompanion = VisitedTraderTeleportService.IsPlayerCompanion(alive, playerId);
+            bool ownershipMatch = alive.belongsPlayerId == playerId;
 
             if (isCompanion)
             {
