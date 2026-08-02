@@ -20,7 +20,7 @@ internal sealed class ConsoleCmdVttTest : ConsoleCmdAbstract
 
     public override string getHelp()
     {
-        return "vtttest <record <traderEntityId>|teleport <destinationKey>|list|companions|" +
+        return "vtttest <record <traderEntityId>|teleport <destinationKey>|list|companions [playerEntityId]|mark <hired|owned> <entityId> [playerEntityId]|" +
                "dialog <open <traderEntityId>|dump|select <responseId>|close>>";
     }
 
