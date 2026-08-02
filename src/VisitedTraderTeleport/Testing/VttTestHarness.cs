@@ -31,10 +31,6 @@ internal static class VttTestHarness
             case "companions":
                 RunCompanions(player, _params.ElementAtOrDefault(1));
                 break;
-            case "mark":
-                RunMark(player, _params.ElementAtOrDefault(1), _params.ElementAtOrDefault(2),
-                        _params.ElementAtOrDefault(3));
-                break;
             case "dialog":
                 VttDialogHarness.Execute(player, _params);
                 break;
@@ -111,77 +107,6 @@ internal static class VttTestHarness
         }
 
         EmitResult("list", true, $"{destinations.Count} destinations");
-    }
-
-    // Puts one of the two markers the companion test reads onto an entity, so a scenario can
-    // set up the situations that cannot otherwise be reached from a script.
-    //
-    //   hired - sets the "Owner" Buffs custom var to the player, which is exactly what SCore
-    //           records when you hire an NPC (EntityUtilities.GetLeaderOrOwner reads it).
-    //           Hiring for real needs NPC dialog, so there is no other headless route to a
-    //           companion the mod will agree to gather.
-    //   owned - sets belongsPlayerId to the player, which is what a turret gets when a player
-    //           places one. Console-spawned turrets come out unowned, so without this the
-    //           original bug's trigger condition cannot be reproduced at all.
-    //
-    // Test-only, and only reachable in a Debug build behind EnableTestHarness.txt. Nothing in
-    // the shipped mod writes either marker.
-    private static void RunMark(
-        EntityPlayer player, string markerArg, string entityIdArg, string playerIdArg)
-    {
-        string marker = markerArg?.ToLowerInvariant();
-        if (!int.TryParse(entityIdArg, out int entityId) ||
-            (marker != "hired" && marker != "owned"))
-        {
-            Output("[vtttest] usage: vtttest mark <hired|owned> <entityId> [playerEntityId]");
-            return;
-        }
-
-        // The player id is explicit when given, because this command has to be usable from the
-        // *server* console - and that is where it matters most. Both markers are read by
-        // server-side code (GatherCompanions), so writing them on the client marks a copy the
-        // server never sees. There is no player context on a dedicated server console, so the
-        // id cannot be resolved there and has to be passed in.
-        int playerId;
-        if (!string.IsNullOrEmpty(playerIdArg))
-        {
-            if (!int.TryParse(playerIdArg, out playerId))
-            {
-                Output("[vtttest] usage: vtttest mark <hired|owned> <entityId> [playerEntityId]");
-                return;
-            }
-        }
-        else if (player != null)
-        {
-            playerId = player.entityId;
-        }
-        else
-        {
-            EmitResult("mark", false, "no player context; pass the player entity id explicitly");
-            return;
-        }
-
-        if (!(GameManager.Instance?.World?.GetEntity(entityId) is EntityAlive alive))
-        {
-            EmitResult("mark", false, "no living entity with that id");
-            return;
-        }
-
-        if (marker == "owned")
-        {
-            alive.belongsPlayerId = playerId;
-            EmitResult("mark", true, $"{entityId} belongsPlayerId={playerId}");
-            return;
-        }
-
-        if (alive.Buffs == null)
-        {
-            EmitResult("mark", false, "entity has no Buffs to write the Owner var to");
-            return;
-        }
-
-        alive.Buffs.SetCustomVar("Owner", playerId);
-        EmitResult("mark", true, $"{entityId} Owner={playerId}");
     }
 
     // Reports what IsPlayerCompanion decides about every live entity, next to the raw markers
