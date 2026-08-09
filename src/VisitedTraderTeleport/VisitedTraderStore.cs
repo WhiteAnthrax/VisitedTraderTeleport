@@ -190,6 +190,47 @@ internal static class VisitedTraderStore
         Debug.Log($"[VisitedTraderTeleport] Recorded visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
     }
 
+    // Removes this player's visit to one trader. Server-side (or single player); a connected
+    // client asks the server to do it - see VisitedTraderNetwork.RequestForget - because the
+    // client only ever holds a snapshot of what it is allowed to see.
+    //
+    // Only ever touches the calling player's own record. In Party and Shared mode the list is
+    // the union of several players' visits, so the entry can survive this; the outcome says
+    // which happened, and the dialog tells the player rather than looking like it did nothing.
+    public static ForgetOutcome Forget(string destinationKey, EntityPlayer player)
+    {
+        EnsureLoaded();
+
+        string playerKey = GetPlayerKey(player);
+        if (string.IsNullOrEmpty(playerKey))
+        {
+            Debug.LogWarning("[VisitedTraderTeleport] Could not resolve player key; nothing was forgotten.");
+            return ForgetOutcome.NotVisitedByThisPlayer;
+        }
+
+        ForgetOutcome outcome = VisitForgetting.Forget(
+            database.VisitsByPlayer,
+            playerKey,
+            destinationKey,
+            // Computed after the removal with the same access-mode logic the destination list
+            // uses, so "is it still on your screen?" cannot disagree with the screen.
+            GetAllowedNewSchemaKeys(player));
+
+        if (outcome == ForgetOutcome.NotVisitedByThisPlayer)
+        {
+            Debug.Log(
+                $"[VisitedTraderTeleport] Nothing to forget for {player.PlayerDisplayName}: " +
+                $"{destinationKey} is not one of their visits.");
+            return outcome;
+        }
+
+        SaveDatabase();
+        Debug.Log(
+            $"[VisitedTraderTeleport] Forgot {destinationKey} for {player.PlayerDisplayName} " +
+            $"({outcome}).");
+        return outcome;
+    }
+
     public static void RecordReportedVisit(TraderVisitReport report, EntityPlayer player)
     {
         if (player == null)
