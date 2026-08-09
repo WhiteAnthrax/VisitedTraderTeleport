@@ -52,6 +52,18 @@ internal static class VisitedTraderNetwork
             false);
     }
 
+    public static void RequestForget(string destinationKey)
+    {
+        if (!IsClientOnly || string.IsNullOrEmpty(destinationKey))
+        {
+            return;
+        }
+
+        ConnectionManager.Instance.SendToServer(
+            NetPackageManager.GetPackage<NetPackageVisitedTraderForgetRequest>().Setup(destinationKey),
+            false);
+    }
+
     public static void SendSnapshot(ClientInfo clientInfo)
     {
         EntityPlayer player = ResolvePlayer(clientInfo);
