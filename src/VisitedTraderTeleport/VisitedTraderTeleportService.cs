@@ -1722,7 +1722,10 @@ internal static class VisitedTraderTeleportService
         ShowTooltip(player, VTTLocalization.Get("vtt_destination_not_ready"));
     }
 
-    private static void ShowTooltip(EntityPlayer player, string message)
+    // internal, not private: the forget request shows its outcome the same way. Copying the
+    // local/MP branch would be copying the bug that once sent an empty tooltip because the
+    // message was passed as ShowTooltipMP's third argument instead of its second.
+    internal static void ShowTooltip(EntityPlayer player, string message)
     {
         if (player is EntityPlayerLocal localPlayer)
         {

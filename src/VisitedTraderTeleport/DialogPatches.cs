@@ -18,6 +18,11 @@ internal static class DialogIds
     public const string PagePreviousResponseId = "vtt_destination_page_previous";
     public const string PageNextResponseId = "vtt_destination_page_next";
     public const string ConfirmYesResponseId = "vtt_confirm_yes";
+    public const string ForgetStatementId = "vtt_forget_confirm";
+    public const string ForgetResponseId = "vtt_forget";
+    public const string ForgetYesResponseId = "vtt_forget_yes";
+    public const string ForgetInfoResponseId = "vtt_forget_infoline";
+    public const string ForgetPromptResponseId = "vtt_forget_promptline";
     public const string ConfirmInfoResponseId = "vtt_confirm_infoline";
     public const string ConfirmPromptResponseId = "vtt_confirm_promptline";
     public const string ConfirmCostResponseId = "vtt_confirm_costline";
@@ -71,6 +76,12 @@ internal static class DialogStatementGetResponsesPatch
         if (__instance.ID == DialogIds.ConfirmStatementId)
         {
             BuildConfirmResponses(__instance, __result);
+            return;
+        }
+
+        if (__instance.ID == DialogIds.ForgetStatementId)
+        {
+            BuildForgetResponses(__instance, __result);
             return;
         }
 
@@ -140,27 +151,21 @@ internal static class DialogStatementGetResponsesPatch
             Actions = new List<BaseDialogAction>()
         };
 
-        if (ConfirmationService.RequiresConfirmation(destination, player))
+        // Always a screen, never a jump straight to the trip. That screen is where forgetting
+        // a destination lives, and there is nowhere else to put it: the destination list is
+        // paged, so pairing every entry with a second one would halve the page and read badly.
+        //
+        // It costs a click for players who have confirmation switched off. For everyone else
+        // it is the same screen they already saw, with one more thing on it - the prompt and
+        // the cost line still appear only when confirmation is called for.
+        response.NextStatementID = DialogIds.ConfirmStatementId;
+        response.Actions.Add(new DialogActionVisitedTraderConfirm
         {
-            response.NextStatementID = DialogIds.ConfirmStatementId;
-            response.Actions.Add(new DialogActionVisitedTraderConfirm
-            {
-                ID = "confirm",
-                Value = destination.Key,
-                OwnerDialog = statement.OwnerDialog,
-                Owner = response
-            });
-        }
-        else
-        {
-            response.Actions.Add(new DialogActionVisitedTraderTeleport
-            {
-                ID = "teleport",
-                Value = destination.Key,
-                OwnerDialog = statement.OwnerDialog,
-                Owner = response
-            });
-        }
+            ID = "confirm",
+            Value = destination.Key,
+            OwnerDialog = statement.OwnerDialog,
+            Owner = response
+        });
 
         return new DialogResponseEntry(response.ID)
         {
@@ -175,8 +180,12 @@ internal static class DialogStatementGetResponsesPatch
         string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
         ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
 
+        // The prompt and the cost line are the *confirmation*, and they still follow the
+        // Confirmation setting. What is always here is the list of things you can do with the
+        // destination you picked, which is a different question from "are you sure".
+        bool confirming = ConfirmationService.RequiresConfirmation(destination, player);
         string question = ConfirmationService.FormatPromptQuestion(destination);
-        string costLine = ConfirmationService.FormatCostLine(destination, player);
+        string costLine = confirming ? ConfirmationService.FormatCostLine(destination, player) : string.Empty;
         statement.Text = question;
 
         // The trader dialog skin renders the response list but not the statement body, so
@@ -194,7 +203,11 @@ internal static class DialogStatementGetResponsesPatch
                 DimInfo(TraderDestinationFormatter.FormatResponse(destination, player))));
         }
 
-        entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, DimInfo(question)));
+        if (confirming)
+        {
+            entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmPromptResponseId, DimInfo(question)));
+        }
+
         if (!string.IsNullOrWhiteSpace(costLine))
         {
             entries.Add(CreateStatusEntry(statement, DialogIds.ConfirmCostResponseId, DimInfo(costLine)));
@@ -215,9 +228,68 @@ internal static class DialogStatementGetResponsesPatch
         });
         entries.Add(new DialogResponseEntry(yes.ID) { Response = yes });
 
+        // Forgetting asks again before it does anything. It is recoverable - visit the trader
+        // and it comes back - but a destination lost to a misclick is still worse than a
+        // wasted click, and this sits directly under the button people came here to press.
+        var forget = new DialogResponse(DialogIds.ForgetResponseId)
+        {
+            Text = VTTLocalization.Get("vtt_forget"),
+            OwnerDialog = dialog,
+            NextStatementID = DialogIds.ForgetStatementId,
+            Actions = new List<BaseDialogAction>()
+        };
+        entries.Add(new DialogResponseEntry(forget.ID) { Response = forget });
+
         // "No" is a static response (vtt_confirm_no) defined in dialogs.xml that returns to
-        // the destination list, so the confirmation screen no longer also shows the vanilla
-        // "nevermind" exit. Insert the prompt, cost, and Yes ahead of it.
+        // the destination list, so this screen no longer also shows the vanilla "nevermind"
+        // exit. Insert the prompt, cost, and the actions ahead of it.
+        responses.InsertRange(0, entries);
+    }
+
+    // "Do you really want to forget X?" - the last screen before a record is deleted.
+    private static void BuildForgetResponses(DialogStatement statement, List<BaseResponseEntry> responses)
+    {
+        Dialog dialog = statement.OwnerDialog;
+        EntityPlayer player = DialogSessionStore.GetPlayer(dialog);
+        string pendingKey = DialogSessionStore.GetPendingDestination(dialog);
+        ConfirmationService.TryResolveDestination(pendingKey, player, out TraderDestination destination);
+
+        string question = destination == null
+            ? VTTLocalization.Get("vtt_statement_forget")
+            : VTTLocalization.Format("vtt_forget_prompt", TraderDestinationFormatter.FormatName(destination));
+        statement.Text = question;
+
+        var entries = new List<BaseResponseEntry>();
+        if (destination != null)
+        {
+            entries.Add(CreateStatusEntry(
+                statement,
+                DialogIds.ForgetInfoResponseId,
+                DimInfo(TraderDestinationFormatter.FormatResponse(destination, player))));
+        }
+
+        entries.Add(CreateStatusEntry(statement, DialogIds.ForgetPromptResponseId, DimInfo(question)));
+
+        var yes = new DialogResponse(DialogIds.ForgetYesResponseId)
+        {
+            Text = VTTLocalization.Get("vtt_forget_yes"),
+            OwnerDialog = dialog,
+            // Back to the list, which is where the player can see the result. On a client the
+            // list is a snapshot and the server's reply lands a moment later, so a slow
+            // connection can show the old list once more; the tooltip says what happened
+            // either way, and the next time the list is opened it is right.
+            NextStatementID = DialogIds.DestinationStatementId,
+            Actions = new List<BaseDialogAction>()
+        };
+        yes.Actions.Add(new DialogActionVisitedTraderForget
+        {
+            ID = "forget",
+            Value = pendingKey,
+            OwnerDialog = dialog,
+            Owner = yes
+        });
+        entries.Add(new DialogResponseEntry(yes.ID) { Response = yes });
+
         responses.InsertRange(0, entries);
     }
 
