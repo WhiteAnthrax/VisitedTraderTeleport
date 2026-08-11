@@ -23,19 +23,15 @@ public class VisitForgettingTests
         return visits;
     }
 
-    private static HashSet<string> Visible(params string[] keys)
-    {
-        return new HashSet<string>(keys, StringComparer.Ordinal);
-    }
+    // --- removing -------------------------------------------------------------------------
 
     [Fact]
     public void RemovesTheKeyFromThePlayersOwnVisits()
     {
         Dictionary<string, HashSet<string>> visits = Visits((Me, new[] { Trader, "other:1:2" }));
 
-        ForgetOutcome outcome = VisitForgetting.Forget(visits, Me, Trader, Visible("other:1:2"));
+        Assert.True(VisitForgetting.TryRemoveVisit(visits, Me, Trader));
 
-        Assert.Equal(ForgetOutcome.Removed, outcome);
         Assert.DoesNotContain(Trader, visits[Me]);
         Assert.Contains("other:1:2", visits[Me]);
     }
@@ -47,46 +43,28 @@ public class VisitForgettingTests
             (Me, new[] { Trader }),
             (SomeoneElse, new[] { Trader }));
 
-        VisitForgetting.Forget(visits, Me, Trader, Visible(Trader));
+        VisitForgetting.TryRemoveVisit(visits, Me, Trader);
 
         Assert.Contains(Trader, visits[SomeoneElse]);
     }
 
-    // Shared and Party show the union of several players' visits, so removing your own record
-    // does not always take the entry off your screen. The player has to be told that, or the
-    // button looks broken.
     [Fact]
-    public void SaysSoWhenSomeoneElsesVisitKeepsItListed()
-    {
-        Dictionary<string, HashSet<string>> visits = Visits(
-            (Me, new[] { Trader }),
-            (SomeoneElse, new[] { Trader }));
-
-        ForgetOutcome outcome = VisitForgetting.Forget(visits, Me, Trader, Visible(Trader));
-
-        Assert.Equal(ForgetOutcome.RemovedButStillListed, outcome);
-        Assert.False(visits.ContainsKey(Me));
-    }
-
-    [Fact]
-    public void ReportsWhenThePlayerNeverVisitedIt()
+    public void RemovesNothingWhenThePlayerNeverVisitedIt()
     {
         Dictionary<string, HashSet<string>> visits = Visits((SomeoneElse, new[] { Trader }));
 
-        ForgetOutcome outcome = VisitForgetting.Forget(visits, Me, Trader, Visible(Trader));
+        Assert.False(VisitForgetting.TryRemoveVisit(visits, Me, Trader));
 
-        Assert.Equal(ForgetOutcome.NotVisitedByThisPlayer, outcome);
         Assert.Contains(Trader, visits[SomeoneElse]);
     }
 
     [Fact]
-    public void ReportsWhenTheKeyIsNotInThePlayersVisits()
+    public void RemovesNothingWhenTheKeyIsNotInThePlayersVisits()
     {
         Dictionary<string, HashSet<string>> visits = Visits((Me, new[] { "other:1:2" }));
 
-        ForgetOutcome outcome = VisitForgetting.Forget(visits, Me, Trader, Visible());
+        Assert.False(VisitForgetting.TryRemoveVisit(visits, Me, Trader));
 
-        Assert.Equal(ForgetOutcome.NotVisitedByThisPlayer, outcome);
         Assert.Contains("other:1:2", visits[Me]);
     }
 
@@ -97,7 +75,7 @@ public class VisitForgettingTests
     {
         Dictionary<string, HashSet<string>> visits = Visits((Me, new[] { Trader }));
 
-        VisitForgetting.Forget(visits, Me, Trader, Visible());
+        VisitForgetting.TryRemoveVisit(visits, Me, Trader);
 
         Assert.False(visits.ContainsKey(Me));
     }
@@ -110,23 +88,80 @@ public class VisitForgettingTests
     {
         Dictionary<string, HashSet<string>> visits = Visits((Me, new[] { Trader }));
 
-        ForgetOutcome outcome = VisitForgetting.Forget(visits, playerKey, destinationKey, Visible());
+        Assert.False(VisitForgetting.TryRemoveVisit(visits, playerKey, destinationKey));
 
-        Assert.Equal(ForgetOutcome.NotVisitedByThisPlayer, outcome);
         Assert.Contains(Trader, visits[Me]);
     }
 
     [Fact]
     public void SurvivesAMissingVisitMap()
     {
-        ForgetOutcome outcome = VisitForgetting.Forget(null, Me, Trader, Visible());
-
-        Assert.Equal(ForgetOutcome.NotVisitedByThisPlayer, outcome);
+        Assert.False(VisitForgetting.TryRemoveVisit(null, Me, Trader));
     }
 
+    // --- what the player is told ----------------------------------------------------------
+    //
+    // The whole truth table, because every wrong answer here is a sentence the player acts on.
+    // The first version took one key set for both questions and consulted it before mutating -
+    // and C# evaluates arguments before the call, so it was always the pre-removal list. Every
+    // successful removal announced that something else was keeping the destination listed,
+    // including in single player where there is nothing else. Four cases had collapsed into
+    // one wrong one, and no test noticed because the set was passed in by hand.
+
+    [Fact]
+    public void RemovedAndGoneIsRemoved()
+    {
+        Assert.Equal(ForgetOutcome.Removed, VisitForgetting.Decide(removed: true, listedNow: false));
+    }
+
+    [Fact]
+    public void RemovedButSomethingElseKeepsItListed()
+    {
+        Assert.Equal(
+            ForgetOutcome.RemovedButStillListed,
+            VisitForgetting.Decide(removed: true, listedNow: true));
+    }
+
+    [Fact]
+    public void ListedButNotYoursMeansThereIsNothingToRemove()
+    {
+        Assert.Equal(
+            ForgetOutcome.NothingOfTheirsToRemove,
+            VisitForgetting.Decide(removed: false, listedNow: true));
+    }
+
+    // The stale-snapshot case: a client forgets twice before the new list reaches it.
+    [Fact]
+    public void NotRemovedAndNotListedMeansItIsAlreadyGone()
+    {
+        Assert.Equal(
+            ForgetOutcome.NotOnTheirList,
+            VisitForgetting.Decide(removed: false, listedNow: false));
+    }
+
+    // --- messages ---------------------------------------------------------------------------
+    //
     // One [Fact] each rather than a [Theory] taking the outcome: ForgetOutcome is internal, and
     // xunit needs its test methods public, which makes an internal parameter type a compile
     // error (CS0051). A local of that type is fine, so the value moves inside the method.
+
+    [Fact]
+    public void EveryOutcomeHasItsOwnMessage()
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal)
+        {
+            VisitForgetting.GetMessageKey(ForgetOutcome.Removed),
+            VisitForgetting.GetMessageKey(ForgetOutcome.RemovedButStillListed),
+            VisitForgetting.GetMessageKey(ForgetOutcome.NothingOfTheirsToRemove),
+            VisitForgetting.GetMessageKey(ForgetOutcome.NotOnTheirList),
+        };
+
+        // Four outcomes, four distinct strings. Sharing one would put a sentence in front of
+        // the player that describes a different situation, which is the bug this split exists
+        // to prevent.
+        Assert.Equal(4, keys.Count);
+    }
+
     [Fact]
     public void RemovedHasItsOwnMessage()
     {
@@ -142,10 +177,18 @@ public class VisitForgettingTests
     }
 
     [Fact]
-    public void NotVisitedHasItsOwnMessage()
+    public void NothingOfTheirsHasItsOwnMessage()
     {
         Assert.Equal(
             "vtt_forget_not_yours",
-            VisitForgetting.GetMessageKey(ForgetOutcome.NotVisitedByThisPlayer));
+            VisitForgetting.GetMessageKey(ForgetOutcome.NothingOfTheirsToRemove));
+    }
+
+    [Fact]
+    public void NotOnTheirListHasItsOwnMessage()
+    {
+        Assert.Equal(
+            "vtt_forget_not_listed",
+            VisitForgetting.GetMessageKey(ForgetOutcome.NotOnTheirList));
     }
 }
