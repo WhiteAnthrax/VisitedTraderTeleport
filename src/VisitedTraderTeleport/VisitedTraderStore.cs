@@ -205,22 +205,24 @@ internal static class VisitedTraderStore
         if (string.IsNullOrEmpty(playerKey))
         {
             Debug.LogWarning("[VisitedTraderTeleport] Could not resolve player key; nothing was forgotten.");
-            return ForgetOutcome.NotVisitedByThisPlayer;
+            return ForgetOutcome.NotOnTheirList;
         }
 
-        ForgetOutcome outcome = VisitForgetting.Forget(
-            database.VisitsByPlayer,
-            playerKey,
-            destinationKey,
-            // Computed after the removal with the same access-mode logic the destination list
-            // uses, so "is it still on your screen?" cannot disagree with the screen.
-            GetAllowedNewSchemaKeys(player));
+        // Whether the destination is on this player's list is asked twice, and both times
+        // against the list the dialog itself builds - legacy entries included, because those
+        // are on the list too and belong to nobody. The second reading has to happen *after*
+        // the removal; taking it as an argument to the removal call is how the first version
+        // got this wrong (arguments are evaluated first, so it always saw the old list).
+        bool removed = VisitForgetting.TryRemoveVisit(
+            database.VisitsByPlayer, playerKey, destinationKey);
+        bool listedNow = IsListedFor(player, destinationKey);
+        ForgetOutcome outcome = VisitForgetting.Decide(removed, listedNow);
 
-        if (outcome == ForgetOutcome.NotVisitedByThisPlayer)
+        if (!removed)
         {
             Debug.Log(
                 $"[VisitedTraderTeleport] Nothing to forget for {player.PlayerDisplayName}: " +
-                $"{destinationKey} is not one of their visits.");
+                $"{destinationKey} is not one of their visits ({outcome}).");
             return outcome;
         }
 
@@ -281,6 +283,14 @@ internal static class VisitedTraderStore
 
         SaveDatabase();
         Debug.Log($"[VisitedTraderTeleport] Recorded reported visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
+    }
+
+    // Is this destination on the player's list right now? The same two sources GetDestinations
+    // draws on, so the answer cannot disagree with what they are looking at.
+    private static bool IsListedFor(EntityPlayer player, string destinationKey)
+    {
+        return LegacyDestinations.ContainsKey(destinationKey) ||
+               GetAllowedNewSchemaKeys(player).Contains(destinationKey);
     }
 
     private static HashSet<string> GetAllowedNewSchemaKeys(EntityPlayer player)
