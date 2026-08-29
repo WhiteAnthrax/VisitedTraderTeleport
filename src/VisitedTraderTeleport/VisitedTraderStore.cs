@@ -338,49 +338,6 @@ internal static class VisitedTraderStore
         Debug.Log($"[VisitedTraderTeleport] Recorded visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
     }
 
-    // Removes this player's visit to one trader. Server-side (or single player); a connected
-    // client asks the server to do it - see VisitedTraderNetwork.RequestForget - because the
-    // client only ever holds a snapshot of what it is allowed to see.
-    //
-    // Only ever touches the calling player's own record. In Party and Shared mode the list is
-    // the union of several players' visits, so the entry can survive this; the outcome says
-    // which happened, and the dialog tells the player rather than looking like it did nothing.
-    public static ForgetOutcome Forget(string destinationKey, EntityPlayer player)
-    {
-        EnsureLoaded();
-
-        string playerKey = GetPlayerKey(player);
-        if (string.IsNullOrEmpty(playerKey))
-        {
-            Debug.LogWarning("[VisitedTraderTeleport] Could not resolve player key; nothing was forgotten.");
-            return ForgetOutcome.NotOnTheirList;
-        }
-
-        // Whether the destination is on this player's list is asked twice, and both times
-        // against the list the dialog itself builds - legacy entries included, because those
-        // are on the list too and belong to nobody. The second reading has to happen *after*
-        // the removal; taking it as an argument to the removal call is how the first version
-        // got this wrong (arguments are evaluated first, so it always saw the old list).
-        bool removed = VisitForgetting.TryRemoveVisit(
-            database.VisitsByPlayer, playerKey, destinationKey);
-        bool listedNow = IsListedFor(player, destinationKey);
-        ForgetOutcome outcome = VisitForgetting.Decide(removed, listedNow);
-
-        if (!removed)
-        {
-            Debug.Log(
-                $"[VisitedTraderTeleport] Nothing to forget for {player.PlayerDisplayName}: " +
-                $"{destinationKey} is not one of their visits ({outcome}).");
-            return outcome;
-        }
-
-        SaveDatabase();
-        Debug.Log(
-            $"[VisitedTraderTeleport] Forgot {destinationKey} for {player.PlayerDisplayName} " +
-            $"({outcome}).");
-        return outcome;
-    }
-
     public static void RecordReportedVisit(TraderVisitReport report, EntityPlayer player)
     {
         if (player == null)
@@ -431,14 +388,6 @@ internal static class VisitedTraderStore
 
         SaveDatabase();
         Debug.Log($"[VisitedTraderTeleport] Recorded reported visited trader for {player.PlayerDisplayName}: {destination.DialogText}");
-    }
-
-    // Is this destination on the player's list right now? The same two sources GetDestinations
-    // draws on, so the answer cannot disagree with what they are looking at.
-    private static bool IsListedFor(EntityPlayer player, string destinationKey)
-    {
-        return LegacyDestinations.ContainsKey(destinationKey) ||
-               GetAllowedNewSchemaKeys(player).Contains(destinationKey);
     }
 
     private static HashSet<string> GetAllowedNewSchemaKeys(EntityPlayer player)
