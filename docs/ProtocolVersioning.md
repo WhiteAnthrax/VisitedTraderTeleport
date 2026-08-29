@@ -101,4 +101,4 @@ VTT_RELEASE_PACKAGE=<新しいzip> VTT_SERVER_RELEASE_PACKAGE=<古いzip> ./bin/
 ## 未解明
 
 - 起動時の自前登録で、なぜ登録数によって最上位 ID がずれるのか。同じサーバー・同じ他 MOD 構成で、5個のとき 193〜189、6個のとき 194〜189 が割り当たった。**接続時に上書きされるため実害は無い**が、機構は未確認
-- 希望 ID（240〜245）が一度も使われない理由。`mappings.Length` が `KnownPackageCount` であることから、240 は範囲外と思われる
+- 希望 ID（240〜244）が一度も使われない理由。`mappings.Length` が `KnownPackageCount` であることから、240 は範囲外と思われる
