@@ -11,7 +11,6 @@ public sealed class ModApi : IModApi
     private const int PreferredSnapshotPackageId = 242;
     private const int PreferredTeleportRequestPackageId = 243;
     private const int PreferredTravelTransitionPackageId = 244;
-    private const int PreferredForgetRequestPackageId = 245;
     private static bool isRegisteringNetPackages;
 
     public void InitMod(Mod _modInstance)
@@ -38,7 +37,6 @@ public sealed class ModApi : IModApi
             RegisterNetPackage(PreferredSnapshotPackageId, typeof(NetPackageVisitedTraderSnapshot), reason);
             RegisterNetPackage(PreferredTeleportRequestPackageId, typeof(NetPackageVisitedTraderTeleportRequest), reason);
             RegisterNetPackage(PreferredTravelTransitionPackageId, typeof(NetPackageVisitedTraderTravelTransition), reason);
-            RegisterNetPackage(PreferredForgetRequestPackageId, typeof(NetPackageVisitedTraderForgetRequest), reason);
         }
         finally
         {
