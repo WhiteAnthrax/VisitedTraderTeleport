@@ -18,14 +18,37 @@ public sealed class ModApi : IModApi
         VisitedTraderTeleportConfig.Configure(_modInstance);
         var harmony = new Harmony("anthr.7d2d.visitedtraderteleport");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
-        RegisterNetPackages("mod init");
+        RegisterNetPackages("mod init", expectMappings: false);
         Debug.Log("[VisitedTraderTeleport] Loaded.");
     }
 
-    internal static void RegisterNetPackages(string reason)
+    // expectMappings says whether the game is supposed to have built its package table by
+    // now. At mod init it has not, and that is the normal order of events - the packages are
+    // registered later, from the SetupBaseMapping patch. Reporting that as a failure, five
+    // times, reads like something went wrong when nothing did.
+    internal static void RegisterNetPackages(string reason, bool expectMappings)
     {
         if (isRegisteringNetPackages)
         {
+            return;
+        }
+
+        System.Type[] mappings = NetPackageManager.PackageMappings;
+        if (mappings == null || mappings.Length == 0)
+        {
+            if (expectMappings)
+            {
+                Debug.LogWarning(
+                    $"[VisitedTraderTeleport] Could not register net packages during {reason}: " +
+                    "package mappings are not available.");
+            }
+            else
+            {
+                Debug.Log(
+                    "[VisitedTraderTeleport] The game has not built its net package table yet; " +
+                    "the mod's packages are registered once it does.");
+            }
+
             return;
         }
 
@@ -130,6 +153,6 @@ internal static class NetPackageManagerSetupBaseMappingPatch
 {
     public static void Postfix()
     {
-        ModApi.RegisterNetPackages("net package base mapping setup");
+        ModApi.RegisterNetPackages("net package base mapping setup", expectMappings: true);
     }
 }
