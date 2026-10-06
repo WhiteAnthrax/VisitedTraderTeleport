@@ -1,0 +1,6 @@
+0.8.0
+This build is for 7 Days to Die V3.3 only.
+V3.3 removed GetLength() from the game's network package class, which this mod implemented. Removing those implementations is what lets the mod build against V3.3 - and is also why this build will not load on 3.0, 3.1 or 3.2, where that method is still required.
+Still on 3.0, 3.1 or 3.2? Keep using 0.7.11. It works there and nothing in this release changes what the mod does.
+Startup no longer reports five warnings about network packages that "could not be registered". The game has not built its package table yet at that point, which is the normal order - the packages were always registered a moment later. Only the message was wrong.
+No save reset required.
