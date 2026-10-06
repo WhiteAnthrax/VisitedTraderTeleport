@@ -3,7 +3,8 @@
 ## 0.8.0 - 2026-10-06 12:00 JST
 - **This build is for 7 Days to Die V3.3 only.** V3.3 removed `GetLength()` from the game's network package class, which this mod implemented. The implementations are gone, which is what lets the mod build against V3.3 - and is also why this build will not load on 3.0, 3.1 or 3.2, where that method is still required. Staying on 3.0-3.2? Keep 0.7.11; it still works there.
 - Startup no longer reports five warnings about network packages that "could not be registered". The game simply has not built its package table at the point the mod starts, which is the normal order - the packages are registered a moment later, and always were. Only the message was wrong.
-- No save reset is required, and nothing about how the mod behaves has changed.
+- Travelling no longer prints a red error to the console. Arriving somewhere the mod had already loaded for you made the game try to create entities it already had, and it complained loudly each time. Nothing was lost when it happened - the entity it refused to create twice was already there - but the message looked alarming and cost a frame of the game's update loop. The duplicate is now ignored quietly.
+- No save reset is required, and nothing about what the mod does has changed.
 
 ## 0.7.11 - 2026-08-01 00:30 JST
 - Fixed placed turrets being pulled to the trader when you travel. Only NPCs you have actually hired are moved now; anything else you own - turrets, vehicles, drones - stays where it is. With the SCore / XNPCCore companion system installed this could affect turrets anywhere on the map, on every trip.
