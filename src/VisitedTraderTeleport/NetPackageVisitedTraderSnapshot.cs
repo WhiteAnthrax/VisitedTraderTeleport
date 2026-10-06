@@ -81,24 +81,6 @@ public sealed class NetPackageVisitedTraderSnapshot : NetPackage
         }
     }
 
-    public override int GetLength()
-    {
-        int length = 20 +
-                     accessMode.ToString().Length +
-                     (travelCost.ItemName?.Length ?? 0) +
-                     (travelCost.ItemDisplayName?.Length ?? 0) +
-                     confirmation.ToString().Length;
-        foreach (TraderDestination destination in destinations)
-        {
-            length += 40;
-            length += destination.Key?.Length ?? 0;
-            length += destination.DisplayName?.Length ?? 0;
-            length += destination.Biome?.Length ?? 0;
-        }
-
-        return length;
-    }
-
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         VisitedTraderClientState.ApplySnapshot(accessMode, destinations, travelCost, confirmation);
