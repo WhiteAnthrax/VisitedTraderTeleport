@@ -210,6 +210,10 @@ For the Linux-orchestrated workflow that invokes compilation on a Windows game h
 
 Update `CHANGELOG.md` whenever behavior, packaging, or project-facing workflow changes. The build copies it into the packaged mod as `Changelog.txt`.
 
+Why the mod is shaped the way it is - which features were deliberately not shipped, and what the
+netcode forces - is recorded in [Decisions](docs/Decisions.md). Read it before adding anything that
+needs a new net package.
+
 ## Install
 
 For normal users, download the versioned ZIP from GitHub Releases and extract the `VisitedTraderTeleport` folder to the game's `Mods` directory:
