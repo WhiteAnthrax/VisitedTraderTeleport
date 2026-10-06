@@ -58,16 +58,6 @@ public sealed class NetPackageVisitedTraderTravelTransition : NetPackage
         writer.ReadWrite(settings.SoundRepeatSeconds);
     }
 
-    public override int GetLength()
-    {
-        return 35 +
-               (destinationKey?.Length ?? 0) +
-               (destinationName?.Length ?? 0) +
-               (transportDestination?.Length ?? 0) +
-               (costItemName?.Length ?? 0) +
-               (settings.Sound?.Length ?? 0);
-    }
-
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         EntityPlayerLocal player = GameManager.Instance?.World?.GetPrimaryPlayer();

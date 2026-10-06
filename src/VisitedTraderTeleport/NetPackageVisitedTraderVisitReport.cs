@@ -38,11 +38,6 @@ public sealed class NetPackageVisitedTraderVisitReport : NetPackage
         writer.ReadWrite(report.TraderPositionZ);
     }
 
-    public override int GetLength()
-    {
-        return 28 + (report.Key?.Length ?? 0) + (report.DisplayName?.Length ?? 0);
-    }
-
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         EntityPlayer player = VisitedTraderNetwork.ResolvePlayer(Sender);

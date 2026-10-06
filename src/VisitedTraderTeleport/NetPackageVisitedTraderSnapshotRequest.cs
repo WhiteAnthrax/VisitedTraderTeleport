@@ -18,11 +18,6 @@ public sealed class NetPackageVisitedTraderSnapshotRequest : NetPackage
         base.write(writer);
     }
 
-    public override int GetLength()
-    {
-        return 0;
-    }
-
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         VisitedTraderNetwork.SendSnapshot(Sender);

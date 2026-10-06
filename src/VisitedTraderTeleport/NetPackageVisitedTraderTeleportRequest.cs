@@ -23,11 +23,6 @@ public sealed class NetPackageVisitedTraderTeleportRequest : NetPackage
         writer.ReadWrite(destinationKey ?? string.Empty);
     }
 
-    public override int GetLength()
-    {
-        return 4 + (destinationKey?.Length ?? 0);
-    }
-
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         EntityPlayer player = VisitedTraderNetwork.ResolvePlayer(Sender);
