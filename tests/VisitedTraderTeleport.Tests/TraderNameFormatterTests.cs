@@ -40,14 +40,14 @@ public class TraderNameFormatterTests
     }
 
     [Theory]
-    [InlineData("トレーダー・レクト")]
-    [InlineData("Rekt le marchand")]
-    [InlineData("Trader rekt")]
-    public void Format_KeepsShortName_WhenGameNameStillContainsIt(string gameName)
+    [InlineData("トレーダー・レクト", "レクト")]
+    [InlineData("Rekt le marchand", "Rekt")]
+    [InlineData("Trader rekt", "Rekt")]
+    public void Format_KeepsShortName_WhenGameNameStillContainsIt(string gameName, string shortName)
     {
-        var localization = Localization(("npcTraderRekt", gameName), ("vtt_trader_name_rekt", "Rekt"));
+        var localization = Localization(("npcTraderRekt", gameName), ("vtt_trader_name_rekt", shortName));
 
-        Assert.Equal("Rekt", TraderNameFormatter.Format("npcTraderRekt", localization));
+        Assert.Equal(shortName, TraderNameFormatter.Format("npcTraderRekt", localization));
     }
 
     [Fact]
