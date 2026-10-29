@@ -1,0 +1,6 @@
+0.8.1
+For 7 Days to Die V3.3.
+When another mod renames a trader, the destination list now uses the name the game shows. In The Asylum, for example, the trader dialog says "Lee Gon" but the list still said "Rekt"; it now says "Lee Gon" too.
+Without such a mod, the list shows the same short names as before (Rekt, Jen, Bob, ...).
+A modded trader the mod has no name of its own for is listed by its in-game name, when the game has one.
+No save reset required. Traders you already recorded show the new names automatically.
