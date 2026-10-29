@@ -1,6 +1,5 @@
 using System;
 using System.Globalization;
-using System.Text;
 using UnityEngine;
 
 namespace VisitedTraderTeleport;
@@ -41,7 +40,7 @@ internal static class TraderDestinationFormatter
 
     public static string FormatName(TraderDestination destination)
     {
-        return FormatTraderName(destination?.DisplayName);
+        return TraderNameFormatter.Format(destination?.DisplayName, GameLocalizationProvider.Instance);
     }
 
     public static string FormatBiomeSuffix(TraderDestination destination)
@@ -71,7 +70,7 @@ internal static class TraderDestinationFormatter
 
         string key = GetKnownBiomeKey(biomeName);
         return string.IsNullOrEmpty(key)
-            ? ClampBiomeLabel(ToTitleWords(biomeName.Replace('_', ' ').Replace('-', ' ')))
+            ? ClampBiomeLabel(TraderNameFormatter.ToTitleWords(biomeName.Replace('_', ' ').Replace('-', ' ')))
             : VTTLocalization.Get(key);
     }
 
@@ -193,138 +192,6 @@ internal static class TraderDestinationFormatter
             VTTLocalization.Get(x >= 0 ? "vtt_coord_east" : "vtt_coord_west"),
             Math.Abs(z),
             VTTLocalization.Get(z >= 0 ? "vtt_coord_south" : "vtt_coord_north"));
-    }
-
-    private static string FormatTraderName(string rawName)
-    {
-        string cleaned = CleanTraderName(rawName);
-        string key = GetKnownTraderNameKey(cleaned);
-        if (!string.IsNullOrEmpty(key))
-        {
-            return VTTLocalization.Get(key);
-        }
-
-        if (string.IsNullOrWhiteSpace(cleaned))
-        {
-            return VTTLocalization.Get("vtt_trader_name_generic");
-        }
-
-        return VTTLocalization.Format("vtt_trader_name_unknown", ToTitleWords(cleaned));
-    }
-
-    private static string GetKnownTraderNameKey(string cleaned)
-    {
-        switch (NormalizeNameToken(cleaned))
-        {
-            case "rekt":
-                return "vtt_trader_name_rekt";
-            case "jen":
-                return "vtt_trader_name_jen";
-            case "bob":
-                return "vtt_trader_name_bob";
-            case "hugh":
-                return "vtt_trader_name_hugh";
-            case "joel":
-                return "vtt_trader_name_joel";
-            case "gene":
-                return "vtt_trader_name_gene";
-            case "johnny":
-                return "vtt_trader_name_johnny";
-            case "radcat":
-            case "spheretest":
-                return "vtt_trader_name_radcat";
-            default:
-                return string.Empty;
-        }
-    }
-
-    private static string CleanTraderName(string rawName)
-    {
-        if (string.IsNullOrWhiteSpace(rawName))
-        {
-            return string.Empty;
-        }
-
-        string cleaned = rawName.Trim();
-        if (cleaned.StartsWith("npcTrader", StringComparison.OrdinalIgnoreCase))
-        {
-            cleaned = cleaned.Substring("npcTrader".Length);
-        }
-        else if (cleaned.StartsWith("trader_", StringComparison.OrdinalIgnoreCase))
-        {
-            cleaned = cleaned.Substring("trader_".Length);
-        }
-        else if (cleaned.StartsWith("Trader ", StringComparison.OrdinalIgnoreCase))
-        {
-            cleaned = cleaned.Substring("Trader ".Length);
-        }
-        else if (cleaned.StartsWith("trader", StringComparison.OrdinalIgnoreCase))
-        {
-            cleaned = cleaned.Substring("trader".Length);
-        }
-
-        return cleaned
-            .Replace('_', ' ')
-            .Replace('-', ' ')
-            .Trim();
-    }
-
-    private static string NormalizeNameToken(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(value.Length);
-        foreach (char c in value)
-        {
-            if (char.IsLetterOrDigit(c))
-            {
-                builder.Append(char.ToLowerInvariant(c));
-            }
-        }
-
-        return builder.ToString();
-    }
-
-    private static string ToTitleWords(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(value.Length + 8);
-        char previous = '\0';
-        for (int i = 0; i < value.Length; i++)
-        {
-            char c = value[i];
-            if (char.IsWhiteSpace(c))
-            {
-                if (builder.Length > 0 && builder[builder.Length - 1] != ' ')
-                {
-                    builder.Append(' ');
-                }
-
-                previous = c;
-                continue;
-            }
-
-            if (i > 0 &&
-                char.IsUpper(c) &&
-                (char.IsLower(previous) || char.IsDigit(previous)) &&
-                builder.Length > 0 &&
-                builder[builder.Length - 1] != ' ')
-            {
-                builder.Append(' ');
-            }
-
-            builder.Append(c);
-            previous = c;
-        }
-
-        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(builder.ToString().Trim().ToLowerInvariant());
     }
 
     public static float GetDistanceSq(TraderDestination destination, EntityPlayer player)

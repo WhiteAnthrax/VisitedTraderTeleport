@@ -1,5 +1,10 @@
 # Travel Between Visited Traders Changelog
 
+## 0.8.1 - Unreleased
+- The destination list now uses a trader's name the way your game shows it when another mod renames them. In The Asylum, for example, the trader dialog says "Lee Gon" while the list still said "Rekt"; the list now says "Lee Gon" too. Without such a mod, the short names (Rekt, Jen, Bob, ...) stay exactly as before.
+- A modded trader this mod has no name of its own for is listed by its in-game name too, when the game has one, instead of a name pieced together from the entity's internal name.
+- No save reset is required. Traders you have already recorded pick up the new names automatically.
+
 ## 0.8.0 - 2026-10-06 12:00 JST
 - **This build is for 7 Days to Die V3.3 only.** V3.3 removed `GetLength()` from the game's network package class, which this mod implemented. The implementations are gone, which is what lets the mod build against V3.3 - and is also why this build will not load on 3.0, 3.1 or 3.2, where that method is still required. Staying on 3.0-3.2? Keep 0.7.11; it still works there.
 - Startup no longer reports five warnings about network packages that "could not be registered". The game simply has not built its package table at the point the mod starts, which is the normal order - the packages are registered a moment later, and always were. Only the message was wrong.
