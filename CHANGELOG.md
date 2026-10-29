@@ -1,6 +1,6 @@
 # Travel Between Visited Traders Changelog
 
-## 0.8.1 - Unreleased
+## 0.8.1 - 2026-10-30 05:10 JST
 - The destination list now uses a trader's name the way your game shows it when another mod renames them. In The Asylum, for example, the trader dialog says "Lee Gon" while the list still said "Rekt"; the list now says "Lee Gon" too. Without such a mod, the short names (Rekt, Jen, Bob, ...) stay exactly as before.
 - A modded trader this mod has no name of its own for is listed by its in-game name too, when the game has one, instead of a name pieced together from the entity's internal name.
 - No save reset is required. Traders you have already recorded pick up the new names automatically.
