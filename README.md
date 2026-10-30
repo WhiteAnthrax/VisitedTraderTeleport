@@ -1,6 +1,8 @@
 # Travel Between Visited Traders
 
-7 Days to Die v2.6 mod that adds a trader dialog option to travel to traders the player has already visited.
+7 Days to Die mod for V3.3 and V3.4 that adds a trader dialog option to travel to traders the player has already visited.
+
+Older game versions need an older build: 0.7.11 for 3.0 to 3.2, and the V2.x build on the [Nexus Mods Files tab](https://www.nexusmods.com/7daystodie/mods/10425?tab=files) for 2.x.
 
 ## What This Mod Does
 
