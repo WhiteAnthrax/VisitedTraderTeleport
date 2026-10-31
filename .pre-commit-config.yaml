@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # gitleaks only recognises credential-shaped strings, so a file of user names, paths and
+  # addresses passes it. This refuses real environment files and copies of them outright,
+  # whatever .gitignore says; only *.env.example belongs in the repo.
+  - repo: local
+    hooks:
+      - id: no-real-env
+        name: Refuse real environment files and copies of them
+        language: fail
+        entry: "real environment values must not be committed; only *.env.example is tracked"
+        files: '(^|/)[^/]*\.env(?!\.example$)([.-][^/]*)?$|\.(bak|orig|old)([.-][^/]*)?$'

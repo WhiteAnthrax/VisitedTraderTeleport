@@ -12,3 +12,10 @@ mod/VisitedTraderTeleport/Changelog.txt
 # and API inspection. Do not redistribute these game files.
 refs/*
 !refs/README.md
+
+# Real environment values and hand-made copies of them never belong here
+*.env
+*.env.*
+!*.env.example
+*.bak
+*.orig
