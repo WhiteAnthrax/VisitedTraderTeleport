@@ -1,5 +1,9 @@
 # Travel Between Visited Traders Changelog
 
+## 0.8.2 - 2026-11-19 19:30 JST
+- Fixed landing on the trader's roof instead of in front of the trader when you travel as the host or in single player, with a mod installed that makes the game take longer to place you after a teleport. SphereII Legacy Distant Terrain is one such mod. At the end of a teleport the game puts you on top of the building, and this mod moves you back down; it now waits for the game to finish placing you before it does. Players who joined someone else's game were not affected.
+- No save reset is required.
+
 ## 0.8.1 - 2026-10-30 05:10 JST
 - The destination list now uses a trader's name the way your game shows it when another mod renames them. In The Asylum, for example, the trader dialog says "Lee Gon" while the list still said "Rekt"; the list now says "Lee Gon" too. Without such a mod, the short names (Rekt, Jen, Bob, ...) stay exactly as before.
 - A modded trader this mod has no name of its own for is listed by its in-game name too, when the game has one, instead of a name pieced together from the entity's internal name.

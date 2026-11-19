@@ -1,0 +1,4 @@
+0.8.2
+For 7 Days to Die V3.3 and V3.4.
+Fixed landing on the trader's roof instead of in front of the trader when you travel as the host or in single player, with a mod installed that makes the game take longer to place you after a teleport (SphereII Legacy Distant Terrain, for example). Players who joined someone else's game were not affected.
+No save reset required.
