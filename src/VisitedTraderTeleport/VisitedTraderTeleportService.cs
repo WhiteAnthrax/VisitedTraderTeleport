@@ -655,9 +655,9 @@ internal static class VisitedTraderTeleportService
             {
                 // Teleport (not TeleportToPosition) avoids the respawn path that SCore /
                 // XNPCCore hook to re-summon companions, which duplicated them every trip.
-                // The respawn-style placement then shoves the player onto the roof of an indoor
-                // trader POI (and it can fire a frame later), so hold the exact recorded floor
-                // for a short while afterward to override it.
+                // The respawn that Teleport starts places the player on the roof of an indoor
+                // trader POI when it finishes, which can be seconds later in V3.4, so wait for it
+                // to finish and then hold the exact recorded floor to override it.
                 localPlayer.Teleport(target, localPlayer.rotation.y);
                 localPlayer.SetPosition(target, true);
                 StartClientVisualRefresh(localPlayer, target);
@@ -685,15 +685,37 @@ internal static class VisitedTraderTeleportService
         }
     }
 
-    // Right after the teleport the spawn settling briefly resets the local player's position
-    // (e.g. dropping the Y), which would otherwise leave the player off the trader floor. Hold
-    // the exact recorded floor until the position stays put, then stop early so the hold is not
-    // noticeable when the transition is off.
+    // Teleport respawns the player, and the game places them only when that respawn finishes.
+    // In V3.4 the finish sets the height to one block above the highest block at the spot - the
+    // roof of an indoor trader. Before that the game waits for the world around the player to be
+    // ready, which usually takes a few frames but took 1.5-2.5s with SphereII Legacy Distant
+    // Terrain installed. Until then the position does not move, so a hold that starts counting
+    // stable frames right away can end before the respawn does. Wait for the respawn to finish first,
+    // the same way the game's own TeleportToPosition does, then hold the exact recorded floor
+    // until the position stays put.
     private static IEnumerator EnforceArrivalPosition(EntityPlayerLocal player, Vector3 target)
     {
+        // The respawn waits in turn for the UI (up to 10s), the spawn chunk (10s), the colliders
+        // (5s) and the world around the player (15s), so it finishes within 40s.
+        const float respawnWaitMaxSeconds = 45f;
         const float maxSeconds = 3f;
         const float driftSqr = 0.75f * 0.75f;
         const int stableFramesNeeded = 12;
+
+        float respawnDeadline = Time.realtimeSinceStartup + respawnWaitMaxSeconds;
+        while (player != null && !player.IsDead() && !player.Spawned &&
+               Time.realtimeSinceStartup < respawnDeadline)
+        {
+            yield return null;
+        }
+
+        if (player != null && !player.IsDead() && !player.Spawned)
+        {
+            Debug.LogWarning(
+                $"[VisitedTraderTeleport] The teleport respawn did not finish within {respawnWaitMaxSeconds:0}s; " +
+                "holding the arrival position anyway.");
+        }
+
         float until = Time.realtimeSinceStartup + maxSeconds;
         int corrections = 0;
         int stableFrames = 0;
